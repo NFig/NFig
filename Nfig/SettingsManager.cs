@@ -148,7 +148,7 @@ namespace Nfig
             }
 
             // verify the converter is good
-            var converter = convObj as SettingConverter<TValue>;
+            var converter = convObj as ISettingConverter<TValue>;
             if (converter == null)
             {
                 throw new SettingConversionException(
@@ -197,7 +197,7 @@ namespace Nfig
                 parent = parent.Parent;
             }
 
-            var converterType = typeof(SettingConverter<TValue>);
+            var converterType = typeof(ISettingConverter<TValue>);
             var getValue = converterType.GetMethod("GetValue");
 
             var dm = new DynamicMethod("AssignSetting_" + name, null, new[] { TSettingsType, typeof(string), converterType }, GetType().Module);
@@ -237,7 +237,7 @@ namespace Nfig
                 return false;
 
             // make sure type implements SettingsConverter<>
-            var genericType = typeof(SettingConverter<>);
+            var genericType = typeof(ISettingConverter<>);
             foreach (var iface in converter.GetType().GetInterfaces())
             {
                 if (iface.IsGenericType && iface.GetGenericTypeDefinition() == genericType)
@@ -316,7 +316,7 @@ namespace Nfig
             public PropertyInfo PropertyInfo { get; set; }
         }
 
-        private delegate void SettingSetterDelegate<TValue>(TSettings settings, string str, SettingConverter<TValue> converter);
+        private delegate void SettingSetterDelegate<TValue>(TSettings settings, string str, ISettingConverter<TValue> converter);
 
         private abstract class Setting
         {
@@ -332,7 +332,7 @@ namespace Nfig
 
         private class Setting<TValue> : Setting
         {
-            private readonly SettingConverter<TValue> _converter;
+            private readonly ISettingConverter<TValue> _converter;
             private readonly SettingSetterDelegate<TValue> _setter;
 
             public Setting(
@@ -342,7 +342,7 @@ namespace Nfig
                 SettingAttribute settingAttribute,
                 DefaultValue[] defaults,
                 SettingSetterDelegate<TValue> setter,
-                SettingConverter<TValue> converter
+                ISettingConverter<TValue> converter
             )
             {
                 Name = name;

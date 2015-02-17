@@ -14,7 +14,7 @@ namespace Nfig
         public SettingConverterAttribute(Type converterType)
         {
             // make sure type implements SettingsConverter<>
-            var genericType = typeof(SettingConverter<>);
+            var genericType = typeof(ISettingConverter<>);
             if (!converterType.GetInterfaces().Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == genericType))
             {
                 throw new InvalidOperationException("Cannot use type " + converterType.Name + " as a setting converter. It does not implement SettingConverter<T>.");
@@ -24,7 +24,7 @@ namespace Nfig
         }
     }
 
-    public interface SettingConverter<TValue>
+    public interface ISettingConverter<TValue>
     {
         string GetString(TValue value);
         TValue GetValue(string s);
@@ -32,7 +32,7 @@ namespace Nfig
 
     #region binaryconverters
 
-    public class BooleanSettingConverter : SettingConverter<bool>
+    public class BooleanSettingConverter : ISettingConverter<bool>
     {
         public string GetString(bool b) { return b.ToString(); }
         public bool GetValue(string s) { return bool.Parse(s); }
@@ -42,55 +42,55 @@ namespace Nfig
 
     #region NumericConverters
 
-    public class ByteSettingConverter : SettingConverter<byte>
+    public class ByteSettingConverter : ISettingConverter<byte>
     {
         public string GetString(byte value) { return value.ToString(); }
         public byte GetValue(string s) { return byte.Parse(s); }
     }
 
-    public class ShortSettingConverter: SettingConverter<short>
+    public class ShortSettingConverter: ISettingConverter<short>
     {
         public string GetString(short value) { return value.ToString(); }
         public short GetValue(string s) { return short.Parse(s); }
     }
 
-    public class UShortSettingConverter: SettingConverter<ushort>
+    public class UShortSettingConverter: ISettingConverter<ushort>
     {
         public string GetString(ushort value) { return value.ToString(); }
         public ushort GetValue(string s) { return ushort.Parse(s); }
     }
 
-    public class IntSettingConverter: SettingConverter<int>
+    public class IntSettingConverter: ISettingConverter<int>
     {
         public string GetString(int value) { return value.ToString(); }
         public int GetValue(string s) { return int.Parse(s); }
     }
 
-    public class UIntSettingConverter: SettingConverter<uint>
+    public class UIntSettingConverter: ISettingConverter<uint>
     {
         public string GetString(uint value) { return value.ToString(); }
         public uint GetValue(string s) { return uint.Parse(s); }
     }
 
-    public class LongSettingConverter: SettingConverter<long>
+    public class LongSettingConverter: ISettingConverter<long>
     {
         public string GetString(long value) { return value.ToString(); }
         public long GetValue(string s) { return long.Parse(s); }
     }
 
-    public class ULongSettingConverter: SettingConverter<ulong>
+    public class ULongSettingConverter: ISettingConverter<ulong>
     {
         public string GetString(ulong value) { return value.ToString(); }
         public ulong GetValue(string s) { return ulong.Parse(s); }
     }
 
-    public class FloatSettingConverter: SettingConverter<float>
+    public class FloatSettingConverter: ISettingConverter<float>
     {
         public string GetString(float value) { return value.ToString(); }
         public float GetValue(string s) { return float.Parse(s); }
     }
 
-    public class DoubleSettingConverter: SettingConverter<double>
+    public class DoubleSettingConverter: ISettingConverter<double>
     {
         public string GetString(double value) { return value.ToString(); }
         public double GetValue(string s) { return double.Parse(s); }
@@ -100,13 +100,13 @@ namespace Nfig
 
     #region TextConverters
 
-    public class StringSettingConverter : SettingConverter<string>
+    public class StringSettingConverter : ISettingConverter<string>
     {
         public string GetString(string value) { return value; }
         public string GetValue(string s) { return s; }
     }
 
-    public class CharSettingConverter : SettingConverter<char>
+    public class CharSettingConverter : ISettingConverter<char>
     {
         public string GetString(char value)
         {
