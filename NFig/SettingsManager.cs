@@ -406,6 +406,7 @@ namespace NFig
             }
         }
 
+        [SuppressMessage("ReSharper", "StaticMemberInGenericType", Justification = "Yes, I know it's a static member in a generic type. The fields are also generic.")]
         private class DefaultValue
         {
             private static readonly EqualityComparer<TTier> _tierComparer = EqualityComparer<TTier>.Default;
