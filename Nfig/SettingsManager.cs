@@ -6,7 +6,7 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 
-namespace Nfig
+namespace NFig
 {
     public class SettingsManager<TSettings, TTier, TDataCenter>
         where TSettings : class, new()
@@ -192,7 +192,7 @@ namespace Nfig
                 if (dsva.Tier != null)
                 {
                     if (!(dsva.Tier is TTier))
-                        throw new NfigException("The tier argument was not of type " + TTierType.Name + " on setting " + name);
+                        throw new NFigException("The tier argument was not of type " + TTierType.Name + " on setting " + name);
 
                     tier = (TTier)dsva.Tier;
                 }
@@ -200,7 +200,7 @@ namespace Nfig
                 if (dsva.DataCenter != null)
                 {
                     if (!(dsva.DataCenter is TDataCenter))
-                        throw new NfigException("The dataCenter argument was not of type " + TDataCenterType.Name + " on setting " + name);
+                        throw new NFigException("The dataCenter argument was not of type " + TDataCenterType.Name + " on setting " + name);
 
                     dc = (TDataCenter)dsva.DataCenter;
                 }
@@ -217,7 +217,7 @@ namespace Nfig
                 foreach (var existing in defaults)
                 {
                     if (existing.HasSameTierAndDataCenter(d))
-                        throw new NfigException("Multiple defaults were specified for the same environment on settings property: " + pi.PropertyType.FullName + "." + pi.Name);
+                        throw new NFigException("Multiple defaults were specified for the same environment on settings property: " + pi.PropertyType.FullName + "." + pi.Name);
                 }
 
                 defaults.Add(d);
@@ -315,7 +315,7 @@ namespace Nfig
             // new up object
             var ctor = type.GetConstructor(Type.EmptyTypes);
             if (ctor == null)
-                throw new NfigException("Cannot use type " + type.Name + " for settings groups. It does not have a parameterless constructor.");
+                throw new NFigException("Cannot use type " + type.Name + " for settings groups. It does not have a parameterless constructor.");
 
             il.Emit(OpCodes.Newobj, ctor); // [type obj]
             il.Emit(OpCodes.Stloc, local); // empty

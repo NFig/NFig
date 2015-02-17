@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.22512.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nfig", "Nfig\Nfig.csproj", "{5D38ADC2-7BB7-4AB0-83FD-0CC56A01BCB4}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NFig", "NFig\NFig.csproj", "{5D38ADC2-7BB7-4AB0-83FD-0CC56A01BCB4}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SampleApplication", "SampleApplication\SampleApplication.csproj", "{962BBD98-A0E9-44A9-8C5E-292947BCEE7A}"
 EndProject

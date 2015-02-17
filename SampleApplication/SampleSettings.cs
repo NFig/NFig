@@ -1,6 +1,6 @@
 ﻿using System;
 using System.ComponentModel;
-using Nfig;
+using NFig;
 
 namespace SampleApplication
 {

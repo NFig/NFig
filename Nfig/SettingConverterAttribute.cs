@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Linq;
 
-namespace Nfig
+namespace NFig
 {
     public class SettingConverterAttribute : Attribute
     {

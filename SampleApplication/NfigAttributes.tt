@@ -5,7 +5,7 @@ var _namespace = "SampleApplication";
 var _tierEnum = "DeploymentTier";
 var _dataCenterEnum = "DataCenter";
 #>
-using Nfig;
+using NFig;
 
 namespace <#= _namespace #>
 {

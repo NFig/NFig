@@ -1,4 +1,4 @@
-﻿using Nfig;
+﻿using NFig;
 
 namespace SampleApplication
 {

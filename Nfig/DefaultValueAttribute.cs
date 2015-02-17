@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Nfig
+namespace NFig
 {
     [AttributeUsage(AttributeTargets.Property, AllowMultiple = true)]
     public abstract class DefaultSettingValueAttribute : Attribute

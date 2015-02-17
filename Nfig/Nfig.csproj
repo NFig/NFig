@@ -7,8 +7,8 @@
     <ProjectGuid>{5D38ADC2-7BB7-4AB0-83FD-0CC56A01BCB4}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Nfig</RootNamespace>
-    <AssemblyName>Nfig</AssemblyName>
+    <RootNamespace>NFig</RootNamespace>
+    <AssemblyName>NFig</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>

@@ -1,15 +1,15 @@
 ﻿using System;
 
-namespace Nfig
+namespace NFig
 {
-    public class NfigException : Exception
+    public class NFigException : Exception
     {
-        public NfigException (string message, Exception innerException = null) : base(message, innerException)
+        public NFigException (string message, Exception innerException = null) : base(message, innerException)
         {
         }
     }
 
-    public class SettingConversionException : NfigException
+    public class SettingConversionException : NFigException
     {
         public SettingConversionException(string message, Exception innerException = null) : base(message, innerException)
         {

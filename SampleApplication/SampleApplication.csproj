@@ -44,25 +44,25 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SampleSettings.cs" />
-    <Compile Include="NfigAttributes.cs">
+    <Compile Include="NFigAttributes.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
-      <DependentUpon>NfigAttributes.tt</DependentUpon>
+      <DependentUpon>NFigAttributes.tt</DependentUpon>
     </Compile>
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Nfig\Nfig.csproj">
+    <ProjectReference Include="..\NFig\NFig.csproj">
       <Project>{5d38adc2-7bb7-4ab0-83fd-0cc56a01bcb4}</Project>
-      <Name>Nfig</Name>
+      <Name>NFig</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="NfigAttributes.tt">
+    <Content Include="NFigAttributes.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>NfigAttributes.cs</LastGenOutput>
+      <LastGenOutput>NFigAttributes.cs</LastGenOutput>
     </Content>
   </ItemGroup>
   <ItemGroup>

@@ -1,4 +1,4 @@
-﻿namespace Nfig
+﻿namespace NFig
 {
     public interface SettingsGroup
     { 
