@@ -165,3 +165,10 @@ node_modules
 
 # Roslyn Temporary Solution Files
 *.sln.ide/
+
+/artifacts
+
+# JetBrains IDE
+.idea
+
+.vs
