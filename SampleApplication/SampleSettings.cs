@@ -27,7 +27,7 @@ namespace SampleApplication
         public BosunSettings Bosun { get; set; }
         public AnalyticsSettings Analytics { get; set; }
 
-        public class CreativesSettings : SettingsGroup
+        public class CreativesSettings : ISettingsGroup
         {
             [Setting(30)]
             [Description("How close (in miles) a job has to be considered near the user. Used to determine whether we can show the 'Jobs Near You' creative.")]
@@ -37,7 +37,7 @@ namespace SampleApplication
             public string ImpressionSeparator { get; set; }
         }
 
-        public class ChatBotsSettings : SettingsGroup
+        public class ChatBotsSettings : ISettingsGroup
         {
             [Setting(false)]
             [TieredDefaultValue(DeploymentTier.Prod, true)]
@@ -45,7 +45,7 @@ namespace SampleApplication
             public bool MalfunctioningEddieEnabled { get; set; }
         }
 
-        public class ConnectionStringsSettings : SettingsGroup
+        public class ConnectionStringsSettings : ISettingsGroup
         {
             [Setting(null)]
             [TieredDefaultValue(DeploymentTier.Local, "local connection string")]
@@ -57,14 +57,14 @@ namespace SampleApplication
             public string Metrics { get; set; }
         }
 
-        public class HaProxyHeadersSettings : SettingsGroup
+        public class HaProxyHeadersSettings : ISettingsGroup
         {
             [Setting(true)]
             [Description("Enables X-* headers indended for logging in HAProxyLogs.")]
             public bool Enabled { get; set; }
         }
 
-        public class BosunSettings : SettingsGroup
+        public class BosunSettings : ISettingsGroup
         {
             [Setting(false)]
             [DataCenterDefaultValue(DataCenter.NewYork, true)]
@@ -80,7 +80,7 @@ namespace SampleApplication
             public int Interval { get; set; }
         }
 
-        public class AnalyticsSettings : SettingsGroup
+        public class AnalyticsSettings : ISettingsGroup
         {
             [Setting("Analytics")]
             public string ProdTableName { get; set; }

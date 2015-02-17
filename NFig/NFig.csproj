@@ -42,7 +42,7 @@
     <Compile Include="DefaultValueAttribute.cs" />
     <Compile Include="Exceptions.cs" />
     <Compile Include="SettingAttribute.cs" />
-    <Compile Include="SettingsGroup.cs" />
+    <Compile Include="ISettingsGroup.cs" />
     <Compile Include="SettingsManager.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SettingConverterAttribute.cs" />

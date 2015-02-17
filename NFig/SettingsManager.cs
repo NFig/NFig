@@ -344,7 +344,7 @@ namespace NFig
 
         private static bool IsSettingsGroup(PropertyInfo pi)
         {
-            return pi.PropertyType.IsClass && typeof(SettingsGroup).IsAssignableFrom(pi.PropertyType);
+            return pi.PropertyType.IsClass && typeof(ISettingsGroup).IsAssignableFrom(pi.PropertyType);
         }
 
         /**************************************************************************************
