@@ -32,7 +32,7 @@ namespace SampleApplication
 
         public class ConnectionStringsSettings : SettingsGroup
         {
-            [RequiredSetting]
+            [Setting(null)]
             [TieredDefaultValue(DeploymentTier.Local, "local connection string")]
             [Description("SQL Connection string to the Calculon db.")]
             public string AdServer { get; set; }

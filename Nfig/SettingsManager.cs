@@ -162,8 +162,7 @@ namespace Nfig
 
             // see if there are any default value attributes
             var defaults = new List<DefaultValue>();
-            if (!sa.IsRequired)
-                defaults.Add(new DefaultValue { Value = converter.GetString((TValue)sa.DefaultValue) });
+            defaults.Add(new DefaultValue { Value = converter.GetString((TValue)sa.DefaultValue) });
             
             foreach (var dsva in pi.GetCustomAttributes<DefaultSettingValueAttribute>())
             {
