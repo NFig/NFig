@@ -1,18 +1,26 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 
 namespace Nfig
 {
-    public class SettingsManager<TSettings> where TSettings : class, new()
+    public class SettingsManager<TSettings, TTier, TDataCenter>
+        where TSettings : class, new()
+        where TTier : struct
+        where TDataCenter : struct
     {
         private readonly Setting[] _settings;
         private readonly Dictionary<string, Setting> _settingsByName;
         private readonly InitializeSettingsDelegate _initializer;
         private readonly Type TSettingsType;
+        private readonly Type TTierType;
+        private readonly Type TDataCenterType;
+        private readonly TTier _tier;
+        private readonly TDataCenter _dataCenter;
 
         private readonly Dictionary<Type, object> _defaultConverters = new Dictionary<Type, object>
         {
@@ -30,9 +38,20 @@ namespace Nfig
             {typeof(char), new CharSettingConverter()},
         };
 
-        public SettingsManager(Dictionary<Type, SettingConverterAttribute> additionalDefaultConverters = null)
+        public TTier Tier { get { return _tier; } }
+        public TDataCenter DataCenter { get { return _dataCenter; } }
+
+        public SettingsManager(TTier tier, TDataCenter dataCenter, Dictionary<Type, SettingConverterAttribute> additionalDefaultConverters = null)
         {
             TSettingsType = typeof(TSettings);
+            TTierType = typeof(TTier);
+            TDataCenterType = typeof(TDataCenter);
+
+            if (!TTierType.IsEnum || !TDataCenterType.IsEnum)
+                throw new InvalidOperationException("TTier and TDataCenter must be enum types.");
+
+            _tier = tier;
+            _dataCenter = dataCenter;
 
             if (additionalDefaultConverters != null)
             {
@@ -59,12 +78,12 @@ namespace Nfig
             _initializer = GetInitializer();
         }
 
-        public TSettings GetAppSettings(DeploymentTier tier, DataCenter dataCenter)
+        public TSettings GetAppSettings()
         {
             var s = _initializer();
             foreach (var setting in _settings)
             {
-                setting.SetDefaultValue(s, tier, dataCenter);
+                setting.SetValueFromString(s, setting.ActiveDefault);
             }
 
             return s;
@@ -166,25 +185,50 @@ namespace Nfig
             
             foreach (var dsva in pi.GetCustomAttributes<DefaultSettingValueAttribute>())
             {
-                // make sure there isn't a conflicting default value
-                foreach (var d in defaults)
+                TTier? tier = null;
+                TDataCenter? dc = null;
+
+                // type check the "object" properties of the attribute
+                if (dsva.Tier != null)
                 {
-                    if (dsva.DeploymentTier == d.DeploymentTier && dsva.DataCenter == d.DataCenter)
+                    if (!(dsva.Tier is TTier))
+                        throw new NfigException("The tier argument was not of type " + TTierType.Name + " on setting " + name);
+
+                    tier = (TTier)dsva.Tier;
+                }
+
+                if (dsva.DataCenter != null)
+                {
+                    if (!(dsva.DataCenter is TDataCenter))
+                        throw new NfigException("The dataCenter argument was not of type " + TDataCenterType.Name + " on setting " + name);
+
+                    dc = (TDataCenter)dsva.DataCenter;
+                }
+
+                // create default
+                var d = new DefaultValue
+                {
+                    Value = converter.GetString((TValue)dsva.DefaultValue),
+                    DataCenter = dc,
+                    Tier = tier
+                };
+
+                // make sure there isn't a conflicting default value
+                foreach (var existing in defaults)
+                {
+                    if (existing.HasSameTierAndDataCenter(d))
                         throw new NfigException("Multiple defaults were specified for the same environment on settings property: " + pi.PropertyType.FullName + "." + pi.Name);
                 }
 
-                defaults.Add(new DefaultValue
-                {
-                    Value = converter.GetString((TValue)dsva.DefaultValue),
-                    DataCenter = dsva.DataCenter,
-                    DeploymentTier = dsva.DeploymentTier
-                });
+                defaults.Add(d);
             }
+
+            var activeDefault = DefaultValue.GetActiveDefaultString(defaults, Tier, DataCenter);
 
             // create setter method
             var setter = CreateSetterMethod<TValue>(pi, parent, name);
 
-            return new Setting<TValue>(name, description, pi, sa, defaults.ToArray(), setter, converter);
+            return new Setting<TValue>(name, description, pi, sa, defaults.ToArray(), activeDefault, setter, converter);
         }
         
         private SettingSetterDelegate<TValue> CreateSetterMethod<TValue>(PropertyInfo pi, PropertyAndParent parent, string name)
@@ -324,9 +368,9 @@ namespace Nfig
             public PropertyInfo PropertyInfo { get; protected set; }
             public SettingAttribute SettingAttribute { get; protected set; }
             public DefaultValue[] DefaultValues { get; protected set; }
+            public string ActiveDefault { get; protected set; }
 
             public abstract void SetValueFromString(TSettings settings, string str);
-            public abstract void SetDefaultValue(TSettings settings, DeploymentTier tier, DataCenter dataCenter);
         }
 
         private class Setting<TValue> : Setting
@@ -339,7 +383,8 @@ namespace Nfig
                 string description,
                 PropertyInfo propertyInfo,
                 SettingAttribute settingAttribute,
-                DefaultValue[] defaults,
+                DefaultValue[] defaultValues,
+                string activeDefault,
                 SettingSetterDelegate<TValue> setter,
                 ISettingConverter<TValue> converter
             )
@@ -348,7 +393,8 @@ namespace Nfig
                 Description = description;
                 PropertyInfo = propertyInfo;
                 SettingAttribute = settingAttribute;
-                DefaultValues = defaults;
+                DefaultValues = defaultValues;
+                ActiveDefault = activeDefault;
 
                 _setter = setter;
                 _converter = converter;
@@ -358,35 +404,23 @@ namespace Nfig
             {
                 _setter(settings, str, _converter);
             }
-
-            public override void SetDefaultValue(TSettings settings, DeploymentTier tier, DataCenter dataCenter)
-            {
-                DefaultValue defaultValue = null;
-                foreach (var dv in DefaultValues)
-                {
-                    if (dv.IsValidFor(tier, dataCenter) && dv.IsMoreSpecificThan(defaultValue))
-                        defaultValue = dv;
-                }
-
-                if (defaultValue == null)
-                    throw new NfigException("Setting " + Name + " has no default value.");
-
-                SetValueFromString(settings, defaultValue.Value);
-            }
         }
 
         private class DefaultValue
         {
-            public string Value { get; set; }
-            public DataCenter? DataCenter { get; set; }
-            public DeploymentTier? DeploymentTier { get; set; }
+            private static readonly EqualityComparer<TTier> _tierComparer = EqualityComparer<TTier>.Default;
+            private static readonly EqualityComparer<TDataCenter> _dataCenterComparer = EqualityComparer<TDataCenter>.Default;
 
-            public bool IsValidFor(DeploymentTier tier, DataCenter dataCenter)
+            public string Value { get; set; }
+            public TDataCenter? DataCenter { get; set; }
+            public TTier? Tier { get; set; }
+
+            public bool IsValidFor(TTier tier, TDataCenter dataCenter)
             {
-                if (DeploymentTier != null && DeploymentTier != tier)
+                if (Tier.HasValue && !_tierComparer.Equals(Tier.Value, tier))
                     return false;
 
-                if (DataCenter != null && DataCenter != dataCenter)
+                if (DataCenter.HasValue && !_dataCenterComparer.Equals(DataCenter.Value, dataCenter))
                     return false;
 
                 return true;
@@ -398,17 +432,49 @@ namespace Nfig
                     return true;
 
                 // tier is considered more important than dc, so this check is first
-                if (DeploymentTier != dv.DeploymentTier)
+                if (Tier.HasValue != dv.Tier.HasValue)
                 {
-                    return dv.DeploymentTier == null;
+                    return Tier.HasValue;
                 }
 
-                if (DataCenter != dv.DataCenter)
+                if (DataCenter.HasValue != dv.DataCenter.HasValue)
                 {
-                    return dv.DataCenter == null;
+                    return DataCenter.HasValue;
                 }
 
                 return false;
+            }
+
+            [SuppressMessage("ReSharper", "PossibleInvalidOperationException", 
+                Justification = "The HasValue != HasValue checks eliminate the need to check both HasValue properties in the equality if statements.")]
+            public bool HasSameTierAndDataCenter(DefaultValue dv)
+            {
+                if (Tier.HasValue != dv.Tier.HasValue)
+                    return false;
+
+                if (Tier.HasValue && !_tierComparer.Equals(Tier.Value, dv.Tier.Value))
+                    return false;
+
+                if (DataCenter.HasValue != dv.DataCenter.HasValue)
+                    return false;
+
+                if (DataCenter.HasValue && _dataCenterComparer.Equals(DataCenter.Value, dv.DataCenter.Value))
+                    return false;
+
+                return true;
+            }
+
+            public static string GetActiveDefaultString(IList<DefaultValue> defaults, TTier tier, TDataCenter dataCenter)
+            {
+                // first item in the list is always the base default, so start with that
+                var defaultValue = defaults[0];
+                for (var i = 1; i < defaults.Count; i++)
+                {
+                    if (defaults[i].IsValidFor(tier, dataCenter) && defaults[i].IsMoreSpecificThan(defaultValue))
+                        defaultValue = defaults[i];
+                }
+
+                return defaultValue.Value;
             }
         }
     }

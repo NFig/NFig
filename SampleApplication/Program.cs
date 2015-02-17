@@ -6,8 +6,8 @@ namespace SampleApplication
     {
         static void Main(string[] args)
         {
-            var manager = new SettingsManager<SampleSettings>();
-            var settings = manager.GetAppSettings(DeploymentTier.Local, DataCenter.Local);
+            var manager = new SettingsManager<SampleSettings, DeploymentTier, DataCenter>(DeploymentTier.Prod, DataCenter.Local);
+            var settings = manager.GetAppSettings();
         }
     }
 }

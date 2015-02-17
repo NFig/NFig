@@ -39,8 +39,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="EnumsThatShouldntBeHere.cs" />
-    <Compile Include="DefaultValueAttributes.cs" />
+    <Compile Include="DefaultValueAttribute.cs" />
     <Compile Include="Exceptions.cs" />
     <Compile Include="SettingAttribute.cs" />
     <Compile Include="SettingsGroup.cs" />

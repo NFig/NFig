@@ -1,8 +1,23 @@
-﻿using System.ComponentModel;
+﻿using System;
+using System.ComponentModel;
 using Nfig;
 
 namespace SampleApplication
 {
+    public enum DeploymentTier
+    {
+        Local,
+        Dev,
+        Simulation,
+        Prod
+    }
+    public enum DataCenter
+    {
+        Local,
+        NewYork,
+        Oregon
+    }
+
     public class SampleSettings
     {
         public CreativesSettings Creatives { get; set; }

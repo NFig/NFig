@@ -1,18 +1,9 @@
-﻿using System;
+﻿using Nfig;
 
-namespace Nfig
+namespace SampleApplication
 {
-    [AttributeUsage(AttributeTargets.Property, AllowMultiple = true)]
-    public abstract class DefaultSettingValueAttribute : Attribute
-    {
-        public object DefaultValue { get; set; }
-        public DataCenter? DataCenter { get; set; }
-        public DeploymentTier? DeploymentTier { get; set; }
-    }
-
     public class DataCenterDefaultValueAttribute : DefaultSettingValueAttribute
     {
-
         public DataCenterDefaultValueAttribute(DataCenter dataCenter, object defaultValue)
         {
             DataCenter = dataCenter;
@@ -24,7 +15,7 @@ namespace Nfig
     {
         public TieredDefaultValueAttribute(DeploymentTier tier, object defaultValue)
         {
-            DeploymentTier = tier;
+            Tier = tier;
             DefaultValue = defaultValue;
         }
     }
@@ -34,7 +25,7 @@ namespace Nfig
         public DataCenterTieredDefaultValueAttribute(DataCenter dataCenter, DeploymentTier tier, object defaultValue)
         {
             DataCenter = dataCenter;
-            DeploymentTier = tier;
+            Tier = tier;
             DefaultValue = defaultValue;
         }
     }

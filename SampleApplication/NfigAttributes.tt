@@ -1,0 +1,40 @@
+﻿<#@ template debug="false" hostspecific="false" language="C#" #>
+<#@ assembly name="System.Core" #>
+<#@ output extension=".cs" #>
+<#
+var _namespace = "SampleApplication";
+var _tierEnum = "DeploymentTier";
+var _dataCenterEnum = "DataCenter";
+#>
+using Nfig;
+
+namespace <#= _namespace #>
+{
+    public class DataCenterDefaultValueAttribute : DefaultSettingValueAttribute
+    {
+        public DataCenterDefaultValueAttribute(<#= _dataCenterEnum #> dataCenter, object defaultValue)
+        {
+            DataCenter = dataCenter;
+            DefaultValue = defaultValue;
+        }
+    }
+
+    public class TieredDefaultValueAttribute : DefaultSettingValueAttribute
+    {
+        public TieredDefaultValueAttribute(<#= _tierEnum #> tier, object defaultValue)
+        {
+            Tier = tier;
+            DefaultValue = defaultValue;
+        }
+    }
+
+    public class DataCenterTieredDefaultValueAttribute : DefaultSettingValueAttribute
+    {
+        public DataCenterTieredDefaultValueAttribute(<#= _dataCenterEnum #> dataCenter, <#= _tierEnum #> tier, object defaultValue)
+        {
+            DataCenter = dataCenter;
+            Tier = tier;
+            DefaultValue = defaultValue;
+        }
+    }
+}
