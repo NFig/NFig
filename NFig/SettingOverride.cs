@@ -13,15 +13,18 @@ namespace NFig
 
         public string Name { get; set; }
         public string Value { get; set; }
-        public TTier? Tier { get; set; }
-        public TDataCenter? DataCenter { get; set; }
+        public TTier Tier { get; set; }
+        public TDataCenter DataCenter { get; set; }
+
+        public bool HasTier { get { return !s_tierComparer.Equals(Tier, default(TTier)); } }
+        public bool HasDataCenter { get { return !s_dataCenterComparer.Equals(DataCenter, default(TDataCenter)); } }
 
         public bool IsValidFor(TTier tier, TDataCenter dataCenter)
         {
-            if (Tier.HasValue && !s_tierComparer.Equals(Tier.Value, tier))
+            if (HasTier && !s_tierComparer.Equals(Tier, tier))
                 return false;
 
-            if (DataCenter.HasValue && !s_dataCenterComparer.Equals(DataCenter.Value, dataCenter))
+            if (HasDataCenter && !s_dataCenterComparer.Equals(DataCenter, dataCenter))
                 return false;
 
             return true;
@@ -29,18 +32,15 @@ namespace NFig
 
         public bool IsMoreSpecificThan(SettingOverride<TTier, TDataCenter> over)
         {
-            if (over == null)
-                return true;
-
             // tier is considered more important than dc, so this check is first
-            if (Tier.HasValue != over.Tier.HasValue)
+            if (HasTier != over.HasTier)
             {
-                return Tier.HasValue;
+                return HasTier;
             }
 
-            if (DataCenter.HasValue != over.DataCenter.HasValue)
+            if (HasDataCenter != over.HasDataCenter)
             {
-                return DataCenter.HasValue;
+                return HasDataCenter;
             }
 
             return false;
@@ -50,19 +50,7 @@ namespace NFig
             Justification = "The HasValue != HasValue checks eliminate the need to check both HasValue properties in the equality if statements.")]
         public bool HasSameTierAndDataCenter(SettingOverride<TTier, TDataCenter> over)
         {
-            if (Tier.HasValue != over.Tier.HasValue)
-                return false;
-
-            if (Tier.HasValue && !s_tierComparer.Equals(Tier.Value, over.Tier.Value))
-                return false;
-
-            if (DataCenter.HasValue != over.DataCenter.HasValue)
-                return false;
-
-            if (DataCenter.HasValue && s_dataCenterComparer.Equals(DataCenter.Value, over.DataCenter.Value))
-                return false;
-
-            return true;
+            return s_tierComparer.Equals(Tier, over.Tier) && s_dataCenterComparer.Equals(DataCenter, over.DataCenter);
         }
     }
 }

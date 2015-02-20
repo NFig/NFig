@@ -6,14 +6,16 @@ namespace SampleApplication
 {
     public enum DeploymentTier
     {
-        Local,
+        Any = 0,
+        Local = 1,
         Dev,
         Simulation,
         Prod
     }
     public enum DataCenter
     {
-        Local,
+        Any = 0,
+        Local = 1,
         NewYork,
         Oregon
     }

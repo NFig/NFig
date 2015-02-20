@@ -223,8 +223,8 @@ namespace NFig
                 var d = new SettingDefault
                 {
                     Value = converter.GetString((TValue)dsva.DefaultValue),
-                    DataCenter = dc,
-                    Tier = tier
+                    Tier = tier ?? default(TTier),
+                    DataCenter = dc ?? default(TDataCenter),
                 };
 
                 // make sure there isn't a conflicting default value
