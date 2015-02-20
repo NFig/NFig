@@ -66,7 +66,7 @@ namespace SampleApplication
 
         public class HaProxyHeadersSettings
         {
-            [Setting(true)]
+            [Setting("true")]
             [Description("Enables X-* headers indended for logging in HAProxyLogs.")]
             public bool Enabled { get; set; }
         }

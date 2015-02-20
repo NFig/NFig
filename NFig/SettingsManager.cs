@@ -194,7 +194,8 @@ namespace NFig
 
             // see if there are any default value attributes
             var defaults = new List<SettingDefault>();
-            defaults.Add(new SettingDefault { Value = converter.GetString((TValue)sa.DefaultValue) });
+            var defaultStringValue = sa.DefaultValue as string ?? converter.GetString((TValue)sa.DefaultValue);
+            defaults.Add(new SettingDefault { Value = defaultStringValue });
             
             foreach (var dsva in pi.GetCustomAttributes<DefaultSettingValueAttribute>())
             {
