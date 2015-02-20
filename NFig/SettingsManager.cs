@@ -420,7 +420,6 @@ namespace NFig
             }
         }
 
-        [SuppressMessage("ReSharper", "StaticMemberInGenericType", Justification = "Yes, I know it's a static member in a generic type. The fields are also generic.")]
         private class SettingDefault : SettingOverride<TTier, TDataCenter>
         {
             public static string GetActiveDefaultString(IList<SettingDefault> defaults, TTier tier, TDataCenter dataCenter)
