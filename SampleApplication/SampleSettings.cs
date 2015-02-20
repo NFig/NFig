@@ -20,24 +20,24 @@ namespace SampleApplication
 
     public class SampleSettings
     {
+        [SettingsGroup]
         public CreativesSettings Creatives { get; set; }
-        public ChatBotsSettings ChatBots { get; set; }
-        public ConnectionStringsSettings ConnectionStrings { get; set; }
-        public HaProxyHeadersSettings HaProxyHeaders { get; set; }
-        public BosunSettings Bosun { get; set; }
-        public AnalyticsSettings Analytics { get; set; }
-
-        public class CreativesSettings : ISettingsGroup
+        
+        public class CreativesSettings
         {
             [Setting(30)]
             [Description("How close (in miles) a job has to be considered near the user. Used to determine whether we can show the 'Jobs Near You' creative.")]
             public int NearYouThreshold { get; set; }
+
             [Setting("-")]
             [Description("The separator used in legacy analytic strings.")]
             public string ImpressionSeparator { get; set; }
         }
 
-        public class ChatBotsSettings : ISettingsGroup
+        [SettingsGroup]
+        public ChatBotsSettings ChatBots { get; set; }
+
+        public class ChatBotsSettings
         {
             [Setting(false)]
             [TieredDefaultValue(DeploymentTier.Prod, true)]
@@ -45,26 +45,36 @@ namespace SampleApplication
             public bool MalfunctioningEddieEnabled { get; set; }
         }
 
-        public class ConnectionStringsSettings : ISettingsGroup
+        [SettingsGroup]
+        public ConnectionStringsSettings ConnectionStrings { get; set; }
+
+        public class ConnectionStringsSettings
         {
             [Setting(null)]
             [TieredDefaultValue(DeploymentTier.Local, "local connection string")]
             [Description("SQL Connection string to the Calculon db.")]
             public string AdServer { get; set; }
+
             [Setting(null)]
             [TieredDefaultValue(DeploymentTier.Local, "local connection string")]
             [Description("SQL Connection string to the Calculon.Metrics db.")]
             public string Metrics { get; set; }
         }
 
-        public class HaProxyHeadersSettings : ISettingsGroup
+        [SettingsGroup]
+        public HaProxyHeadersSettings HaProxyHeaders { get; set; }
+
+        public class HaProxyHeadersSettings
         {
             [Setting(true)]
             [Description("Enables X-* headers indended for logging in HAProxyLogs.")]
             public bool Enabled { get; set; }
         }
 
-        public class BosunSettings : ISettingsGroup
+        [SettingsGroup]
+        public BosunSettings Bosun { get; set; }
+
+        public class BosunSettings
         {
             [Setting(false)]
             [DataCenterDefaultValue(DataCenter.NewYork, true)]
@@ -80,7 +90,10 @@ namespace SampleApplication
             public int Interval { get; set; }
         }
 
-        public class AnalyticsSettings : ISettingsGroup
+        [SettingsGroup]
+        public AnalyticsSettings Analytics { get; set; }
+
+        public class AnalyticsSettings
         {
             [Setting("Analytics")]
             public string ProdTableName { get; set; }
