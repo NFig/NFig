@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -381,7 +380,7 @@ namespace NFig
             public string Description { get; protected set; }
             public PropertyInfo PropertyInfo { get; protected set; }
             public SettingAttribute SettingAttribute { get; protected set; }
-            public SettingDefault[] SettingDefault { get; protected set; }
+            public SettingDefault[] SettingDefaults { get; protected set; }
             public string ActiveDefault { get; protected set; }
 
             public abstract void SetValueFromString(TSettings settings, string str);
@@ -397,7 +396,7 @@ namespace NFig
                 string description,
                 PropertyInfo propertyInfo,
                 SettingAttribute settingAttribute,
-                SettingDefault[] settingDefault,
+                SettingDefault[] settingDefaults,
                 string activeDefault,
                 SettingSetterDelegate<TValue> setter,
                 ISettingConverter<TValue> converter
@@ -407,7 +406,7 @@ namespace NFig
                 Description = description;
                 PropertyInfo = propertyInfo;
                 SettingAttribute = settingAttribute;
-                SettingDefault = settingDefault;
+                SettingDefaults = settingDefaults;
                 ActiveDefault = activeDefault;
 
                 _setter = setter;
