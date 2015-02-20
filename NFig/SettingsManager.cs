@@ -14,7 +14,6 @@ namespace NFig
         where TDataCenter : struct
     {
         private readonly Setting[] _settings;
-        private readonly Dictionary<string, Setting> _settingsByName;
         private readonly InitializeSettingsDelegate _initializer;
         private readonly Type TSettingsType;
         private readonly Type TTierType;
@@ -73,8 +72,6 @@ namespace NFig
             }
 
             _settings = BuildSettings(TSettingsType);
-            _settingsByName = _settings.ToDictionary(s => s.Name);
-
             _initializer = GetInitializer();
         }
 
