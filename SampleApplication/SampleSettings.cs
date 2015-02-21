@@ -23,6 +23,7 @@ namespace SampleApplication
 
     public class SampleSettings : INFigRedisSettings
     {
+        public string ApplicationName { get; set; }
         public string SettingsCommit { get; set; }
 
         [SettingsGroup]

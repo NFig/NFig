@@ -13,14 +13,14 @@ namespace NFig.Redis
         where TTier : struct
         where TDataCenter : struct
     {
-        public delegate void SettingsUpdateDelegate(Exception ex, string appName, TSettings settings, NFigRedisStore<TSettings, TTier, TDataCenter> nfigRedisStore);
+        public delegate void SettingsUpdateDelegate(Exception ex, TSettings settings, NFigRedisStore<TSettings, TTier, TDataCenter> nfigRedisStore);
 
         private const string APP_UPDATE_CHANNEL = "NFig-AppUpdate";
         private const string COMMIT_KEY = "$commit";
 
         private readonly ConnectionMultiplexer _redis;
         private readonly ISubscriber _subscriber;
-        private readonly int _db;
+        private readonly int _dbIndex;
         private readonly SettingsManager<TSettings, TTier, TDataCenter> _manager;
 
         private readonly object _callbacksLock = new object();
@@ -33,14 +33,14 @@ namespace NFig.Redis
 
         public NFigRedisStore(
             string redisConnectionString, 
-            int db, 
+            int dbIndex, 
             TTier tier, 
             TDataCenter dataCenter, 
             Dictionary<Type, SettingConverterAttribute> additionalDefaultConverters = null
             )
         : this (
             ConnectionMultiplexer.Connect(redisConnectionString),
-            db,
+            dbIndex,
             tier,
             dataCenter,
             additionalDefaultConverters
@@ -51,7 +51,7 @@ namespace NFig.Redis
         // The reason this constructor is private and there is a public static method wrapper is so the calling dll isn't required to reference to SE.Redis.
         private NFigRedisStore(
             ConnectionMultiplexer redisConnection, 
-            int db, 
+            int dbIndex, 
             TTier tier, 
             TDataCenter dataCenter, 
             Dictionary<Type, SettingConverterAttribute> additionalDefaultConverters = null
@@ -59,7 +59,7 @@ namespace NFig.Redis
         {
             _redis = redisConnection;
             _subscriber = _redis.GetSubscriber();
-            _db = db;
+            _dbIndex = dbIndex;
             _manager = new SettingsManager<TSettings, TTier, TDataCenter>(tier, dataCenter, additionalDefaultConverters);
         }
 
@@ -134,7 +134,7 @@ namespace NFig.Redis
 
             // grab the redis hash
             string commit = null;
-            var db = _redis.GetDatabase(_db);
+            var db = _redis.GetDatabase(_dbIndex);
             var hash = await db.HashGetAllAsync(appName);
             var overrides = new List<SettingOverride<TTier, TDataCenter>>();
             foreach (var hashEntry in hash)
@@ -159,6 +159,7 @@ namespace NFig.Redis
 
             // create new settings object
             var settings = _manager.GetAppSettings(overrides);
+            settings.ApplicationName = appName;
             settings.SettingsCommit = commit;
             return settings;
         }
@@ -174,7 +175,7 @@ namespace NFig.Redis
             var dcVal = dataCenter ?? DataCenter;
 
             var key = GetSettingKey(settingName, tierVal, dcVal);
-            var db = _redis.GetDatabase(_db);
+            var db = GetRedisDb();
 
             await db.HashSetAsync(appName, new [] { new HashEntry(key, value), new HashEntry(COMMIT_KEY, GetCommit()) });
             await _subscriber.PublishAsync(APP_UPDATE_CHANNEL, appName);
@@ -191,7 +192,7 @@ namespace NFig.Redis
             var dcVal = dataCenter ?? DataCenter;
 
             var key = GetSettingKey(settingName, tierVal, dcVal);
-            var db = _redis.GetDatabase(_db);
+            var db = GetRedisDb();
 
             var tran = db.CreateTransaction();
             var delTask = tran.HashDeleteAsync(appName, key);
@@ -205,6 +206,28 @@ namespace NFig.Redis
             await setTask;
 
             await _subscriber.PublishAsync(APP_UPDATE_CHANNEL, appName);
+        }
+
+        public bool IsCurrent(TSettings settings)
+        {
+            return IsCurrentAsync(settings).Result;
+        }
+
+        public async Task<bool> IsCurrentAsync(TSettings settings)
+        {
+            var commit = await GetCurrentCommitAsync(settings.ApplicationName);
+            return commit == settings.SettingsCommit;
+        }
+
+        public string GetCurrentCommit(string appName)
+        {
+            return GetCurrentCommitAsync(appName).Result;
+        }
+
+        public async Task<string> GetCurrentCommitAsync(string appName)
+        {
+            var db = GetRedisDb();
+            return await db.HashGetAsync(appName, COMMIT_KEY);
         }
 
         private void OnAppUpdate(RedisChannel channel, RedisValue message)
@@ -232,7 +255,7 @@ namespace NFig.Redis
                 ex = e;
             }
 
-            callback(ex, appName, settings, this);
+            callback(ex, settings, this);
         }
 
         private static string GetSettingKey(string settingName, TTier tier, TDataCenter dataCenter)
@@ -243,6 +266,11 @@ namespace NFig.Redis
         private static string GetCommit()
         {
             return Guid.NewGuid().ToString();
+        }
+
+        private IDatabase GetRedisDb()
+        {
+            return _redis.GetDatabase(_dbIndex);
         }
     }
 }

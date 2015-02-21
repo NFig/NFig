@@ -44,13 +44,14 @@ namespace SampleApplication
         }
 
         private static int s_updateInteration = 0;
-        public static void OnSettingsUpdate(Exception ex, string appName, SampleSettings settings, NFigRedis nfig)
+        public static void OnSettingsUpdate(Exception ex, SampleSettings settings, NFigRedis nfig)
         {
             if (ex != null)
                 throw ex;
 
-            Console.WriteLine(appName + " settings updated. Commit: " + settings.SettingsCommit);
+            Console.WriteLine(settings.ApplicationName + " settings updated. Commit: " + settings.SettingsCommit);
             Console.WriteLine(settings.ConnectionStrings.AdServer);
+            Console.WriteLine(nfig.IsCurrent(settings));
             Console.WriteLine();
 
             s_updateInteration++;
@@ -60,11 +61,11 @@ namespace SampleApplication
 
             if (s_updateInteration == 1)
             {
-                nfig.SetOverride(appName, "ConnectionStrings.AdServer", "connection string in redis", tier, dc);
+                nfig.SetOverride(settings.ApplicationName, "ConnectionStrings.AdServer", "connection string in redis", tier, dc);
             }
             else if (s_updateInteration == 2)
             {
-                nfig.ClearOverride(appName, "ConnectionStrings.AdServer", tier, dc);
+                nfig.ClearOverride(settings.ApplicationName, "ConnectionStrings.AdServer", tier, dc);
             }
             else
             {
