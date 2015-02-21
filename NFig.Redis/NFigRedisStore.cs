@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using StackExchange.Redis;
 
@@ -109,18 +110,34 @@ namespace NFig.Redis
             return GetSettingsFromRedisAsync(appName).Result;
         }
 
+        private static readonly Regex s_keyRegex = new Regex(@"^:(?<Tier>\d+):(?<DataCenter>\d+);(?<Name>.+)$");
         public async Task<TSettings> GetSettingsFromRedisAsync(string appName)
         {
+            var tierType = typeof(TTier);
+            var dataCenterType = typeof(TDataCenter);
+
             // grab the redis hash
             var db = _redis.GetDatabase(_db);
             var hash = await db.HashGetAllAsync(appName);
-            var overrides = HashToOverrides(hash);
-            return _manager.GetAppSettings(overrides);
-        }
+            var overrides = new List<SettingOverride<TTier, TDataCenter>>();
+            foreach (var hashEntry in hash)
+            {
+                string key = hashEntry.Name;
+                var match = s_keyRegex.Match(key);
+                if (match.Success)
+                {
+                    overrides.Add(new SettingOverride<TTier, TDataCenter>()
+                    {
+                        Name = match.Groups["Name"].Value,
+                        Value = hashEntry.Value,
+                        Tier = (TTier)Enum.ToObject(tierType, int.Parse(match.Groups["Tier"].Value)),
+                        DataCenter = (TDataCenter)Enum.ToObject(dataCenterType, int.Parse(match.Groups["DataCenter"].Value))
+                    });
+                }
+            }
 
-        private IEnumerable<SettingOverride<TTier, TDataCenter>> HashToOverrides(HashEntry[] hash)
-        {
-            throw new NotImplementedException();
+            // create new settings object
+            return _manager.GetAppSettings(overrides);
         }
 
         private void OnAppUpdate(RedisChannel channel, RedisValue message)
