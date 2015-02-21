@@ -155,27 +155,33 @@ namespace NFig.Redis
             return _manager.GetAppSettings(overrides);
         }
 
-        public void SetOverride(string appName, string settingName, string value, TTier tier, TDataCenter dataCenter)
+        public void SetOverride(string appName, string settingName, string value, TTier? tier = null, TDataCenter? dataCenter = null)
         {
             SetOverrideAsync(appName, settingName, value, tier, dataCenter).Wait();
         }
 
-        public async Task SetOverrideAsync(string appName, string settingName, string value, TTier tier, TDataCenter dataCenter)
+        public async Task SetOverrideAsync(string appName, string settingName, string value, TTier? tier = null, TDataCenter? dataCenter = null)
         {
-            var key = GetSettingKey(settingName, tier, dataCenter);
+            var tierVal = tier ?? Tier;
+            var dcVal = dataCenter ?? DataCenter;
+
+            var key = GetSettingKey(settingName, tierVal, dcVal);
             var db = _redis.GetDatabase(_db);
             await db.HashSetAsync(appName, key, value);
             await _subscriber.PublishAsync(APP_UPDATE_CHANNEL, appName);
         }
 
-        public void ClearOverride(string appName, string settingName, TTier tier, TDataCenter dataCenter)
+        public void ClearOverride(string appName, string settingName, TTier? tier = null, TDataCenter? dataCenter = null)
         {
             ClearOverrideAsync(appName, settingName, tier, dataCenter).Wait();
         }
 
-        public async Task ClearOverrideAsync(string appName, string settingName, TTier tier, TDataCenter dataCenter)
+        public async Task ClearOverrideAsync(string appName, string settingName, TTier? tier = null, TDataCenter? dataCenter = null)
         {
-            var key = GetSettingKey(settingName, tier, dataCenter);
+            var tierVal = tier ?? Tier;
+            var dcVal = dataCenter ?? DataCenter;
+
+            var key = GetSettingKey(settingName, tierVal, dcVal);
             var db = _redis.GetDatabase(_db);
             await db.HashDeleteAsync(appName, key);
             await _subscriber.PublishAsync(APP_UPDATE_CHANNEL, appName);
