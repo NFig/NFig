@@ -1,6 +1,7 @@
 ﻿using System;
 using System.ComponentModel;
 using NFig;
+using NFig.Redis;
 
 namespace SampleApplication
 {
@@ -20,8 +21,10 @@ namespace SampleApplication
         Oregon
     }
 
-    public class SampleSettings
+    public class SampleSettings : INFigRedisSettings
     {
+        public string SettingsCommit { get; set; }
+
         [SettingsGroup]
         public CreativesSettings Creatives { get; set; }
         

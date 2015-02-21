@@ -49,7 +49,7 @@ namespace SampleApplication
             if (ex != null)
                 throw ex;
 
-            Console.WriteLine(appName + " settings updated.");
+            Console.WriteLine(appName + " settings updated. Commit: " + settings.SettingsCommit);
             Console.WriteLine(settings.ConnectionStrings.AdServer);
             Console.WriteLine();
 

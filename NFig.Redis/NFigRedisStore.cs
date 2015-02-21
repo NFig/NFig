@@ -9,13 +9,14 @@ namespace NFig.Redis
 {
 
     public class NFigRedisStore<TSettings, TTier, TDataCenter>
-        where TSettings : class, new()
+        where TSettings : class, INFigRedisSettings, new()
         where TTier : struct
         where TDataCenter : struct
     {
         public delegate void SettingsUpdateDelegate(Exception ex, string appName, TSettings settings, NFigRedisStore<TSettings, TTier, TDataCenter> nfigRedisStore);
 
         private const string APP_UPDATE_CHANNEL = "NFig-AppUpdate";
+        private const string COMMIT_KEY = "$commit";
 
         private readonly ConnectionMultiplexer _redis;
         private readonly ISubscriber _subscriber;
@@ -132,6 +133,7 @@ namespace NFig.Redis
             var dataCenterType = typeof(TDataCenter);
 
             // grab the redis hash
+            string commit = null;
             var db = _redis.GetDatabase(_db);
             var hash = await db.HashGetAllAsync(appName);
             var overrides = new List<SettingOverride<TTier, TDataCenter>>();
@@ -149,10 +151,16 @@ namespace NFig.Redis
                         DataCenter = (TDataCenter)Enum.ToObject(dataCenterType, int.Parse(match.Groups["DataCenter"].Value))
                     });
                 }
+                else if (key == COMMIT_KEY)
+                {
+                    commit = hashEntry.Value;
+                }
             }
 
             // create new settings object
-            return _manager.GetAppSettings(overrides);
+            var settings = _manager.GetAppSettings(overrides);
+            settings.SettingsCommit = commit;
+            return settings;
         }
 
         public void SetOverride(string appName, string settingName, string value, TTier? tier = null, TDataCenter? dataCenter = null)
@@ -167,7 +175,8 @@ namespace NFig.Redis
 
             var key = GetSettingKey(settingName, tierVal, dcVal);
             var db = _redis.GetDatabase(_db);
-            await db.HashSetAsync(appName, key, value);
+
+            await db.HashSetAsync(appName, new [] { new HashEntry(key, value), new HashEntry(COMMIT_KEY, GetCommit()) });
             await _subscriber.PublishAsync(APP_UPDATE_CHANNEL, appName);
         }
 
@@ -183,7 +192,18 @@ namespace NFig.Redis
 
             var key = GetSettingKey(settingName, tierVal, dcVal);
             var db = _redis.GetDatabase(_db);
-            await db.HashDeleteAsync(appName, key);
+
+            var tran = db.CreateTransaction();
+            var delTask = tran.HashDeleteAsync(appName, key);
+            var setTask = tran.HashSetAsync(appName, COMMIT_KEY, GetCommit());
+            var committed = await tran.ExecuteAsync();
+            if (!committed)
+                throw new NFigException("Unable to clear override. Redis Transaction failed. " + appName + "." + settingName);
+
+            // not sure if these actually need to be awaited after ExecuteAwait finishes
+            await delTask;
+            await setTask;
+
             await _subscriber.PublishAsync(APP_UPDATE_CHANNEL, appName);
         }
 
@@ -218,6 +238,11 @@ namespace NFig.Redis
         private static string GetSettingKey(string settingName, TTier tier, TDataCenter dataCenter)
         {
             return ":" + Convert.ToUInt32(tier) + ":" + Convert.ToUInt32(dataCenter) + ";" + settingName;
+        }
+
+        private static string GetCommit()
+        {
+            return Guid.NewGuid().ToString();
         }
     }
 }
