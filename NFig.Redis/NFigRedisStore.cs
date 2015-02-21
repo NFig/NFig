@@ -36,7 +36,7 @@ namespace NFig.Redis
             TTier tier, 
             TDataCenter dataCenter, 
             Dictionary<Type, SettingConverterAttribute> additionalDefaultConverters = null
-        )
+            )
         : this (
             ConnectionMultiplexer.Connect(redisConnectionString),
             db,
@@ -47,7 +47,8 @@ namespace NFig.Redis
         {
         }
 
-        public NFigRedisStore(
+        // The reason this constructor is private and there is a public static method wrapper is so the calling dll isn't required to reference to SE.Redis.
+        private NFigRedisStore(
             ConnectionMultiplexer redisConnection, 
             int db, 
             TTier tier, 
@@ -61,6 +62,17 @@ namespace NFig.Redis
             _manager = new SettingsManager<TSettings, TTier, TDataCenter>(tier, dataCenter, additionalDefaultConverters);
         }
 
+        public static NFigRedisStore<TSettings, TTier, TDataCenter> FromConnectionMultiplexer(
+            ConnectionMultiplexer redisConnection,
+            int db,
+            TTier tier,
+            TDataCenter dataCenter,
+            Dictionary<Type, SettingConverterAttribute> additionalDefaultConverters = null
+            )
+        {
+            return new NFigRedisStore<TSettings, TTier, TDataCenter>(redisConnection, db, tier, dataCenter, additionalDefaultConverters);
+        }
+
         public void SubscribeToAppSettings(string appName, SettingsUpdateDelegate callback, bool overrideExisting = false)
         {
             lock (_callbacksLock)
@@ -68,11 +80,14 @@ namespace NFig.Redis
                 SettingsUpdateDelegate existing;
                 if (_callbacks.TryGetValue(appName, out existing))
                 {
+                    if (callback == existing)
+                        return;
+
                     if (!overrideExisting && existing != callback)
                         throw new InvalidOperationException("Already subscribed to settings for app: " + appName + ". Only one callback can be subscribed at a time.");
-
-                    return;
                 }
+
+                _callbacks[appName] = callback;
 
                 // set up a redis subscription
                 _subscriber.Subscribe(APP_UPDATE_CHANNEL, OnAppUpdate);
@@ -140,6 +155,32 @@ namespace NFig.Redis
             return _manager.GetAppSettings(overrides);
         }
 
+        public void SetOverride(string appName, string settingName, string value, TTier tier, TDataCenter dataCenter)
+        {
+            SetOverrideAsync(appName, settingName, value, tier, dataCenter).Wait();
+        }
+
+        public async Task SetOverrideAsync(string appName, string settingName, string value, TTier tier, TDataCenter dataCenter)
+        {
+            var key = GetSettingKey(settingName, tier, dataCenter);
+            var db = _redis.GetDatabase(_db);
+            await db.HashSetAsync(appName, key, value);
+            await _subscriber.PublishAsync(APP_UPDATE_CHANNEL, appName);
+        }
+
+        public void ClearOverride(string appName, string settingName, TTier tier, TDataCenter dataCenter)
+        {
+            ClearOverrideAsync(appName, settingName, tier, dataCenter).Wait();
+        }
+
+        public async Task ClearOverrideAsync(string appName, string settingName, TTier tier, TDataCenter dataCenter)
+        {
+            var key = GetSettingKey(settingName, tier, dataCenter);
+            var db = _redis.GetDatabase(_db);
+            await db.HashDeleteAsync(appName, key);
+            await _subscriber.PublishAsync(APP_UPDATE_CHANNEL, appName);
+        }
+
         private void OnAppUpdate(RedisChannel channel, RedisValue message)
         {
             if (channel == APP_UPDATE_CHANNEL)
@@ -166,6 +207,11 @@ namespace NFig.Redis
             }
 
             callback(ex, appName, settings, this);
+        }
+
+        private static string GetSettingKey(string settingName, TTier tier, TDataCenter dataCenter)
+        {
+            return ":" + Convert.ToUInt32(tier) + ":" + Convert.ToUInt32(dataCenter) + ";" + settingName;
         }
     }
 }

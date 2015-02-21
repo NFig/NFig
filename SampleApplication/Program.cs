@@ -1,13 +1,26 @@
-﻿using NFig;
+﻿using System;
+using System.Diagnostics;
+using System.Threading;
+using NFig;
+using NFig.Redis;
 
 namespace SampleApplication
 {
     using Override = SettingOverride<DeploymentTier, DataCenter>;
     using Manager = SettingsManager<SampleSettings, DeploymentTier, DataCenter>;
+    using NFigRedis = NFigRedisStore<SampleSettings, DeploymentTier, DataCenter>;
 
     class Program
     {
         static void Main(string[] args)
+        {
+            var thread = new Thread(KeepAlive);
+            thread.Start(0);
+
+            RedisExample();
+        }
+
+        public static void BasicOverrides()
         {
             // create some test overrides
             var overrides = new []
@@ -22,6 +35,49 @@ namespace SampleApplication
 
             var manager = new Manager(DeploymentTier.Prod, DataCenter.Oregon);
             var settings = manager.GetAppSettings(overrides);
+        }
+
+        public static void RedisExample()
+        {
+            var nfig = new NFigRedis("localhost:6379", 11, DeploymentTier.Prod, DataCenter.Oregon);
+            nfig.SubscribeToAppSettings("Sample", OnSettingsUpdate);
+        }
+
+        private static int s_updateInteration = 0;
+        public static void OnSettingsUpdate(Exception ex, string appName, SampleSettings settings, NFigRedis nfig)
+        {
+            if (ex != null)
+                throw ex;
+
+            Console.WriteLine(appName + " settings updated.");
+            Console.WriteLine(settings.ConnectionStrings.AdServer);
+            Console.WriteLine();
+
+            s_updateInteration++;
+
+            var tier = DeploymentTier.Prod;
+            var dc = DataCenter.Any;
+
+            if (s_updateInteration == 1)
+            {
+                nfig.SetOverride(appName, "ConnectionStrings.AdServer", "connection string in redis", tier, dc);
+            }
+            else if (s_updateInteration == 2)
+            {
+                nfig.ClearOverride(appName, "ConnectionStrings.AdServer", tier, dc);
+            }
+            else
+            {
+                Environment.Exit(0);
+            }
+        }
+
+        static void KeepAlive(object data)
+        {
+            while (true)
+            {
+                Thread.Sleep(60000);
+            }
         }
     }
 }

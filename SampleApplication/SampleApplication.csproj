@@ -54,6 +54,10 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\NFig.Redis\NFig.Redis.csproj">
+      <Project>{3c921fca-cc7e-4779-88b7-86f55c72a58f}</Project>
+      <Name>NFig.Redis</Name>
+    </ProjectReference>
     <ProjectReference Include="..\NFig\NFig.csproj">
       <Project>{5d38adc2-7bb7-4ab0-83fd-0cc56a01bcb4}</Project>
       <Name>NFig</Name>
