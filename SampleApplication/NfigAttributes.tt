@@ -2,7 +2,7 @@
 <#@ output extension=".cs" #>
 <#
 var _namespace = "SampleApplication";
-var _tierEnum = "DeploymentTier";
+var _tierEnum = "Tier";
 var _dataCenterEnum = "DataCenter";
 #>
 using NFig;
@@ -27,12 +27,12 @@ namespace <#= _namespace #>
         }
     }
 
-    public class DataCenterTieredDefaultValueAttribute : DefaultSettingValueAttribute
+    public class TieredDataCenterDefaultValueAttribute : DefaultSettingValueAttribute
     {
-        public DataCenterTieredDefaultValueAttribute(<#= _dataCenterEnum #> dataCenter, <#= _tierEnum #> tier, object defaultValue)
+        public TieredDataCenterDefaultValueAttribute(<#= _tierEnum #> tier, <#= _dataCenterEnum #> dataCenter, object defaultValue)
         {
-            DataCenter = dataCenter;
             Tier = tier;
+            DataCenter = dataCenter;
             DefaultValue = defaultValue;
         }
     }

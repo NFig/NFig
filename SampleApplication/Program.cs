@@ -6,9 +6,9 @@ using NFig.Redis;
 
 namespace SampleApplication
 {
-    using Override = SettingValue<DeploymentTier, DataCenter>;
-    using Manager = SettingsManager<SampleSettings, DeploymentTier, DataCenter>;
-    using NFigRedis = NFigRedisStore<SampleSettings, DeploymentTier, DataCenter>;
+    using Override = SettingValue<Tier, DataCenter>;
+    using Manager = SettingsManager<SampleSettings, Tier, DataCenter>;
+    using NFigRedis = NFigRedisStore<SampleSettings, Tier, DataCenter>;
 
     class Program
     {
@@ -22,7 +22,7 @@ namespace SampleApplication
 
         public static void RedisExample()
         {
-            var nfig = new NFigRedis("localhost:6379", 11, DeploymentTier.Prod, DataCenter.Oregon);
+            var nfig = new NFigRedis("localhost:6379", 11, Tier.Prod, DataCenter.Oregon);
             nfig.SubscribeToAppSettings("Sample", OnSettingsUpdate);
         }
 
@@ -39,7 +39,7 @@ namespace SampleApplication
 
             s_updateInteration++;
 
-            var tier = DeploymentTier.Prod;
+            var tier = Tier.Prod;
             var dc = DataCenter.Any;
 
             if (s_updateInteration == 1)

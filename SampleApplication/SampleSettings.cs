@@ -5,7 +5,7 @@ using NFig.Redis;
 
 namespace SampleApplication
 {
-    public enum DeploymentTier
+    public enum Tier
     {
         Any = 0,
         Local = 1,
@@ -46,7 +46,7 @@ namespace SampleApplication
         public class ChatBotsSettings
         {
             [Setting(false)]
-            [TieredDefaultValue(DeploymentTier.Prod, true)]
+            [TieredDefaultValue(Tier.Prod, true)]
             [Description("Enables the Malfunctioning Eddie chat bot.")]
             public bool MalfunctioningEddieEnabled { get; set; }
         }
@@ -57,12 +57,12 @@ namespace SampleApplication
         public class ConnectionStringsSettings
         {
             [Setting(null)]
-            [TieredDefaultValue(DeploymentTier.Local, "local connection string")]
+            [TieredDefaultValue(Tier.Local, "local connection string")]
             [Description("SQL Connection string to the Calculon db.")]
             public string AdServer { get; set; }
 
             [Setting(null)]
-            [TieredDefaultValue(DeploymentTier.Local, "local connection string")]
+            [TieredDefaultValue(Tier.Local, "local connection string")]
             [Description("SQL Connection string to the Calculon.Metrics db.")]
             public string Metrics { get; set; }
         }
@@ -88,8 +88,8 @@ namespace SampleApplication
             public bool Enabled { get; set; }
 
             [Setting(null)]
-            [DataCenterTieredDefaultValue(DataCenter.NewYork, DeploymentTier.Dev, "http://ny-devbosun01:8070/api/put")]
-            [DataCenterTieredDefaultValue(DataCenter.NewYork, DeploymentTier.Prod, "http://bosun:80/api/put")]
+            [TieredDataCenterDefaultValue(Tier.Dev, DataCenter.NewYork, "http://ny-devbosun01:8070/api/put")]
+            [TieredDataCenterDefaultValue(Tier.Prod, DataCenter.NewYork, "http://bosun:80/api/put")]
             public string ApiUrl { get; set; }
 
             [Setting(15)]

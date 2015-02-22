@@ -1,4 +1,7 @@
-﻿using NFig;
+﻿
+
+
+using NFig;
 
 namespace SampleApplication
 {
@@ -13,19 +16,19 @@ namespace SampleApplication
 
     public class TieredDefaultValueAttribute : DefaultSettingValueAttribute
     {
-        public TieredDefaultValueAttribute(DeploymentTier tier, object defaultValue)
+        public TieredDefaultValueAttribute(Tier tier, object defaultValue)
         {
             Tier = tier;
             DefaultValue = defaultValue;
         }
     }
 
-    public class DataCenterTieredDefaultValueAttribute : DefaultSettingValueAttribute
+    public class TieredDataCenterDefaultValueAttribute : DefaultSettingValueAttribute
     {
-        public DataCenterTieredDefaultValueAttribute(DataCenter dataCenter, DeploymentTier tier, object defaultValue)
+        public TieredDataCenterDefaultValueAttribute(Tier tier, DataCenter dataCenter, object defaultValue)
         {
-            DataCenter = dataCenter;
             Tier = tier;
+            DataCenter = dataCenter;
             DefaultValue = defaultValue;
         }
     }
