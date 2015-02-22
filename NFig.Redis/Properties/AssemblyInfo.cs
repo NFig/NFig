@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("NFig.Redis")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyDescription("A distributed settings library built on top of Redis.")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("NFig.Redis")]
