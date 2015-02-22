@@ -185,9 +185,21 @@ namespace NFig
             var sa = pi.GetCustomAttribute<SettingAttribute>();
             if (sa != null)
             {
-                var toSetting = GetPropertyToSettingMethod(pi.PropertyType);
-                var setting = (Setting)toSetting.Invoke(this, new object[] { pi, parent, sa, prefix });
-                return SelectSingle(setting);
+                try
+                {
+                    var toSetting = GetPropertyToSettingMethod(pi.PropertyType);
+                    var setting = (Setting)toSetting.Invoke(this, new object[] { pi, parent, sa, prefix });
+                    return SelectSingle(setting);
+                }
+                catch (TargetInvocationException ex)
+                {
+                    // don't care about the fact that there's a target invocation exception
+                    // what we want is the inner exception
+                    if (ex.InnerException != null)
+                        throw ex.InnerException;
+
+                    throw;
+                }
             }
 
             if (IsSettingsGroup(pi))
