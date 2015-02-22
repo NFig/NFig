@@ -247,7 +247,7 @@ namespace NFig
 
             // see if there are any default value attributes
             var defaults = new List<SettingValue<TTier, TDataCenter>>();
-            var defaultStringValue = sa.DefaultValue as string ?? converter.GetString((TValue)sa.DefaultValue);
+            var defaultStringValue = GetStringFromDefault(converter, sa.DefaultValue);
             defaults.Add(new SettingValue<TTier, TDataCenter>(name, defaultStringValue, default(TTier), default(TDataCenter), true));
             
             foreach (var dsva in pi.GetCustomAttributes<DefaultSettingValueAttribute>())
@@ -275,7 +275,7 @@ namespace NFig
                 // create default
                 var d = new SettingValue<TTier, TDataCenter>(
                     name,
-                    converter.GetString((TValue)dsva.DefaultValue),
+                    GetStringFromDefault(converter, dsva.DefaultValue),
                     tier ?? default(TTier),
                     dc ?? default(TDataCenter),
                     true
@@ -285,7 +285,7 @@ namespace NFig
                 foreach (var existing in defaults)
                 {
                     if (existing.HasSameTierAndDataCenter(d))
-                        throw new NFigException("Multiple defaults were specified for the same environment on settings property: " + pi.PropertyType.FullName + "." + pi.Name);
+                        throw new NFigException("Multiple defaults were specified for the same environment on settings property: " + pi.DeclaringType.FullName + "." + pi.Name);
                 }
 
                 defaults.Add(d);
@@ -297,6 +297,16 @@ namespace NFig
             var setter = CreateSetterMethod<TValue>(pi, parent, name);
 
             return new Setting<TValue>(name, description, pi, sa, defaults.ToArray(), activeDefault, setter, converter);
+        }
+
+        private static string GetStringFromDefault<TValue>(ISettingConverter<TValue> converter, object value)
+        {
+            var str = value as string;
+            if (str != null)
+                return str;
+
+            TValue tval = value is TValue ? (TValue)value : (TValue)Convert.ChangeType(value, typeof(TValue));
+            return converter.GetString(tval);
         }
         
         private SettingSetterDelegate<TValue> CreateSetterMethod<TValue>(PropertyInfo pi, PropertyAndParent parent, string name)
