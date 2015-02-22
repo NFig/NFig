@@ -24,6 +24,7 @@ namespace SampleApplication
         {
             var nfig = new NFigRedis("localhost:6379", 11, Tier.Prod, DataCenter.Oregon);
             nfig.SubscribeToAppSettings("Sample", OnSettingsUpdate);
+            OnSettingsUpdate(null, nfig.GetApplicationSettings("Sample"), nfig);
         }
 
         private static int s_updateInteration = 0;

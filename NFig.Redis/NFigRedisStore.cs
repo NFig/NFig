@@ -99,7 +99,6 @@ namespace NFig.Redis
 
                 // set up a redis subscription
                 _subscriber.Subscribe(APP_UPDATE_CHANNEL, OnAppUpdate);
-                ReloadAndNotifyCallback(appName, callback);
             }
         }
 
@@ -130,10 +129,10 @@ namespace NFig.Redis
 
         public TSettings GetApplicationSettings(string appName)
         {
-            return GetSettingsFromRedisAsync(appName).Result;
+            return GetApplicationSettingsAsync(appName).Result;
         }
 
-        public async Task<TSettings> GetSettingsFromRedisAsync(string appName)
+        public async Task<TSettings> GetApplicationSettingsAsync(string appName)
         {
             var data = await GetCurrentDataAsync(appName);
 
