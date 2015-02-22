@@ -36,6 +36,8 @@ namespace SampleApplication
             Console.WriteLine(settings.ConnectionStrings.AdServer);
             Console.WriteLine(nfig.IsCurrent(settings));
             Console.WriteLine();
+            var info = nfig.GetSettingInfo(settings.ApplicationName, "ConnectionStrings.AdServer");
+            var ac = info.GetActiveValueFor(nfig.Tier, nfig.DataCenter);
 
             s_updateInteration++;
 

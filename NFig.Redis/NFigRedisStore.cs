@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using StackExchange.Redis;
@@ -24,6 +25,12 @@ namespace NFig.Redis
 
         private readonly object _callbacksLock = new object();
         private readonly Dictionary<string, SettingsUpdateDelegate> _callbacks = new Dictionary<string, SettingsUpdateDelegate>();
+
+        private readonly object _dataCacheLock = new object();
+        private readonly Dictionary<string, RedisAppData> _dataCache = new Dictionary<string, RedisAppData>();
+
+        private readonly object _infoCacheLock = new object();
+        private readonly Dictionary<string, SettingInfoData> _infoCache = new Dictionary<string, SettingInfoData>();
 
         public IReadOnlyDictionary<string, SettingsUpdateDelegate> RegisteredCallbacks { get { return new ReadOnlyDictionary<string, SettingsUpdateDelegate>(_callbacks); } }
         public SettingsManager<TSettings, TTier, TDataCenter> Manager { get; }
@@ -121,7 +128,7 @@ namespace NFig.Redis
             }
         }
 
-        public TSettings GetSettingsFromRedis(string appName)
+        public TSettings GetApplicationSettings(string appName)
         {
             return GetSettingsFromRedisAsync(appName).Result;
         }
@@ -203,10 +210,45 @@ namespace NFig.Redis
             return await db.HashGetAsync(appName, COMMIT_KEY);
         }
 
+        public SettingInfo<TTier, TDataCenter>[] GetAllSettingInfos(string appName)
+        {
+            return GetAllSettingInfosAsync(appName).Result;
+        }
+
         public async Task<SettingInfo<TTier, TDataCenter>[]> GetAllSettingInfosAsync(string appName)
         {
             var data = await GetCurrentDataAsync(appName);
             return Manager.GetAllSettingInfos(data.Overrides);
+        }
+
+        public SettingInfo<TTier, TDataCenter> GetSettingInfo(string appName, string settingName)
+        {
+            return GetSettingInfoAsync(appName, settingName).Result;
+        }
+
+        public async Task<SettingInfo<TTier, TDataCenter>> GetSettingInfoAsync(string appName, string settingName)
+        {
+            // todo: should probably call GetAllSettingInfosAsync and have it perform caching rather than redoing work and reproducing logic in this method
+            SettingInfoData data;
+            // ReSharper disable once InconsistentlySynchronizedField
+            if (_infoCache.TryGetValue(appName, out data))
+            {
+                // check if cached info is valid
+                var commit = await GetCurrentCommitAsync(appName);
+                if (data.Commit == commit)
+                    return data.InfoBySetting[settingName];
+            }
+
+            data = new SettingInfoData();
+            var redisData = await GetCurrentDataAsync(appName);
+            data.InfoBySetting = Manager.GetAllSettingInfos(redisData.Overrides).ToDictionary(s => s.Name);
+
+            lock (_infoCacheLock)
+            {
+                _infoCache[appName] = data;
+            }
+
+            return data.InfoBySetting[settingName];
         }
 
         public bool IsValidStringForSetting(string settingName, string str)
@@ -218,10 +260,21 @@ namespace NFig.Redis
         private static readonly Regex s_keyRegex = new Regex(@"^:(?<Tier>\d+):(?<DataCenter>\d+);(?<Name>.+)$");
         private async Task<RedisAppData> GetCurrentDataAsync(string appName)
         {
+            RedisAppData data;
+
+            // check cache first
+            // ReSharper disable once InconsistentlySynchronizedField
+            if (_dataCache.TryGetValue(appName, out data))
+            {
+                var commit = await GetCurrentCommitAsync(appName);
+                if (data.Commit == commit)
+                    return data;
+            }
+
             var tierType = typeof(TTier);
             var dataCenterType = typeof(TDataCenter);
 
-            var data = new RedisAppData();
+            data = new RedisAppData();
 
             // grab the redis hash
             var db = GetRedisDb();
@@ -248,6 +301,12 @@ namespace NFig.Redis
             }
 
             data.Overrides = overrides;
+
+            lock (_dataCacheLock)
+            {
+                _dataCache[appName] = data;
+            }
+
             return data;
         }
 
@@ -269,7 +328,7 @@ namespace NFig.Redis
             TSettings settings = null;
             try
             {
-                settings = GetSettingsFromRedis(appName);
+                settings = GetApplicationSettings(appName);
             }
             catch(Exception e)
             {
@@ -298,6 +357,12 @@ namespace NFig.Redis
         {
             public string Commit { get; set; }
             public IList<SettingValue<TTier, TDataCenter>> Overrides { get; set; }
+        }
+
+        private class SettingInfoData
+        {
+            public string Commit { get; set; }
+            public Dictionary<string, SettingInfo<TTier, TDataCenter>> InfoBySetting { get; set; }
         }
     }
 }
