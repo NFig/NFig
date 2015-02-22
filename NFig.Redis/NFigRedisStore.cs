@@ -21,15 +21,15 @@ namespace NFig.Redis
         private readonly ConnectionMultiplexer _redis;
         private readonly ISubscriber _subscriber;
         private readonly int _dbIndex;
-        private readonly SettingsManager<TSettings, TTier, TDataCenter> _manager;
 
         private readonly object _callbacksLock = new object();
         private readonly Dictionary<string, SettingsUpdateDelegate> _callbacks = new Dictionary<string, SettingsUpdateDelegate>();
 
         public IReadOnlyDictionary<string, SettingsUpdateDelegate> RegisteredCallbacks { get { return new ReadOnlyDictionary<string, SettingsUpdateDelegate>(_callbacks); } }
+        public SettingsManager<TSettings, TTier, TDataCenter> Manager { get; }
 
-        public TTier Tier { get { return _manager.Tier; } }
-        public TDataCenter DataCenter { get { return _manager.DataCenter; } }
+        public TTier Tier { get { return Manager.Tier; } }
+        public TDataCenter DataCenter { get { return Manager.DataCenter; } }
 
         public NFigRedisStore(
             string redisConnectionString, 
@@ -60,7 +60,7 @@ namespace NFig.Redis
             _redis = redisConnection;
             _subscriber = _redis.GetSubscriber();
             _dbIndex = dbIndex;
-            _manager = new SettingsManager<TSettings, TTier, TDataCenter>(tier, dataCenter, additionalDefaultConverters);
+            Manager = new SettingsManager<TSettings, TTier, TDataCenter>(tier, dataCenter, additionalDefaultConverters);
         }
 
         public static NFigRedisStore<TSettings, TTier, TDataCenter> FromConnectionMultiplexer(
@@ -131,7 +131,7 @@ namespace NFig.Redis
             var data = await GetCurrentDataAsync(appName);
 
             // create new settings object
-            var settings = _manager.GetAppSettings(data.Overrides);
+            var settings = Manager.GetAppSettings(data.Overrides);
             settings.ApplicationName = appName;
             settings.SettingsCommit = data.Commit;
             return settings;
@@ -206,7 +206,12 @@ namespace NFig.Redis
         public async Task<SettingInfo<TTier, TDataCenter>[]> GetAllSettingInfosAsync(string appName)
         {
             var data = await GetCurrentDataAsync(appName);
-            return _manager.GetAllSettingInfos(data.Overrides);
+            return Manager.GetAllSettingInfos(data.Overrides);
+        }
+
+        public bool IsValidStringForSetting(string settingName, string str)
+        {
+            return Manager.IsValidStringForSetting(settingName, str);
         }
 
         // ReSharper disable once StaticMemberInGenericType

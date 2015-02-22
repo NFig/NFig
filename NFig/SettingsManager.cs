@@ -13,6 +13,7 @@ namespace NFig
         where TDataCenter : struct
     {
         private readonly Setting[] _settings;
+        private readonly Dictionary<string, Setting> _settingsByName;
         private readonly InitializeSettingsDelegate _initializer;
         private readonly Type TSettingsType;
         private readonly Type TTierType;
@@ -71,6 +72,7 @@ namespace NFig
             }
 
             _settings = BuildSettings(TSettingsType);
+            _settingsByName = _settings.ToDictionary(s => s.Name);
             _initializer = GetInitializer();
         }
 
@@ -147,6 +149,24 @@ namespace NFig
             }
 
             return infos;
+        }
+
+        public bool IsValidStringForSetting(string settingName, string str)
+        {
+            object o;
+            return TryConvertStringToValue(settingName, str, out o);
+        }
+
+        public bool TryConvertStringToValue(string settingName, string str, out object value)
+        {
+            var setting = _settingsByName[settingName];
+            return setting.TryGetValueFromString(str, out value);
+        }
+
+        public bool TryConvertValueToString(string settingName, object value, out string str)
+        {
+            var setting = _settingsByName[settingName];
+            return setting.TryGetStringFromValue(value, out str);
         }
 
         private Setting[] BuildSettings(Type type)
@@ -432,6 +452,8 @@ namespace NFig
             public string ActiveDefault { get; protected set; }
 
             public abstract void SetValueFromString(TSettings settings, string str);
+            public abstract bool TryGetValueFromString(string str, out object value);
+            public abstract bool TryGetStringFromValue(object value, out string str);
         }
 
         private class Setting<TValue> : Setting
@@ -464,6 +486,36 @@ namespace NFig
             public override void SetValueFromString(TSettings settings, string str)
             {
                 _setter(settings, str, _converter);
+            }
+
+            public override bool TryGetValueFromString(string str, out object value)
+            {
+                value = null;
+                try
+                {
+                    value = _converter.GetValue(str);
+                }
+                catch (Exception)
+                {
+                    return false;
+                }
+
+                return true;
+            }
+
+            public override bool TryGetStringFromValue(object value, out string str)
+            {
+                str = null;
+                try
+                {
+                    str = _converter.GetString((TValue)value);
+                }
+                catch (Exception)
+                {
+                    return false;
+                }
+
+                return true;
             }
         }
     }
