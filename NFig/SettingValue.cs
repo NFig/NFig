@@ -48,6 +48,9 @@ namespace NFig
 
         public bool IsMoreSpecificThan(SettingValue<TTier, TDataCenter> value)
         {
+            if (value == null)
+                return true;
+
             // an override is always more specific than a default
             if (IsOverride && value.IsDefault)
                 return true;
