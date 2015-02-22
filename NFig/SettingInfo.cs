@@ -19,12 +19,17 @@ namespace NFig
             Overrides = overrides;
         } 
 
-        public SettingValue<TTier, TDataCenter> GetActiveDefault(TTier tier, TDataCenter dataCenter)
+        public SettingValue<TTier, TDataCenter> GetActiveValueFor(TTier tier, TDataCenter dataCenter)
+        {
+            return GetOverrideFor(tier, dataCenter) ?? GetDefaultFor(tier, dataCenter);
+        }
+
+        public SettingValue<TTier, TDataCenter> GetDefaultFor(TTier tier, TDataCenter dataCenter)
         {
             return GetActive(Defaults, tier, dataCenter);
         }
 
-        public SettingValue<TTier, TDataCenter> GetActiveOverride(TTier tier, TDataCenter dataCenter)
+        public SettingValue<TTier, TDataCenter> GetOverrideFor(TTier tier, TDataCenter dataCenter)
         {
             return GetActive(Overrides, tier, dataCenter);
         }
