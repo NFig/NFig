@@ -126,41 +126,14 @@ namespace NFig.Redis
             return GetSettingsFromRedisAsync(appName).Result;
         }
 
-        private static readonly Regex s_keyRegex = new Regex(@"^:(?<Tier>\d+):(?<DataCenter>\d+);(?<Name>.+)$");
         public async Task<TSettings> GetSettingsFromRedisAsync(string appName)
         {
-            var tierType = typeof(TTier);
-            var dataCenterType = typeof(TDataCenter);
-
-            // grab the redis hash
-            string commit = null;
-            var db = _redis.GetDatabase(_dbIndex);
-            var hash = await db.HashGetAllAsync(appName);
-            var overrides = new List<SettingOverride<TTier, TDataCenter>>();
-            foreach (var hashEntry in hash)
-            {
-                string key = hashEntry.Name;
-                var match = s_keyRegex.Match(key);
-                if (match.Success)
-                {
-                    overrides.Add(new SettingOverride<TTier, TDataCenter>()
-                    {
-                        Name = match.Groups["Name"].Value,
-                        Value = hashEntry.Value,
-                        Tier = (TTier)Enum.ToObject(tierType, int.Parse(match.Groups["Tier"].Value)),
-                        DataCenter = (TDataCenter)Enum.ToObject(dataCenterType, int.Parse(match.Groups["DataCenter"].Value))
-                    });
-                }
-                else if (key == COMMIT_KEY)
-                {
-                    commit = hashEntry.Value;
-                }
-            }
+            var data = await GetCurrentDataAsync(appName);
 
             // create new settings object
-            var settings = _manager.GetAppSettings(overrides);
+            var settings = _manager.GetAppSettings(data.Overrides);
             settings.ApplicationName = appName;
-            settings.SettingsCommit = commit;
+            settings.SettingsCommit = data.Commit;
             return settings;
         }
 
@@ -230,6 +203,49 @@ namespace NFig.Redis
             return await db.HashGetAsync(appName, COMMIT_KEY);
         }
 
+        public async Task<SettingInfo<TTier, TDataCenter>[]> GetAllSettingInfosAsync(string appName)
+        {
+            var data = await GetCurrentDataAsync(appName);
+            return _manager.GetAllSettingInfos(data.Overrides);
+        }
+
+        // ReSharper disable once StaticMemberInGenericType
+        private static readonly Regex s_keyRegex = new Regex(@"^:(?<Tier>\d+):(?<DataCenter>\d+);(?<Name>.+)$");
+        private async Task<RedisAppData> GetCurrentDataAsync(string appName)
+        {
+            var tierType = typeof(TTier);
+            var dataCenterType = typeof(TDataCenter);
+
+            var data = new RedisAppData();
+
+            // grab the redis hash
+            var db = GetRedisDb();
+            var hash = await db.HashGetAllAsync(appName);
+
+            var overrides = new List<SettingValue<TTier, TDataCenter>>();
+            foreach (var hashEntry in hash)
+            {
+                string key = hashEntry.Name;
+                var match = s_keyRegex.Match(key);
+                if (match.Success)
+                {
+                    overrides.Add(new SettingValue<TTier, TDataCenter>(
+                        match.Groups["Name"].Value,
+                        hashEntry.Value,
+                        (TTier)Enum.ToObject(tierType, int.Parse(match.Groups["Tier"].Value)),
+                        (TDataCenter)Enum.ToObject(dataCenterType, int.Parse(match.Groups["DataCenter"].Value))
+                    ));
+                }
+                else if (key == COMMIT_KEY)
+                {
+                    data.Commit = hashEntry.Value;
+                }
+            }
+
+            data.Overrides = overrides;
+            return data;
+        }
+
         private void OnAppUpdate(RedisChannel channel, RedisValue message)
         {
             if (channel == APP_UPDATE_CHANNEL)
@@ -271,6 +287,12 @@ namespace NFig.Redis
         private IDatabase GetRedisDb()
         {
             return _redis.GetDatabase(_dbIndex);
+        }
+
+        private class RedisAppData
+        {
+            public string Commit { get; set; }
+            public IList<SettingValue<TTier, TDataCenter>> Overrides { get; set; }
         }
     }
 }

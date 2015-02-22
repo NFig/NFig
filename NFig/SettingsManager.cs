@@ -74,19 +74,19 @@ namespace NFig
             _initializer = GetInitializer();
         }
 
-        public TSettings GetAppSettings(IEnumerable<SettingOverride<TTier, TDataCenter>> overrides = null)
+        public TSettings GetAppSettings(IEnumerable<SettingValue<TTier, TDataCenter>> overrides = null)
         {
             // pick the right overrides
-            Dictionary<string, SettingOverride<TTier, TDataCenter>> overridesBySetting = null;
+            Dictionary<string, SettingValue<TTier, TDataCenter>> overridesBySetting = null;
 
             if (overrides != null)
             {
-                overridesBySetting = new Dictionary<string, SettingOverride<TTier, TDataCenter>>();
+                overridesBySetting = new Dictionary<string, SettingValue<TTier, TDataCenter>>();
                 foreach (var over in overrides)
                 {
                     if (over.IsValidFor(Tier, DataCenter))
                     {
-                        SettingOverride<TTier, TDataCenter> prev;
+                        SettingValue<TTier, TDataCenter> prev;
                         if (overridesBySetting.TryGetValue(over.Name, out prev))
                         {
                             if (over.IsMoreSpecificThan(prev))
@@ -103,7 +103,7 @@ namespace NFig
             var s = _initializer();
             foreach (var setting in _settings)
             {
-                SettingOverride<TTier, TDataCenter> over;
+                SettingValue<TTier, TDataCenter> over;
                 if (overridesBySetting != null && overridesBySetting.TryGetValue(setting.Name, out over))
                 {
                     setting.SetValueFromString(s, over.Value);
@@ -115,6 +115,38 @@ namespace NFig
             }
 
             return s;
+        }
+
+        public SettingInfo<TTier, TDataCenter>[] GetAllSettingInfos(IEnumerable<SettingValue<TTier, TDataCenter>> overrides = null)
+        {
+            Dictionary<string, List<SettingValue<TTier, TDataCenter>>> overrideListBySetting = null;
+
+            if (overrides != null)
+            {
+                overrideListBySetting = new Dictionary<string, List<SettingValue<TTier, TDataCenter>>>();
+                foreach (var over in overrides)
+                {
+                    List<SettingValue<TTier, TDataCenter>> overList;
+                    if (!overrideListBySetting.TryGetValue(over.Name, out overList))
+                        overrideListBySetting[over.Name] = overList = new List<SettingValue<TTier, TDataCenter>>();
+
+                    overList.Add(over);
+                }
+            }
+
+            var infos = new SettingInfo<TTier, TDataCenter>[_settings.Length];
+            for (var i = 0; i < _settings.Length; i++)
+            {
+                var s = _settings[i];
+
+                List<SettingValue<TTier, TDataCenter>> overList;
+                if (overrideListBySetting == null || !overrideListBySetting.TryGetValue(s.Name, out overList))
+                    overList = new List<SettingValue<TTier, TDataCenter>>();
+
+                infos[i] = new SettingInfo<TTier, TDataCenter>(s.Name, s.Description, s.Defaults, overList);
+            }
+
+            return infos;
         }
 
         private Setting[] BuildSettings(Type type)
@@ -153,6 +185,7 @@ namespace NFig
             return GetType().GetMethod("PropertyToSetting", BindingFlags.NonPublic | BindingFlags.Instance).MakeGenericMethod(type);
         }
 
+        // ReSharper disable once UnusedMember.Local
         private Setting PropertyToSetting<TValue>(PropertyInfo pi, PropertyAndParent parent, SettingAttribute sa, string prefix)
         {
             var name = prefix + pi.Name;
@@ -193,9 +226,9 @@ namespace NFig
             var description = da == null ? "" : da.Description;
 
             // see if there are any default value attributes
-            var defaults = new List<SettingDefault>();
+            var defaults = new List<SettingValue<TTier, TDataCenter>>();
             var defaultStringValue = sa.DefaultValue as string ?? converter.GetString((TValue)sa.DefaultValue);
-            defaults.Add(new SettingDefault { Value = defaultStringValue });
+            defaults.Add(new SettingValue<TTier, TDataCenter>(name, defaultStringValue, default(TTier), default(TDataCenter), true));
             
             foreach (var dsva in pi.GetCustomAttributes<DefaultSettingValueAttribute>())
             {
@@ -220,12 +253,13 @@ namespace NFig
                 }
 
                 // create default
-                var d = new SettingDefault
-                {
-                    Value = converter.GetString((TValue)dsva.DefaultValue),
-                    Tier = tier ?? default(TTier),
-                    DataCenter = dc ?? default(TDataCenter),
-                };
+                var d = new SettingValue<TTier, TDataCenter>(
+                    name,
+                    converter.GetString((TValue)dsva.DefaultValue),
+                    tier ?? default(TTier),
+                    dc ?? default(TDataCenter),
+                    true
+                );
 
                 // make sure there isn't a conflicting default value
                 foreach (var existing in defaults)
@@ -237,7 +271,7 @@ namespace NFig
                 defaults.Add(d);
             }
 
-            var activeDefault = SettingDefault.GetActiveDefaultString(defaults, Tier, DataCenter);
+            var activeDefault = GetActiveDefaultString(defaults, Tier, DataCenter);
 
             // create setter method
             var setter = CreateSetterMethod<TValue>(pi, parent, name);
@@ -361,6 +395,19 @@ namespace NFig
             return pi.PropertyType.IsClass && pi.GetCustomAttribute<SettingsGroupAttribute>() != null;
         }
 
+        private static string GetActiveDefaultString(IList<SettingValue<TTier, TDataCenter>> defaults, TTier tier, TDataCenter dataCenter)
+        {
+            // first item in the list is always the base default, so start with that
+            var defaultValue = defaults[0];
+            for (var i = 1; i < defaults.Count; i++)
+            {
+                if (defaults[i].IsValidFor(tier, dataCenter) && defaults[i].IsMoreSpecificThan(defaultValue))
+                    defaultValue = defaults[i];
+            }
+
+            return defaultValue.Value;
+        }
+
         /**************************************************************************************
          * Helper Classes and Delegates
          *************************************************************************************/
@@ -381,7 +428,7 @@ namespace NFig
             public string Description { get; protected set; }
             public PropertyInfo PropertyInfo { get; protected set; }
             public SettingAttribute SettingAttribute { get; protected set; }
-            public SettingDefault[] SettingDefaults { get; protected set; }
+            public SettingValue<TTier, TDataCenter>[] Defaults { get; protected set; }
             public string ActiveDefault { get; protected set; }
 
             public abstract void SetValueFromString(TSettings settings, string str);
@@ -397,7 +444,7 @@ namespace NFig
                 string description,
                 PropertyInfo propertyInfo,
                 SettingAttribute settingAttribute,
-                SettingDefault[] settingDefaults,
+                SettingValue<TTier, TDataCenter>[] defaults,
                 string activeDefault,
                 SettingSetterDelegate<TValue> setter,
                 ISettingConverter<TValue> converter
@@ -407,7 +454,7 @@ namespace NFig
                 Description = description;
                 PropertyInfo = propertyInfo;
                 SettingAttribute = settingAttribute;
-                SettingDefaults = settingDefaults;
+                Defaults = defaults;
                 ActiveDefault = activeDefault;
 
                 _setter = setter;
@@ -417,22 +464,6 @@ namespace NFig
             public override void SetValueFromString(TSettings settings, string str)
             {
                 _setter(settings, str, _converter);
-            }
-        }
-
-        private class SettingDefault : SettingOverride<TTier, TDataCenter>
-        {
-            public static string GetActiveDefaultString(IList<SettingDefault> defaults, TTier tier, TDataCenter dataCenter)
-            {
-                // first item in the list is always the base default, so start with that
-                var defaultValue = defaults[0];
-                for (var i = 1; i < defaults.Count; i++)
-                {
-                    if (defaults[i].IsValidFor(tier, dataCenter) && defaults[i].IsMoreSpecificThan(defaultValue))
-                        defaultValue = defaults[i];
-                }
-
-                return defaultValue.Value;
             }
         }
     }
