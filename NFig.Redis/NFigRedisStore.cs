@@ -134,7 +134,7 @@ namespace NFig.Redis
 
         public async Task<TSettings> GetApplicationSettingsAsync(string appName)
         {
-            var data = await GetCurrentDataAsync(appName);
+            var data = await GetCurrentDataAsync(appName).ConfigureAwait(false);
 
             // create new settings object
             var settings = Manager.GetAppSettings(data.Overrides);
@@ -160,8 +160,8 @@ namespace NFig.Redis
             var key = GetSettingKey(settingName, tierVal, dcVal);
             var db = GetRedisDb();
 
-            await db.HashSetAsync(appName, new [] { new HashEntry(key, value), new HashEntry(COMMIT_KEY, GetCommit()) });
-            await _subscriber.PublishAsync(APP_UPDATE_CHANNEL, appName);
+            await db.HashSetAsync(appName, new [] { new HashEntry(key, value), new HashEntry(COMMIT_KEY, GetCommit()) }).ConfigureAwait(false);
+            await _subscriber.PublishAsync(APP_UPDATE_CHANNEL, appName).ConfigureAwait(false);
         }
 
         public void ClearOverride(string appName, string settingName, TTier? tier = null, TDataCenter? dataCenter = null)
@@ -180,15 +180,15 @@ namespace NFig.Redis
             var tran = db.CreateTransaction();
             var delTask = tran.HashDeleteAsync(appName, key);
             var setTask = tran.HashSetAsync(appName, COMMIT_KEY, GetCommit());
-            var committed = await tran.ExecuteAsync();
+            var committed = await tran.ExecuteAsync().ConfigureAwait(false);
             if (!committed)
                 throw new NFigException("Unable to clear override. Redis Transaction failed. " + appName + "." + settingName);
 
             // not sure if these actually need to be awaited after ExecuteAwait finishes
-            await delTask;
-            await setTask;
+            await delTask.ConfigureAwait(false);
+            await setTask.ConfigureAwait(false);
 
-            await _subscriber.PublishAsync(APP_UPDATE_CHANNEL, appName);
+            await _subscriber.PublishAsync(APP_UPDATE_CHANNEL, appName).ConfigureAwait(false);
         }
 
         public bool IsCurrent(TSettings settings)
@@ -198,7 +198,7 @@ namespace NFig.Redis
 
         public async Task<bool> IsCurrentAsync(TSettings settings)
         {
-            var commit = await GetCurrentCommitAsync(settings.ApplicationName);
+            var commit = await GetCurrentCommitAsync(settings.ApplicationName).ConfigureAwait(false);
             return commit == settings.SettingsCommit;
         }
 
@@ -210,7 +210,7 @@ namespace NFig.Redis
         public async Task<string> GetCurrentCommitAsync(string appName)
         {
             var db = GetRedisDb();
-            return await db.HashGetAsync(appName, COMMIT_KEY);
+            return await db.HashGetAsync(appName, COMMIT_KEY).ConfigureAwait(false);
         }
 
         public SettingInfo<TTier, TDataCenter>[] GetAllSettingInfos(string appName)
@@ -220,7 +220,7 @@ namespace NFig.Redis
 
         public async Task<SettingInfo<TTier, TDataCenter>[]> GetAllSettingInfosAsync(string appName)
         {
-            var data = await GetCurrentDataAsync(appName);
+            var data = await GetCurrentDataAsync(appName).ConfigureAwait(false);
             return Manager.GetAllSettingInfos(data.Overrides);
         }
 
@@ -237,13 +237,13 @@ namespace NFig.Redis
             if (_infoCache.TryGetValue(appName, out data))
             {
                 // check if cached info is valid
-                var commit = await GetCurrentCommitAsync(appName);
+                var commit = await GetCurrentCommitAsync(appName).ConfigureAwait(false);
                 if (data.Commit == commit)
                     return data.InfoBySetting[settingName];
             }
 
             data = new SettingInfoData();
-            var redisData = await GetCurrentDataAsync(appName);
+            var redisData = await GetCurrentDataAsync(appName).ConfigureAwait(false);
             data.InfoBySetting = Manager.GetAllSettingInfos(redisData.Overrides).ToDictionary(s => s.Name);
 
             lock (_infoCacheLock)
@@ -269,7 +269,7 @@ namespace NFig.Redis
             // ReSharper disable once InconsistentlySynchronizedField
             if (_dataCache.TryGetValue(appName, out data))
             {
-                var commit = await GetCurrentCommitAsync(appName);
+                var commit = await GetCurrentCommitAsync(appName).ConfigureAwait(false);
                 if (data.Commit == commit)
                     return data;
             }
@@ -281,7 +281,7 @@ namespace NFig.Redis
 
             // grab the redis hash
             var db = GetRedisDb();
-            var hash = await db.HashGetAllAsync(appName);
+            var hash = await db.HashGetAllAsync(appName).ConfigureAwait(false);
 
             var overrides = new List<SettingValue<TTier, TDataCenter>>();
             foreach (var hashEntry in hash)
