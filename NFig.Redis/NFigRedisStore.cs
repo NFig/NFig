@@ -150,6 +150,10 @@ namespace NFig.Redis
 
         public async Task SetOverrideAsync(string appName, string settingName, string value, TTier? tier = null, TDataCenter? dataCenter = null)
         {
+            // make sure this is even valid input before saving it to Redis
+            if (!Manager.IsValidStringForSetting(settingName, value))
+                throw new SettingConversionException("\"" + value + "\" is not a valid value for setting \"" + settingName + "\"");
+
             var tierVal = tier ?? Tier;
             var dcVal = dataCenter ?? DataCenter;
 
