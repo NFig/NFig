@@ -129,7 +129,7 @@ namespace NFig.Redis
 
         public TSettings GetApplicationSettings(string appName)
         {
-            return GetApplicationSettingsAsync(appName).Result;
+            return Task.Run(async () => { return await GetApplicationSettingsAsync(appName); }).Result;
         }
 
         public async Task<TSettings> GetApplicationSettingsAsync(string appName)
@@ -145,7 +145,7 @@ namespace NFig.Redis
 
         public void SetOverride(string appName, string settingName, string value, TTier? tier = null, TDataCenter? dataCenter = null)
         {
-            SetOverrideAsync(appName, settingName, value, tier, dataCenter).Wait();
+            Task.Run(async () => { await SetOverrideAsync(appName, settingName, value, tier, dataCenter); }).Wait();
         }
 
         public async Task SetOverrideAsync(string appName, string settingName, string value, TTier? tier = null, TDataCenter? dataCenter = null)
@@ -166,7 +166,7 @@ namespace NFig.Redis
 
         public void ClearOverride(string appName, string settingName, TTier? tier = null, TDataCenter? dataCenter = null)
         {
-            ClearOverrideAsync(appName, settingName, tier, dataCenter).Wait();
+            Task.Run(async () => { await ClearOverrideAsync(appName, settingName, tier, dataCenter); }).Wait();
         }
 
         public async Task ClearOverrideAsync(string appName, string settingName, TTier? tier = null, TDataCenter? dataCenter = null)
@@ -193,7 +193,7 @@ namespace NFig.Redis
 
         public bool IsCurrent(TSettings settings)
         {
-            return IsCurrentAsync(settings).Result;
+            return Task.Run(async () => { return await IsCurrentAsync(settings); }).Result;
         }
 
         public async Task<bool> IsCurrentAsync(TSettings settings)
@@ -204,7 +204,7 @@ namespace NFig.Redis
 
         public string GetCurrentCommit(string appName)
         {
-            return GetCurrentCommitAsync(appName).Result;
+            return Task.Run(async () => { return await GetCurrentCommitAsync(appName); }).Result;
         }
 
         public async Task<string> GetCurrentCommitAsync(string appName)
@@ -215,7 +215,7 @@ namespace NFig.Redis
 
         public SettingInfo<TTier, TDataCenter>[] GetAllSettingInfos(string appName)
         {
-            return GetAllSettingInfosAsync(appName).Result;
+            return Task.Run(async () => { return await GetAllSettingInfosAsync(appName); }).Result;
         }
 
         public async Task<SettingInfo<TTier, TDataCenter>[]> GetAllSettingInfosAsync(string appName)
@@ -226,7 +226,7 @@ namespace NFig.Redis
 
         public SettingInfo<TTier, TDataCenter> GetSettingInfo(string appName, string settingName)
         {
-            return GetSettingInfoAsync(appName, settingName).Result;
+            return Task.Run(async () => { return await GetSettingInfoAsync(appName, settingName); }).Result;
         }
 
         public async Task<SettingInfo<TTier, TDataCenter>> GetSettingInfoAsync(string appName, string settingName)
