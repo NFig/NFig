@@ -213,6 +213,11 @@ namespace NFig.Redis
             return await db.HashGetAsync(appName, COMMIT_KEY).ConfigureAwait(false);
         }
 
+        public bool SettingExists(string settingName)
+        {
+            return Manager.SettingExists(settingName);
+        }
+
         public SettingInfo<TTier, TDataCenter>[] GetAllSettingInfos(string appName)
         {
             return Task.Run(async () => { return await GetAllSettingInfosAsync(appName); }).Result;

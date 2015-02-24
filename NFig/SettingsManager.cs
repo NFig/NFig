@@ -169,6 +169,11 @@ namespace NFig
             return setting.TryGetStringFromValue(value, out str);
         }
 
+        public bool SettingExists(string settingName)
+        {
+            return _settingsByName.ContainsKey(settingName);
+        }
+
         private Setting[] BuildSettings(Type type)
         {
             // parallize the top-level class. Call ToList() at the end to get out of the parallel query.
