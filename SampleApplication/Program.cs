@@ -22,9 +22,12 @@ namespace SampleApplication
 
         public static void RedisExample()
         {
-            var nfig = new NFigRedis("localhost:6379", 11, Tier.Prod, DataCenter.Oregon);
-            nfig.SubscribeToAppSettings("Sample", OnSettingsUpdate);
-            OnSettingsUpdate(null, nfig.GetApplicationSettings("Sample"), nfig);
+            var tier = Tier.Prod;
+            var dc = DataCenter.Oregon;
+
+            var nfig = new NFigRedis("localhost:6379", 11);
+            nfig.SubscribeToAppSettings("Sample", tier, dc, OnSettingsUpdate);
+            OnSettingsUpdate(null, nfig.GetApplicationSettings("Sample", tier, dc), nfig);
         }
 
         private static int s_updateInteration = 0;
@@ -38,7 +41,7 @@ namespace SampleApplication
             Console.WriteLine(nfig.IsCurrent(settings));
             Console.WriteLine();
             var info = nfig.GetSettingInfo(settings.ApplicationName, "ConnectionStrings.AdServer");
-            var ac = info.GetActiveValueFor(nfig.Tier, nfig.DataCenter);
+            var ac = info.GetActiveValueFor(settings.Tier, settings.DataCenter);
 
             s_updateInteration++;
 

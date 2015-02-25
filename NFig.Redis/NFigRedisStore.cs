@@ -8,13 +8,26 @@ using StackExchange.Redis;
 
 namespace NFig.Redis
 {
-
     public class NFigRedisStore<TSettings, TTier, TDataCenter>
-        where TSettings : class, INFigRedisSettings, new()
+        where TSettings : class, INFigRedisSettings<TTier, TDataCenter>, new()
         where TTier : struct
         where TDataCenter : struct
     {
         public delegate void SettingsUpdateDelegate(Exception ex, TSettings settings, NFigRedisStore<TSettings, TTier, TDataCenter> nfigRedisStore);
+
+        private class TierDataCenterCallback
+        {
+            public TTier Tier { get; }
+            public TDataCenter DataCenter { get; }
+            public SettingsUpdateDelegate Callback { get; }
+
+            public TierDataCenterCallback(TTier tier, TDataCenter dataCenter, SettingsUpdateDelegate callback)
+            {
+                Tier = tier;
+                DataCenter = dataCenter;
+                Callback = callback;
+            }
+        }
 
         private const string APP_UPDATE_CHANNEL = "NFig-AppUpdate";
         private const string COMMIT_KEY = "$commit";
@@ -24,7 +37,7 @@ namespace NFig.Redis
         private readonly int _dbIndex;
 
         private readonly object _callbacksLock = new object();
-        private readonly Dictionary<string, SettingsUpdateDelegate> _callbacks = new Dictionary<string, SettingsUpdateDelegate>();
+        private readonly Dictionary<string, List<TierDataCenterCallback>> _callbacksByApp = new Dictionary<string, List<TierDataCenterCallback>>();
 
         private readonly object _dataCacheLock = new object();
         private readonly Dictionary<string, RedisAppData> _dataCache = new Dictionary<string, RedisAppData>();
@@ -32,24 +45,16 @@ namespace NFig.Redis
         private readonly object _infoCacheLock = new object();
         private readonly Dictionary<string, SettingInfoData> _infoCache = new Dictionary<string, SettingInfoData>();
 
-        public IReadOnlyDictionary<string, SettingsUpdateDelegate> RegisteredCallbacks { get { return new ReadOnlyDictionary<string, SettingsUpdateDelegate>(_callbacks); } }
         public SettingsManager<TSettings, TTier, TDataCenter> Manager { get; }
-
-        public TTier Tier { get { return Manager.Tier; } }
-        public TDataCenter DataCenter { get { return Manager.DataCenter; } }
 
         public NFigRedisStore(
             string redisConnectionString, 
-            int dbIndex, 
-            TTier tier, 
-            TDataCenter dataCenter, 
+            int dbIndex,
             Dictionary<Type, SettingConverterAttribute> additionalDefaultConverters = null
             )
         : this (
             ConnectionMultiplexer.Connect(redisConnectionString),
             dbIndex,
-            tier,
-            dataCenter,
             additionalDefaultConverters
         )
         {
@@ -58,47 +63,50 @@ namespace NFig.Redis
         // The reason this constructor is private and there is a public static method wrapper is so the calling dll isn't required to reference to SE.Redis.
         private NFigRedisStore(
             ConnectionMultiplexer redisConnection, 
-            int dbIndex, 
-            TTier tier, 
-            TDataCenter dataCenter, 
+            int dbIndex,
             Dictionary<Type, SettingConverterAttribute> additionalDefaultConverters = null
             )
         {
             _redis = redisConnection;
             _subscriber = _redis.GetSubscriber();
             _dbIndex = dbIndex;
-            Manager = new SettingsManager<TSettings, TTier, TDataCenter>(tier, dataCenter, additionalDefaultConverters);
+            Manager = new SettingsManager<TSettings, TTier, TDataCenter>(additionalDefaultConverters);
         }
 
         public static NFigRedisStore<TSettings, TTier, TDataCenter> FromConnectionMultiplexer(
             ConnectionMultiplexer redisConnection,
             int db,
-            TTier tier,
-            TDataCenter dataCenter,
             Dictionary<Type, SettingConverterAttribute> additionalDefaultConverters = null
             )
         {
-            return new NFigRedisStore<TSettings, TTier, TDataCenter>(redisConnection, db, tier, dataCenter, additionalDefaultConverters);
+            return new NFigRedisStore<TSettings, TTier, TDataCenter>(redisConnection, db, additionalDefaultConverters);
         }
 
-        public void SubscribeToAppSettings(string appName, SettingsUpdateDelegate callback, bool overrideExisting = false)
+        public void SubscribeToAppSettings(string appName, TTier tier, TDataCenter dataCenter, SettingsUpdateDelegate callback, bool overrideExisting = false)
         {
             lock (_callbacksLock)
             {
-                SettingsUpdateDelegate existing;
-                if (_callbacks.TryGetValue(appName, out existing))
+                var info = new TierDataCenterCallback(tier, dataCenter, callback);
+                List<TierDataCenterCallback> callbackList;
+                if (_callbacksByApp.TryGetValue(appName, out callbackList))
                 {
-                    if (callback == existing)
-                        return;
+                    var existing = callbackList.FirstOrDefault(tdc => tdc.Tier.Equals(tier) && tdc.DataCenter.Equals(dataCenter));
 
-                    if (!overrideExisting && existing != callback)
-                        throw new InvalidOperationException("Already subscribed to settings for app: " + appName + ". Only one callback can be subscribed at a time.");
+                    if (existing != null)
+                    {
+                        if (callback == existing.Callback)
+                            return;
+                    }
+                }
+                else
+                {
+                    _callbacksByApp[appName] = new List<TierDataCenterCallback>();
+
+                    // set up a redis subscription
+                    _subscriber.Subscribe(APP_UPDATE_CHANNEL, OnAppUpdate);
                 }
 
-                _callbacks[appName] = callback;
-
-                // set up a redis subscription
-                _subscriber.Subscribe(APP_UPDATE_CHANNEL, OnAppUpdate);
+                _callbacksByApp[appName].Add(info);
             }
         }
 
@@ -107,74 +115,71 @@ namespace NFig.Redis
         /// Note that there is a potential race condition if you unsibscribe while an update is in progress, the prior callback may still get called.
         /// </summary>
         /// <param name="appName">The name of the app.</param>
+        /// <param name="tier"></param>
+        /// <param name="dataCenter"></param>
         /// <param name="callback">(optional) If null, any callback will be removed. If specified, the current callback will only be removed if it is equal to this param.</param>
         /// <returns>True if a callback was removed, otherwise false.</returns>
-        public bool UnsubscribeFromAppSettings(string appName, SettingsUpdateDelegate callback = null)
+        public bool UnsubscribeFromAppSettings(string appName, TTier? tier = null, TDataCenter? dataCenter = null, SettingsUpdateDelegate callback = null)
         {
             lock (_callbacksLock)
             {
-                SettingsUpdateDelegate existing;
-                if (_callbacks.TryGetValue(appName, out existing))
+                var removedAny = false;
+                List<TierDataCenterCallback> callbackList;
+                if (_callbacksByApp.TryGetValue(appName, out callbackList))
                 {
-                    if (callback == null || callback == existing)
+                    for (var i = callbackList.Count - 1; i >= 0; i--)
                     {
-                        _callbacks.Remove(appName);
-                        return true;
+                        var c = callbackList[i];
+
+                        if ((tier == null || c.Tier.Equals(tier.Value)) && (dataCenter == null || c.DataCenter.Equals(dataCenter.Value)) && (callback == null || c.Callback == callback))
+                        {
+                            callbackList.RemoveAt(i);
+                            removedAny = true;
+                        }
                     }
                 }
 
-                return false;
+                return removedAny;
             }
         }
 
-        public TSettings GetApplicationSettings(string appName)
+        public TSettings GetApplicationSettings(string appName, TTier tier, TDataCenter dataCenter)
         {
-            return Task.Run(async () => { return await GetApplicationSettingsAsync(appName); }).Result;
+            return Task.Run(async () => { return await GetApplicationSettingsAsync(appName, tier, dataCenter); }).Result;
         }
 
-        public async Task<TSettings> GetApplicationSettingsAsync(string appName)
+        public async Task<TSettings> GetApplicationSettingsAsync(string appName, TTier tier, TDataCenter dataCenter)
         {
             var data = await GetCurrentDataAsync(appName).ConfigureAwait(false);
-
-            // create new settings object
-            var settings = Manager.GetAppSettings(data.Overrides);
-            settings.ApplicationName = appName;
-            settings.SettingsCommit = data.Commit;
-            return settings;
+            return GetSettingsObjectFromData(data, tier, dataCenter);
         }
 
-        public void SetOverride(string appName, string settingName, string value, TTier? tier = null, TDataCenter? dataCenter = null)
+        public void SetOverride(string appName, string settingName, string value, TTier tier, TDataCenter dataCenter)
         {
             Task.Run(async () => { await SetOverrideAsync(appName, settingName, value, tier, dataCenter); }).Wait();
         }
 
-        public async Task SetOverrideAsync(string appName, string settingName, string value, TTier? tier = null, TDataCenter? dataCenter = null)
+        public async Task SetOverrideAsync(string appName, string settingName, string value, TTier tier, TDataCenter dataCenter)
         {
             // make sure this is even valid input before saving it to Redis
             if (!Manager.IsValidStringForSetting(settingName, value))
                 throw new SettingConversionException("\"" + value + "\" is not a valid value for setting \"" + settingName + "\"");
 
-            var tierVal = tier ?? Tier;
-            var dcVal = dataCenter ?? DataCenter;
-
-            var key = GetSettingKey(settingName, tierVal, dcVal);
+            var key = GetSettingKey(settingName, tier, dataCenter);
             var db = GetRedisDb();
 
             await db.HashSetAsync(appName, new [] { new HashEntry(key, value), new HashEntry(COMMIT_KEY, GetCommit()) }).ConfigureAwait(false);
             await _subscriber.PublishAsync(APP_UPDATE_CHANNEL, appName).ConfigureAwait(false);
         }
 
-        public void ClearOverride(string appName, string settingName, TTier? tier = null, TDataCenter? dataCenter = null)
+        public void ClearOverride(string appName, string settingName, TTier tier, TDataCenter dataCenter)
         {
             Task.Run(async () => { await ClearOverrideAsync(appName, settingName, tier, dataCenter); }).Wait();
         }
 
-        public async Task ClearOverrideAsync(string appName, string settingName, TTier? tier = null, TDataCenter? dataCenter = null)
+        public async Task ClearOverrideAsync(string appName, string settingName, TTier tier, TDataCenter dataCenter)
         {
-            var tierVal = tier ?? Tier;
-            var dcVal = dataCenter ?? DataCenter;
-
-            var key = GetSettingKey(settingName, tierVal, dcVal);
+            var key = GetSettingKey(settingName, tier, dataCenter);
             var db = GetRedisDb();
 
             var tran = db.CreateTransaction();
@@ -283,6 +288,7 @@ namespace NFig.Redis
             var dataCenterType = typeof(TDataCenter);
 
             data = new RedisAppData();
+            data.ApplicationName = appName;
 
             // grab the redis hash
             var db = GetRedisDb();
@@ -318,32 +324,63 @@ namespace NFig.Redis
             return data;
         }
 
+        private TSettings GetSettingsObjectFromData(RedisAppData data, TTier tier, TDataCenter dataCenter)
+        {
+            // create new settings object
+            var settings = Manager.GetAppSettings(tier, dataCenter, data.Overrides);
+            settings.ApplicationName = data.ApplicationName;
+            settings.SettingsCommit = data.Commit;
+            return settings;
+        }
+
         private void OnAppUpdate(RedisChannel channel, RedisValue message)
         {
             if (channel == APP_UPDATE_CHANNEL)
             {
-                SettingsUpdateDelegate callback;
-                if (_callbacks.TryGetValue(message, out callback))
+                List<TierDataCenterCallback> callbacks;
+                if (_callbacksByApp.TryGetValue(message, out callbacks))
                 {
-                    ReloadAndNotifyCallback(message, callback);
+                    ReloadAndNotifyCallback(message, callbacks);
                 }
             }
         }
 
-        private void ReloadAndNotifyCallback(string appName, SettingsUpdateDelegate callback)
+        private void ReloadAndNotifyCallback(string appName, List<TierDataCenterCallback> callbacks)
         {
+            if (callbacks == null || callbacks.Count == 0)
+                return;
+
             Exception ex = null;
-            TSettings settings = null;
+            RedisAppData data = null;
             try
             {
-                settings = GetApplicationSettings(appName);
+                data = Task.Run(async () => { return await GetCurrentDataAsync(appName); }).Result;
             }
             catch(Exception e)
             {
                 ex = e;
             }
 
-            callback(ex, settings, this);
+            foreach (var c in callbacks)
+            {
+                if (c.Callback == null)
+                    continue;
+
+                TSettings settings = null;
+                Exception inner = null;
+                try
+                {
+                    if (ex == null)
+                        settings = GetSettingsObjectFromData(data, c.Tier, c.DataCenter);
+                }
+                catch (Exception e)
+                {
+                    inner = e;
+                }
+
+                c.Callback(ex ?? inner, settings, this);
+            }
+
         }
 
         private static string GetSettingKey(string settingName, TTier tier, TDataCenter dataCenter)
@@ -363,6 +400,7 @@ namespace NFig.Redis
 
         private class RedisAppData
         {
+            public string ApplicationName { get; set; }
             public string Commit { get; set; }
             public IList<SettingValue<TTier, TDataCenter>> Overrides { get; set; }
         }

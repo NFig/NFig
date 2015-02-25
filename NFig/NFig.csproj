@@ -41,6 +41,7 @@
   <ItemGroup>
     <Compile Include="DefaultValueAttribute.cs" />
     <Compile Include="Exceptions.cs" />
+    <Compile Include="INFigSettings.cs" />
     <Compile Include="SettingAttribute.cs" />
     <Compile Include="SettingInfo.cs" />
     <Compile Include="SettingsGroupAttribute.cs" />

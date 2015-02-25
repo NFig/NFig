@@ -11,7 +11,12 @@ namespace NFig
         public IList<SettingValue<TTier, TDataCenter>> Defaults { get; }
         public IList<SettingValue<TTier, TDataCenter>> Overrides { get; }
 
-        public SettingInfo(string name, string description, IList<SettingValue<TTier, TDataCenter>> defaults, IList<SettingValue<TTier, TDataCenter>> overrides)
+        internal SettingInfo(
+            string name,
+            string description,
+            IList<SettingValue<TTier, TDataCenter>> defaults,
+            IList<SettingValue<TTier, TDataCenter>> overrides
+            )
         {
             Name = name;
             Description = description;
@@ -26,24 +31,24 @@ namespace NFig
 
         public SettingValue<TTier, TDataCenter> GetDefaultFor(TTier tier, TDataCenter dataCenter)
         {
-            return GetActive(Defaults, tier, dataCenter);
+            return GetBestValueFor(Defaults, tier, dataCenter);
         }
 
         public SettingValue<TTier, TDataCenter> GetOverrideFor(TTier tier, TDataCenter dataCenter)
         {
-            return GetActive(Overrides, tier, dataCenter);
+            return GetBestValueFor(Overrides, tier, dataCenter);
         }
 
-        private SettingValue<TTier, TDataCenter> GetActive(IList<SettingValue<TTier, TDataCenter>> overrides, TTier tier, TDataCenter dataCenter)
+        internal static SettingValue<TTier, TDataCenter> GetBestValueFor(IList<SettingValue<TTier, TDataCenter>> values, TTier tier, TDataCenter dataCenter)
         {
-            SettingValue<TTier, TDataCenter> over = null;
-            foreach (var o in overrides)
+            SettingValue<TTier, TDataCenter> best = null;
+            foreach (var val in values)
             {
-                if (o.IsValidFor(tier, dataCenter) && o.IsMoreSpecificThan(over))
-                    over = o;
+                if (val.IsValidFor(tier, dataCenter) && val.IsMoreSpecificThan(best))
+                    best = val;
             }
 
-            return over;
+            return best;
         }
     }
 }
