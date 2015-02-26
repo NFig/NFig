@@ -331,7 +331,7 @@ namespace NFig
             var converterType = typeof(ISettingConverter<TValue>);
             var getValue = converterType.GetMethod("GetValue");
 
-            var dm = new DynamicMethod("AssignSetting_" + name, null, new[] { TSettingsType, typeof(string), converterType }, GetType().Module);
+            var dm = new DynamicMethod("AssignSetting_" + name, null, new[] { TSettingsType, typeof(string), converterType }, GetType().Module, true);
             var il = dm.GetILGenerator();
 
             // arg 0 = TSettings settings
@@ -386,7 +386,7 @@ namespace NFig
             // Also don't want to make that code uglier than it already is... need to think about this more.
 
             // build a dynamic method which instantiates a TSettings object
-            var dm = new DynamicMethod("TSettings_Instantiate", TSettingsType, Type.EmptyTypes, TSettingsType.Module);
+            var dm = new DynamicMethod("TSettings_Instantiate", TSettingsType, Type.EmptyTypes, TSettingsType.Module, true);
             var il = dm.GetILGenerator();
 
             var settingsLocal = WriteInstantiationIL(il, TSettingsType);
