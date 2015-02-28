@@ -7,7 +7,7 @@ if ("$env:APPVEYOR_REPO_TAG" -ne "true") # non-tagged (pre-release build)
 }
 
 # grab .nuspec file contents
-$file = "$PSScriptRoot\..\BosunReporter\BosunReporter.nuspec"
+$file = "$PSScriptRoot\..\$env:NUGET_FILE"
 $contents = (Get-Content $file) | Out-String
 
 # replace NUGET_VERSION with the the actual version
