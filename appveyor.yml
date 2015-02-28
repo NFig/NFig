@@ -26,6 +26,7 @@ assembly_info:
 
 install:
   - set PATH=C:\Program Files (x86)\MSBuild\14.0\Bin;%PATH%
+  - ps: Scripts\SetNugetVersion.ps1
 
 #---------------------------------#
 #       build configuration       #
@@ -40,9 +41,6 @@ build:
   publish_nuget: true
   publish_nuget_symbols: true
   verbosity: normal
-
-before_build:
-  - ps: Scripts\SetNugetVersion.ps1
 
 #---------------------------------#
 #       tests configuration       #
