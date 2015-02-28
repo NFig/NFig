@@ -3,31 +3,9 @@
 $version = "$env:NUGET_RELEASE_VERSION"
 if ("$env:APPVEYOR_REPO_TAG" -ne "true") # non-tagged (pre-release build)
 {
-  $version += "-unstable$env:APPVEYOR_BUILD_NUMBER"
-}
-
-# grab .nuspec file contents
-$file = "$PSScriptRoot\..\$env:NUGET_FILE"
-$contents = (Get-Content $file) | Out-String
-
-# replace NUGET_VERSION with the the actual version
-$count = 0
-$replacer = [System.Text.RegularExpressions.MatchEvaluator]{
-  $script:count++
-  "$version"
-}
-$contents = [Regex]::Replace($contents, "NUGET_VERSION", $replacer)
-
-# make sure NUGET_VERSION existed exactly once
-if ($count -ne 1)
-{
-  Write-Error "NUGET_VERSION was found $count times in the nuspec file. If should have been found exactly once."
-  Exit 1
+	$version += "-unstable$env:APPVEYOR_BUILD_NUMBER"
 }
 
 # set the NUGET_VERSION env variable
 [Environment]::SetEnvironmentVariable("NUGET_VERSION", "$version", "User")
-
-# save nuspec file
-Write-Host "Nuget version set as $version"
-$contents | Set-Content $file
+Write-Host "NUGET_VERSION set as $version"
