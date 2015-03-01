@@ -140,7 +140,7 @@ namespace NFig
                 if (overrideListBySetting == null || !overrideListBySetting.TryGetValue(s.Name, out overList))
                     overList = new List<SettingValue<TTier, TDataCenter>>();
 
-                infos[i] = new SettingInfo<TTier, TDataCenter>(s.Name, s.Description, s.Defaults, overList);
+                infos[i] = new SettingInfo<TTier, TDataCenter>(s.Name, s.Description, s.PropertyInfo, s.Defaults, overList);
             }
 
             return infos;

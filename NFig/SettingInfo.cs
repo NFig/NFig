@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Reflection;
 
 namespace NFig
 {
@@ -8,18 +9,21 @@ namespace NFig
     {
         public string Name { get; }
         public string Description { get; }
+        public PropertyInfo PropertyInfo { get; }
         public IList<SettingValue<TTier, TDataCenter>> Defaults { get; }
         public IList<SettingValue<TTier, TDataCenter>> Overrides { get; }
 
         internal SettingInfo(
             string name,
             string description,
+            PropertyInfo propertyInfo,
             IList<SettingValue<TTier, TDataCenter>> defaults,
             IList<SettingValue<TTier, TDataCenter>> overrides
             )
         {
             Name = name;
             Description = description;
+            PropertyInfo = propertyInfo;
             Defaults = defaults;
             Overrides = overrides;
         } 
