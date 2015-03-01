@@ -7,7 +7,7 @@ using System.Reflection.Emit;
 
 namespace NFig
 {
-    public class SettingsManager<TSettings, TTier, TDataCenter>
+    public class SettingsFactory<TSettings, TTier, TDataCenter>
         where TSettings : class, INFigSettings<TTier, TDataCenter>, new()
         where TTier : struct
         where TDataCenter : struct
@@ -35,7 +35,7 @@ namespace NFig
             {typeof(char), new CharSettingConverter()},
         };
 
-        public SettingsManager(Dictionary<Type, SettingConverterAttribute> additionalDefaultConverters = null)
+        public SettingsFactory(Dictionary<Type, SettingConverterAttribute> additionalDefaultConverters = null)
         {
             TSettingsType = typeof(TSettings);
             TTierType = typeof(TTier);
@@ -167,6 +167,11 @@ namespace NFig
         public bool SettingExists(string settingName)
         {
             return _settingsByName.ContainsKey(settingName);
+        }
+
+        public static string NewCommit()
+        {
+            return Guid.NewGuid().ToString();
         }
 
         private Setting[] BuildSettings(Type type)
