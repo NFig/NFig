@@ -7,4 +7,4 @@ NFig is a settings library which helps you manage both default values, and live 
 
 Currently, the only useful implementation is built on top of Redis (see [NFig.Redis](https://github.com/NFig/NFig.Redis)). However, the core of the library is data-store agnostic, and other implementations could easily be built on top of it.
 
-NFig is a work in progress, and there is no documentation yet, but you can look at the [sample console app](https://github.com/NFig/NFig.Redis/tree/master/SampleApplication) in NFig.Redis to get a feel for how it works.
+For documentation on how to use NFig, see the [Sample Web Application](https://github.com/NFig/SampleWebApplication).
