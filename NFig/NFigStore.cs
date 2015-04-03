@@ -32,6 +32,11 @@ namespace NFig
             return Factory.SettingExists(settingName);
         }
 
+        public virtual TValue GetSettingValue<TValue>(TSettings obj, string settingName)
+        {
+            return Factory.GetSettingValue<TValue>(obj, settingName);
+        }
+
         public virtual bool IsValidStringForSetting(string settingName, string str)
         {
             return Factory.IsValidStringForSetting(settingName, str);

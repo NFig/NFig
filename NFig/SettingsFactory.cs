@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Reflection.Emit;
 
@@ -174,6 +175,19 @@ namespace NFig
             return Guid.NewGuid().ToString();
         }
 
+        public TValue GetSettingValue<TValue>(TSettings obj, string settingName)
+        {
+            Setting setting;
+            if (!_settingsByName.TryGetValue(settingName, out setting))
+                throw new ArgumentException("No setting named " + settingName + " exists on type " + TSettingsType.FullName);
+
+            var typedSetting = setting as Setting<TValue>;
+            if (typedSetting == null)
+                throw new ArgumentException(string.Format("Setting {0} is not of the requested type {1}", settingName, typeof(TValue)));
+
+            return typedSetting.Getter(obj);
+        }
+
         private Setting[] BuildSettings(Type type)
         {
             // parallize the top-level class. Call ToList() at the end to get out of the parallel query.
@@ -310,8 +324,9 @@ namespace NFig
 
             // create setter method
             var setter = CreateSetterMethod<TValue>(pi, parent, name);
+            var getter = CreateGetterMethod<TValue>(pi, parent, name);
 
-            return new Setting<TValue>(name, description, pi, sa, defaults.ToArray(), setter, converter);
+            return new Setting<TValue>(name, description, pi, sa, defaults.ToArray(), setter, converter, getter);
         }
 
         private static string GetStringFromDefault<TValue>(ISettingConverter<TValue> converter, object value)
@@ -365,6 +380,37 @@ namespace NFig
             il.Emit(OpCodes.Ret);
 
             return (SettingSetterDelegate<TValue>) dm.CreateDelegate(typeof(SettingSetterDelegate<TValue>));
+        }
+
+        private SettingGetterDelegate<TValue> CreateGetterMethod<TValue>(PropertyInfo pi, PropertyAndParent parent, string name)
+        {
+            var list = new List<PropertyInfo>();
+            while (parent != null)
+            {
+                list.Add(parent.PropertyInfo);
+                parent = parent.Parent;
+            }
+
+            var dm = new DynamicMethod("RetrieveSetting_" + name, null, new[] { TSettingsType }, GetType().Module, true);
+            var il = dm.GetILGenerator();
+
+            // arg 0 = TSettings settings
+
+            // start with the TSettings object
+            il.Emit(OpCodes.Ldarg_0); // [settings]
+
+            // loop through any levels of nesting
+            // the list is in bottom-to-top order, so we have to iterate in reverse
+            for (var i = list.Count - 1; i >= 0; i--)
+            {
+                il.Emit(OpCodes.Callvirt, list[i].GetMethod); // [nested-property-obj]
+            }
+
+            // stack should now be [parent-obj-of-setting]
+            il.Emit(OpCodes.Callvirt, pi.GetMethod); // [setting-value]
+            il.Emit(OpCodes.Ret);
+
+            return (SettingGetterDelegate<TValue>) dm.CreateDelegate(typeof(SettingGetterDelegate<TValue>));
         }
 
         private static bool IsConverterOfType(object converter, Type type)
@@ -440,6 +486,7 @@ namespace NFig
             return pi.PropertyType.IsClass && pi.GetCustomAttribute<SettingsGroupAttribute>() != null;
         }
 
+
         /**************************************************************************************
          * Helper Classes and Delegates
          *************************************************************************************/
@@ -453,6 +500,7 @@ namespace NFig
         }
 
         private delegate void SettingSetterDelegate<TValue>(TSettings settings, string str, ISettingConverter<TValue> converter);
+        private delegate TValue SettingGetterDelegate<TValue>(TSettings settings);
 
         private abstract class Setting
         {
@@ -472,6 +520,9 @@ namespace NFig
             private readonly ISettingConverter<TValue> _converter;
             private readonly SettingSetterDelegate<TValue> _setter;
 
+            public readonly SettingGetterDelegate<TValue> Getter;
+
+
             public Setting(
                 string name,
                 string description,
@@ -479,7 +530,8 @@ namespace NFig
                 SettingAttribute settingAttribute,
                 SettingValue<TTier, TDataCenter>[] defaults,
                 SettingSetterDelegate<TValue> setter,
-                ISettingConverter<TValue> converter
+                ISettingConverter<TValue> converter,
+                SettingGetterDelegate<TValue> getter
             )
             {
                 Name = name;
@@ -487,6 +539,7 @@ namespace NFig
                 PropertyInfo = propertyInfo;
                 SettingAttribute = settingAttribute;
                 Defaults = defaults;
+                Getter = getter;
 
                 _setter = setter;
                 _converter = converter;
