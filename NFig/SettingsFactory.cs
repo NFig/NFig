@@ -391,7 +391,7 @@ namespace NFig
                 parent = parent.Parent;
             }
 
-            var dm = new DynamicMethod("RetrieveSetting_" + name, null, new[] { TSettingsType }, GetType().Module, true);
+            var dm = new DynamicMethod("RetrieveSetting_" + name, typeof(TValue), new[] { TSettingsType }, GetType().Module, true);
             var il = dm.GetILGenerator();
 
             // arg 0 = TSettings settings
