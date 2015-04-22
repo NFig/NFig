@@ -34,7 +34,7 @@ namespace NFig
             {typeof(double), new DoubleSettingConverter()},
             {typeof(string), new StringSettingConverter()},
             {typeof(char), new CharSettingConverter()},
-            {typeof(decimal), new DecimalSettingConverter()}
+            {typeof(decimal), new DecimalSettingConverter()},
         };
 
         public SettingsFactory(Dictionary<Type, SettingConverterAttribute> additionalDefaultConverters = null)

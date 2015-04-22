@@ -96,11 +96,11 @@ namespace NFig
         public double GetValue(string s) { return double.Parse(s); }
     }
 
-	public class DecimalSettingConverter: ISettingConverter<decimal>
-	{
-		public string GetString(decimal value) { return value.ToString(); }
-		public decimal GetValue(string s) { return decimal.Parse(s); }
-	}
+    public class DecimalSettingConverter: ISettingConverter<decimal>
+    {
+        public string GetString(decimal value) { return value.ToString(); }
+        public decimal GetValue(string s) { return decimal.Parse(s); }
+    }
 
     #endregion
 
