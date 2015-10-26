@@ -1,14 +1,10 @@
-using System.Diagnostics.CodeAnalysis;
-
-
-namespace NFig
+﻿namespace NFig
 {
-    [SuppressMessage("ReSharper", "TypeParameterCanBeVariant")]
     public interface INFigSettings<TTier, TDataCenter>
         where TTier : struct
         where TDataCenter : struct
     {
-        string ApplicationName { get; }
+        string ApplicationName { get; set; }
         string Commit { get; set; }
         TTier Tier { get; set; }
         TDataCenter DataCenter { get; set; }
