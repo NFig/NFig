@@ -260,7 +260,18 @@ namespace NFig
                 // use the default converter
                 if (!_defaultConverters.TryGetValue(pi.PropertyType, out convObj))
                 {
-                    throw new SettingConversionException("No default converter is available for setting " + name + " of type " + pi.PropertyType.Name);
+                    var tValueType = typeof (TValue);
+                    if (tValueType.IsEnum)
+                    {
+                        if (!tValueType.IsPublic && !tValueType.IsNestedPublic)
+                            throw new SettingConversionException($"Cannot create converter for enum type \"{tValueType.Name}\" because it is not public.");
+
+                        convObj = EnumConverters.GetConverterFor(tValueType);
+                    }
+                    else
+                    {
+                        throw new SettingConversionException($"No default converter is available for setting {name} of type {pi.PropertyType.Name}");
+                    }
                 }
             }
 

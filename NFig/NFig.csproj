@@ -40,6 +40,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DefaultValueAttribute.cs" />
+    <Compile Include="EnumConverters.cs" />
     <Compile Include="Exceptions.cs" />
     <Compile Include="INFigSettings.cs" />
     <Compile Include="NFigStore.cs" />
