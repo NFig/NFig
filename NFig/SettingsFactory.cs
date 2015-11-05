@@ -59,9 +59,8 @@ namespace NFig
             {
                 if (!IsConverterOfType(kvp.Value, kvp.Key))
                 {
-                    throw new SettingConversionException(
-                        string.Format("Cannot use {0} as setting converter for type {1}. The converter must implement SettingConverter<{1}>.",
-                            kvp.Value.GetType().Name, kvp.Key.Name));
+                    throw new InvalidSettingConverterException(
+                        $"Cannot use {kvp.Value.GetType().Name} as setting converter for type {kvp.Key.Name}. The converter must implement SettingConverter<{kvp.Key.Name}>.", kvp.Key);
                 }
             }
 
@@ -105,7 +104,21 @@ namespace NFig
                 SettingValue<TTier, TDataCenter> over;
                 if (overridesBySetting != null && overridesBySetting.TryGetValue(setting.Name, out over))
                 {
-                    setting.SetValueFromString(s, over.Value);
+                    try
+                    {
+                        setting.SetValueFromString(s, over.Value);
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new InvalidSettingValueException<TTier, TDataCenter>(
+                            "Invalid override value for " + setting.Name,
+                            setting.Name,
+                            over.Value,
+                            false,
+                            over.Tier,
+                            over.DataCenter,
+                            ex);
+                    }
                 }
                 else
                 {
@@ -184,7 +197,7 @@ namespace NFig
 
             var typedSetting = setting as Setting<TValue>;
             if (typedSetting == null)
-                throw new ArgumentException(string.Format("Setting {0} is not of the requested type {1}", settingName, typeof(TValue)));
+                throw new ArgumentException($"Setting {settingName} is not of the requested type {typeof (TValue)}");
 
             return typedSetting.Getter(obj);
         }
@@ -250,7 +263,7 @@ namespace NFig
             {
                 if (pi.GetCustomAttributes<SettingConverterAttribute>().Count() != 1)
                 {
-                    throw new SettingConversionException("More than one SettingConverterAttribute was specified for " + name);
+                    throw new NFigException("More than one SettingConverterAttribute was specified for " + name);
                 }
 
                 convObj = converterAttribute.Converter;
@@ -264,13 +277,13 @@ namespace NFig
                     if (tValueType.IsEnum)
                     {
                         if (!tValueType.IsPublic && !tValueType.IsNestedPublic)
-                            throw new SettingConversionException($"Cannot create converter for enum type \"{tValueType.Name}\" because it is not public.");
+                            throw new InvalidSettingConverterException($"Cannot create converter for enum type \"{tValueType.Name}\" because it is not public.", tValueType);
 
                         convObj = EnumConverters.GetConverterFor(tValueType);
                     }
                     else
                     {
-                        throw new SettingConversionException($"No default converter is available for setting {name} of type {pi.PropertyType.Name}");
+                        throw new InvalidSettingConverterException($"No default converter is available for setting {name} of type {pi.PropertyType.Name}", pi.PropertyType);
                     }
                 }
             }
@@ -279,9 +292,8 @@ namespace NFig
             var converter = convObj as ISettingConverter<TValue>;
             if (converter == null)
             {
-                throw new SettingConversionException(
-                    string.Format("Cannot use {0} as setting converter for {1}. The converter must implement SettingConverter<{2}>.", 
-                        convObj.GetType().Name, name, pi.PropertyType.Name));
+                throw new InvalidSettingConverterException(
+                    $"Cannot use {convObj.GetType().Name} as setting converter for {name}. The converter must implement SettingConverter<{pi.PropertyType.Name}>.", pi.PropertyType);
             }
 
             // description
@@ -291,6 +303,7 @@ namespace NFig
             // see if there are any default value attributes
             var defaults = new List<SettingValue<TTier, TDataCenter>>();
             var defaultStringValue = GetStringFromDefault(converter, sa.DefaultValue);
+            AssertDefault(name, defaultStringValue, default(TTier), default(TDataCenter), converter);
             defaults.Add(new SettingValue<TTier, TDataCenter>(name, defaultStringValue, default(TTier), default(TDataCenter), true));
             
             foreach (var dsva in pi.GetCustomAttributes<DefaultSettingValueAttribute>())
@@ -331,6 +344,8 @@ namespace NFig
                         throw new NFigException("Multiple defaults were specified for the same environment on settings property: " + pi.DeclaringType.FullName + "." + pi.Name);
                 }
 
+                AssertDefault(name, d.Value, d.Tier, d.DataCenter, converter);
+
                 defaults.Add(d);
             }
 
@@ -349,6 +364,25 @@ namespace NFig
 
             TValue tval = value is TValue ? (TValue)value : (TValue)Convert.ChangeType(value, typeof(TValue));
             return converter.GetString(tval);
+        }
+
+        private static void AssertDefault<TValue>(string name, string defaultStringValue, TTier tier, TDataCenter dataCenter, ISettingConverter<TValue> converter)
+        {
+            try
+            {
+                converter.GetValue(defaultStringValue);
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidSettingValueException<TTier, TDataCenter>(
+                    "Invalid default value for " + name,
+                    name,
+                    defaultStringValue,
+                    true,
+                    tier,
+                    dataCenter,
+                    ex);
+            }
         }
         
         private SettingSetterDelegate<TValue> CreateSetterMethod<TValue>(PropertyInfo pi, PropertyAndParent parent, string name)
