@@ -111,7 +111,7 @@ namespace NFig
                     catch (Exception ex)
                     {
                         throw new InvalidSettingValueException<TTier, TDataCenter>(
-                            "Invalid override value for " + setting.Name,
+                            $"Invalid override value for setting \"{setting.Name}\". Cannot convert the string override to a real value.",
                             setting.Name,
                             over.Value,
                             false,
@@ -193,11 +193,11 @@ namespace NFig
         {
             Setting setting;
             if (!_settingsByName.TryGetValue(settingName, out setting))
-                throw new ArgumentException("No setting named " + settingName + " exists on type " + TSettingsType.FullName);
+                throw new ArgumentException($"No setting named \"{settingName}\" exists on type {TSettingsType.FullName}");
 
             var typedSetting = setting as Setting<TValue>;
             if (typedSetting == null)
-                throw new ArgumentException($"Setting {settingName} is not of the requested type {typeof (TValue)}");
+                throw new ArgumentException($"Setting \"{settingName}\" is not of the requested type {typeof (TValue)}");
 
             return typedSetting.Getter(obj);
         }
@@ -263,7 +263,7 @@ namespace NFig
             {
                 if (pi.GetCustomAttributes<SettingConverterAttribute>().Count() != 1)
                 {
-                    throw new NFigException("More than one SettingConverterAttribute was specified for " + name);
+                    throw new NFigException($"More than one SettingConverterAttribute was specified for \"{name}\"");
                 }
 
                 convObj = converterAttribute.Converter;
@@ -283,7 +283,7 @@ namespace NFig
                     }
                     else
                     {
-                        throw new InvalidSettingConverterException($"No default converter is available for setting {name} of type {pi.PropertyType.Name}", pi.PropertyType);
+                        throw new InvalidSettingConverterException($"No default converter is available for setting \"{name}\" of type {pi.PropertyType.Name}", pi.PropertyType);
                     }
                 }
             }
@@ -293,7 +293,7 @@ namespace NFig
             if (converter == null)
             {
                 throw new InvalidSettingConverterException(
-                    $"Cannot use {convObj.GetType().Name} as setting converter for {name}. The converter must implement SettingConverter<{pi.PropertyType.Name}>.", pi.PropertyType);
+                    $"Cannot use {convObj.GetType().Name} as setting converter for \"{name}\". The converter must implement SettingConverter<{pi.PropertyType.Name}>.", pi.PropertyType);
             }
 
             // description
@@ -302,8 +302,7 @@ namespace NFig
 
             // see if there are any default value attributes
             var defaults = new List<SettingValue<TTier, TDataCenter>>();
-            var defaultStringValue = GetStringFromDefault(converter, sa.DefaultValue);
-            AssertDefault(name, defaultStringValue, default(TTier), default(TDataCenter), converter);
+            var defaultStringValue = GetStringFromDefaultAndValidate(name, sa.DefaultValue, default(TTier), default(TDataCenter), converter);
             defaults.Add(new SettingValue<TTier, TDataCenter>(name, defaultStringValue, default(TTier), default(TDataCenter), true));
             
             foreach (var dsva in pi.GetCustomAttributes<DefaultSettingValueAttribute>())
@@ -315,7 +314,7 @@ namespace NFig
                 if (dsva.Tier != null)
                 {
                     if (!(dsva.Tier is TTier))
-                        throw new NFigException("The tier argument was not of type " + TTierType.Name + " on setting " + name);
+                        throw new NFigException($"The tier argument was not of type {TTierType.Name} on setting \"{name}\"");
 
                     tier = (TTier)dsva.Tier;
                 }
@@ -323,17 +322,25 @@ namespace NFig
                 if (dsva.DataCenter != null)
                 {
                     if (!(dsva.DataCenter is TDataCenter))
-                        throw new NFigException("The dataCenter argument was not of type " + TDataCenterType.Name + " on setting " + name);
+                        throw new NFigException($"The dataCenter argument was not of type {TDataCenterType.Name} on setting \"{name}\"");
 
                     dc = (TDataCenter)dsva.DataCenter;
                 }
 
+                if (tier == null)
+                    tier = default(TTier);
+
+                if (dc == null)
+                    dc = default(TDataCenter);
+
+                defaultStringValue = GetStringFromDefaultAndValidate(name, dsva.DefaultValue, tier.Value, dc.Value, converter);
+
                 // create default
                 var d = new SettingValue<TTier, TDataCenter>(
                     name,
-                    GetStringFromDefault(converter, dsva.DefaultValue),
-                    tier ?? default(TTier),
-                    dc ?? default(TDataCenter),
+                    defaultStringValue,
+                    tier.Value,
+                    dc.Value,
                     true
                 );
 
@@ -343,8 +350,6 @@ namespace NFig
                     if (existing.HasSameTierAndDataCenter(d))
                         throw new NFigException("Multiple defaults were specified for the same environment on settings property: " + pi.DeclaringType.FullName + "." + pi.Name);
                 }
-
-                AssertDefault(name, d.Value, d.Tier, d.DataCenter, converter);
 
                 defaults.Add(d);
             }
@@ -356,33 +361,55 @@ namespace NFig
             return new Setting<TValue>(name, description, pi, sa, defaults.ToArray(), setter, converter, getter);
         }
 
-        private static string GetStringFromDefault<TValue>(ISettingConverter<TValue> converter, object value)
+        private static string GetStringFromDefaultAndValidate<TValue>(string name, object value, TTier tier, TDataCenter dataCenter, ISettingConverter<TValue> converter)
         {
-            var str = value as string;
-            if (str != null)
-                return str;
+            string stringValue;
 
-            TValue tval = value is TValue ? (TValue)value : (TValue)Convert.ChangeType(value, typeof(TValue));
-            return converter.GetString(tval);
-        }
+            if (value is string && typeof (TValue) != typeof (string))
+            {
+                // Don't need to convert to a string if value is already a string and TValue is not.
+                // We expect that the human essentially already did the conversion.
+                stringValue = (string) value;
+            }
+            else
+            {
+                try
+                {
+                    // try convert the real value into its string representation
+                    TValue tval = value is TValue ? (TValue)value : (TValue)Convert.ChangeType(value, typeof(TValue));
+                    stringValue = converter.GetString(tval);
+                }
+                catch (Exception ex)
+                {
+                    throw new InvalidSettingValueException<TTier, TDataCenter>(
+                        $"Invalid default for setting \"{name}\". Cannot convert to a string representation.",
+                        name,
+                        value,
+                        true,
+                        tier,
+                        dataCenter,
+                        ex);
+                }
+            }
 
-        private static void AssertDefault<TValue>(string name, string defaultStringValue, TTier tier, TDataCenter dataCenter, ISettingConverter<TValue> converter)
-        {
+            // now make sure we can also convert the string value back into a real value
             try
             {
-                converter.GetValue(defaultStringValue);
+                converter.GetValue(stringValue);
             }
             catch (Exception ex)
             {
                 throw new InvalidSettingValueException<TTier, TDataCenter>(
-                    "Invalid default value for " + name,
+                    $"Invalid default value for setting \"{name}\". Cannot convert string representation back into a real value.",
                     name,
-                    defaultStringValue,
+                    value,
                     true,
                     tier,
                     dataCenter,
                     ex);
             }
+
+            return stringValue;
         }
         
         private SettingSetterDelegate<TValue> CreateSetterMethod<TValue>(PropertyInfo pi, PropertyAndParent parent, string name)
@@ -493,7 +520,7 @@ namespace NFig
             return (InitializeSettingsDelegate)dm.CreateDelegate(typeof(InitializeSettingsDelegate));
         }
 
-        private LocalBuilder WriteInstantiationIL(ILGenerator il, Type type)
+        private static LocalBuilder WriteInstantiationIL(ILGenerator il, Type type)
         {
             var local = il.DeclareLocal(type);
 

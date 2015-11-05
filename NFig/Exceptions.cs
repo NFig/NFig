@@ -23,7 +23,7 @@ namespace NFig
         where TDataCenter : struct
     {
         public string SettingName { get; }
-        public string Value { get; }
+        public object Value { get; }
         public bool IsDefault { get; }
         public bool IsOverride => !IsDefault;
         public TTier Tier { get; }
@@ -32,7 +32,7 @@ namespace NFig
         public InvalidSettingValueException(
             string message,
             string settingName,
-            string value,
+            object value,
             bool isDefault,
             TTier tier,
             TDataCenter dataCenter,
