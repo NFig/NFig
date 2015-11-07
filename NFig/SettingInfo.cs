@@ -9,6 +9,7 @@ namespace NFig
     {
         public string Name { get; }
         public string Description { get; }
+        public bool ChangeRequiresRestart { get; }
         public PropertyInfo PropertyInfo { get; }
         public IList<SettingValue<TTier, TDataCenter>> Defaults { get; }
         public IList<SettingValue<TTier, TDataCenter>> Overrides { get; }
@@ -16,6 +17,7 @@ namespace NFig
         internal SettingInfo(
             string name,
             string description,
+            bool changeRequiresRestart,
             PropertyInfo propertyInfo,
             IList<SettingValue<TTier, TDataCenter>> defaults,
             IList<SettingValue<TTier, TDataCenter>> overrides
@@ -23,6 +25,7 @@ namespace NFig
         {
             Name = name;
             Description = description;
+            ChangeRequiresRestart = changeRequiresRestart;
             PropertyInfo = propertyInfo;
             Defaults = defaults;
             Overrides = overrides;

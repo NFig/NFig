@@ -157,7 +157,7 @@ namespace NFig
                 if (overrideListBySetting == null || !overrideListBySetting.TryGetValue(s.Name, out overList))
                     overList = new List<SettingValue<TTier, TDataCenter>>();
 
-                infos[i] = new SettingInfo<TTier, TDataCenter>(s.Name, s.Description, s.PropertyInfo, s.Defaults, overList);
+                infos[i] = new SettingInfo<TTier, TDataCenter>(s.Name, s.Description, s.ChangeRequiresRestart, s.PropertyInfo, s.Defaults, overList);
             }
 
             return infos;
@@ -302,6 +302,9 @@ namespace NFig
             var da = pi.GetCustomAttribute<DescriptionAttribute>();
             var description = da == null ? "" : da.Description;
 
+            // change requires restart
+            var changeRequiresRestart = pi.GetCustomAttribute<ChangeRequiresRestartAttribute>() != null;
+
             // see if there are any default value attributes
             var defaults = new List<SettingValue<TTier, TDataCenter>>();
             var defaultStringValue = GetStringFromDefaultAndValidate(name, sa.DefaultValue, default(TTier), default(TDataCenter), converter);
@@ -361,7 +364,7 @@ namespace NFig
             var setter = CreateSetterMethod<TValue>(pi, parent, name);
             var getter = CreateGetterMethod<TValue>(pi, parent, name);
 
-            return new Setting<TValue>(name, description, pi, sa, defaults.ToArray(), setter, converter, getter);
+            return new Setting<TValue>(name, description, changeRequiresRestart, pi, sa, defaults.ToArray(), setter, converter, getter);
         }
 
         private static string GetStringFromDefaultAndValidate<TValue>(string name, object value, TTier tier, TDataCenter dataCenter, ISettingConverter<TValue> converter)
@@ -582,6 +585,7 @@ namespace NFig
         {
             public string Name { get; protected set; }
             public string Description { get; protected set; }
+            public bool ChangeRequiresRestart { get; protected set; }
             public PropertyInfo PropertyInfo { get; protected set; }
             public SettingAttribute SettingAttribute { get; protected set; }
             public SettingValue<TTier, TDataCenter>[] Defaults { get; protected set; }
@@ -602,6 +606,7 @@ namespace NFig
             public Setting(
                 string name,
                 string description,
+                bool changeRequiresRestart,
                 PropertyInfo propertyInfo,
                 SettingAttribute settingAttribute,
                 SettingValue<TTier, TDataCenter>[] defaults,
@@ -612,6 +617,7 @@ namespace NFig
             {
                 Name = name;
                 Description = description;
+                ChangeRequiresRestart = changeRequiresRestart;
                 PropertyInfo = propertyInfo;
                 SettingAttribute = settingAttribute;
                 Defaults = defaults;
