@@ -101,8 +101,10 @@ namespace NFig
 
             foreach (var setting in _settings)
             {
+                var settingValue = SettingInfo<TTier, TDataCenter>.GetBestValueFor(setting.Defaults, tier, dataCenter);
+
                 SettingValue<TTier, TDataCenter> over;
-                if (overridesBySetting != null && overridesBySetting.TryGetValue(setting.Name, out over))
+                if (settingValue.AllowsOverrides && overridesBySetting != null && overridesBySetting.TryGetValue(setting.Name, out over))
                 {
                     try
                     {
@@ -122,7 +124,7 @@ namespace NFig
                 }
                 else
                 {
-                    setting.SetValueFromString(s, SettingInfo<TTier, TDataCenter>.GetBestValueFor(setting.Defaults, tier, dataCenter).Value);
+                    setting.SetValueFromString(s, settingValue.Value);
                 }
             }
 
@@ -303,7 +305,7 @@ namespace NFig
             // see if there are any default value attributes
             var defaults = new List<SettingValue<TTier, TDataCenter>>();
             var defaultStringValue = GetStringFromDefaultAndValidate(name, sa.DefaultValue, default(TTier), default(TDataCenter), converter);
-            defaults.Add(new SettingValue<TTier, TDataCenter>(name, defaultStringValue, default(TTier), default(TDataCenter), true));
+            defaults.Add(new SettingValue<TTier, TDataCenter>(name, defaultStringValue, default(TTier), default(TDataCenter), true, true));
             
             foreach (var dsva in pi.GetCustomAttributes<DefaultSettingValueAttribute>())
             {
@@ -341,7 +343,8 @@ namespace NFig
                     defaultStringValue,
                     tier.Value,
                     dc.Value,
-                    true
+                    true,
+                    dsva.AllowOverrides
                 );
 
                 // make sure there isn't a conflicting default value

@@ -30,7 +30,11 @@ namespace NFig
 
         public SettingValue<TTier, TDataCenter> GetActiveValueFor(TTier tier, TDataCenter dataCenter)
         {
-            return GetOverrideFor(tier, dataCenter) ?? GetDefaultFor(tier, dataCenter);
+            var def = GetDefaultFor(tier, dataCenter);
+            if (!def.AllowsOverrides)
+                return def;
+
+            return GetOverrideFor(tier, dataCenter) ?? def;
         }
 
         public SettingValue<TTier, TDataCenter> GetDefaultFor(TTier tier, TDataCenter dataCenter)
@@ -41,6 +45,11 @@ namespace NFig
         public SettingValue<TTier, TDataCenter> GetOverrideFor(TTier tier, TDataCenter dataCenter)
         {
             return GetBestValueFor(Overrides, tier, dataCenter);
+        }
+
+        public bool CanSetOverrideFor(TTier tier, TDataCenter dataCenter)
+        {
+            return GetDefaultFor(tier, dataCenter).AllowsOverrides;
         }
 
         internal static SettingValue<TTier, TDataCenter> GetBestValueFor(IList<SettingValue<TTier, TDataCenter>> values, TTier tier, TDataCenter dataCenter)

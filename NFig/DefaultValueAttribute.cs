@@ -8,5 +8,6 @@ namespace NFig
         public object DefaultValue { get; set; }
         public object DataCenter { get; set; }
         public object Tier { get; set; }
+        public bool AllowOverrides { get; set; } = true;
     }
 }

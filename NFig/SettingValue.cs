@@ -16,23 +16,25 @@ namespace NFig
         public TTier Tier { get; }
         public TDataCenter DataCenter { get; }
         public bool IsDefault { get; }
+        public bool AllowsOverrides { get; }
 
         public bool IsOverride => !IsDefault;
         public bool HasTier => !s_tierComparer.Equals(Tier, default(TTier));
         public bool HasDataCenter => !s_dataCenterComparer.Equals(DataCenter, default(TDataCenter));
 
         public SettingValue(string name, string value, TTier tier, TDataCenter dataCenter)
-            : this(name, value, tier, dataCenter, false)
+            : this(name, value, tier, dataCenter, false, false)
         {
         }
 
-        internal SettingValue(string name, string value, TTier tier, TDataCenter dataCenter, bool isDefault)
+        internal SettingValue(string name, string value, TTier tier, TDataCenter dataCenter, bool isDefault, bool allowsOverrides)
         {
             Name = name;
             Value = value;
             Tier = tier;
             DataCenter = dataCenter;
             IsDefault = isDefault;
+            AllowsOverrides = allowsOverrides;
         }
 
         public bool IsValidFor(TTier tier, TDataCenter dataCenter)
