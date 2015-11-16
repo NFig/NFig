@@ -5,9 +5,9 @@ namespace NFig
     [AttributeUsage(AttributeTargets.Property, AllowMultiple = true)]
     public abstract class DefaultSettingValueAttribute : Attribute
     {
-        public object DefaultValue { get; set; }
-        public object DataCenter { get; set; }
-        public object Tier { get; set; }
-        public bool AllowOverrides { get; set; } = true;
+        public object DefaultValue { get; protected set; }
+        public object DataCenter { get; protected set; }
+        public object Tier { get; protected set; }
+        public bool AllowOverrides { get; protected set; } = true;
     }
 }
