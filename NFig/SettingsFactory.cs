@@ -20,8 +20,8 @@ namespace NFig
         private readonly Type TTierType;
         private readonly Type TDataCenterType;
 
-        private static readonly Dictionary<Type, PropertyToSettingDelegate> _propertyToSettingDelegatesCache = new Dictionary<Type, PropertyToSettingDelegate>();
-        private static readonly object _delegatesCacheLock = new object();
+        private readonly Dictionary<Type, PropertyToSettingDelegate> _propertyToSettingDelegatesCache;
+        private readonly object _delegatesCacheLock;
 
         private delegate Setting PropertyToSettingDelegate(PropertyInfo pi, PropertyAndParent parent, SettingAttribute sa, string prefix);
 
@@ -69,9 +69,16 @@ namespace NFig
                 }
             }
 
+            _propertyToSettingDelegatesCache = new Dictionary<Type, PropertyToSettingDelegate>();
+            _delegatesCacheLock = new object();
+
             _settings = BuildSettings(TSettingsType);
             _settingsByName = _settings.ToDictionary(s => s.Name);
             _initializer = GetInitializer();
+
+            // don't need this cache anymore
+            _propertyToSettingDelegatesCache = null;
+            _delegatesCacheLock = null;
         }
 
         public TSettings GetAppSettings(TTier tier, TDataCenter dataCenter, IEnumerable<SettingValue<TTier, TDataCenter>> overrides = null)
