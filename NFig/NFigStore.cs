@@ -59,7 +59,7 @@ namespace NFig
 
         public override TSettings GetAppSettings(string appName, TTier tier, TDataCenter dataCenter)
         {
-            return Task.Run(async () => { return await GetAppSettingsAsync(appName, tier, dataCenter); }).Result;
+            return Task.Run(async () => await GetAppSettingsAsync(appName, tier, dataCenter)).Result;
         }
 
         public override void SetOverride(string appName, string settingName, string value, TTier tier, TDataCenter dataCenter)
@@ -74,17 +74,17 @@ namespace NFig
 
         public override string GetCurrentCommit(string appName)
         {
-            return Task.Run(async () => { return await GetCurrentCommitAsync(appName); }).Result;
+            return Task.Run(async () => await GetCurrentCommitAsync(appName)).Result;
         }
 
         public override SettingInfo<TTier, TDataCenter>[] GetAllSettingInfos(string appName)
         {
-            return Task.Run(async () => { return await GetAllSettingInfosAsync(appName); }).Result;
+            return Task.Run(async () => await GetAllSettingInfosAsync(appName)).Result;
         }
 
         public override SettingInfo<TTier, TDataCenter> GetSettingInfo(string appName, string settingName)
         {
-            return Task.Run(async () => { return await GetSettingInfoAsync(appName, settingName); }).Result;
+            return Task.Run(async () => await GetSettingInfoAsync(appName, settingName)).Result;
         }
 
         public virtual async Task<bool> IsCurrentAsync(TSettings settings)
