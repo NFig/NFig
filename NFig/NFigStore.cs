@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 
 namespace NFig
 {
@@ -40,6 +41,11 @@ namespace NFig
         public virtual bool IsValidStringForSetting(string settingName, string str)
         {
             return Factory.IsValidStringForSetting(settingName, str);
+        }
+
+        protected static string NewCommit()
+        {
+            return Guid.NewGuid().ToString();
         }
     }
 

@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Reflection;
 using System.Reflection.Emit;
 
@@ -196,11 +195,6 @@ namespace NFig
         public bool SettingExists(string settingName)
         {
             return _settingsByName.ContainsKey(settingName);
-        }
-
-        public static string NewCommit()
-        {
-            return Guid.NewGuid().ToString();
         }
 
         public TValue GetSettingValue<TValue>(TSettings obj, string settingName)
