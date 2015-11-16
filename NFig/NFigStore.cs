@@ -14,7 +14,7 @@ namespace NFig
             Factory = factory;
         }
 
-        public abstract TSettings GetApplicationSettings(string appName, TTier tier, TDataCenter dataCenter);
+        public abstract TSettings GetAppSettings(string appName, TTier tier, TDataCenter dataCenter);
         public abstract void SetOverride(string appName, string settingName, string value, TTier tier, TDataCenter dataCenter);
         public abstract void ClearOverride(string appName, string settingName, TTier tier, TDataCenter dataCenter);
         public abstract string GetCurrentCommit(string appName);
@@ -50,16 +50,16 @@ namespace NFig
     {
         protected NFigAsyncStore(SettingsFactory<TSettings, TTier, TDataCenter> factory) : base(factory) { }
 
-        public abstract Task<TSettings> GetApplicationSettingsAsync(string appName, TTier tier, TDataCenter dataCenter);
+        public abstract Task<TSettings> GetAppSettingsAsync(string appName, TTier tier, TDataCenter dataCenter);
         public abstract Task SetOverrideAsync(string appName, string settingName, string value, TTier tier, TDataCenter dataCenter);
         public abstract Task ClearOverrideAsync(string appName, string settingName, TTier tier, TDataCenter dataCenter);
         public abstract Task<string> GetCurrentCommitAsync(string appName);
         public abstract Task<SettingInfo<TTier, TDataCenter>[]> GetAllSettingInfosAsync(string appName);
         public abstract Task<SettingInfo<TTier, TDataCenter>> GetSettingInfoAsync(string appName, string settingName);
 
-        public override TSettings GetApplicationSettings(string appName, TTier tier, TDataCenter dataCenter)
+        public override TSettings GetAppSettings(string appName, TTier tier, TDataCenter dataCenter)
         {
-            return Task.Run(async () => { return await GetApplicationSettingsAsync(appName, tier, dataCenter); }).Result;
+            return Task.Run(async () => { return await GetAppSettingsAsync(appName, tier, dataCenter); }).Result;
         }
 
         public override void SetOverride(string appName, string settingName, string value, TTier tier, TDataCenter dataCenter)
