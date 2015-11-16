@@ -82,8 +82,21 @@ namespace NFig
 
         public TSettings GetAppSettings(TTier tier, TDataCenter dataCenter, IEnumerable<SettingValue<TTier, TDataCenter>> overrides = null)
         {
+            TSettings settings;
+            GetAppSettingsImpl(out settings, tier, dataCenter, overrides, true);
+            return settings;
+        }
+
+        public IList<Exception> TryGetAppSettings(out TSettings settings, TTier tier, TDataCenter dataCenter, IEnumerable<SettingValue<TTier, TDataCenter>> overrides = null)
+        {
+            return GetAppSettingsImpl(out settings, tier, dataCenter, overrides, false);
+        }
+
+        private IList<Exception> GetAppSettingsImpl(out TSettings settings, TTier tier, TDataCenter dataCenter, IEnumerable<SettingValue<TTier, TDataCenter>> overrides, bool throwOnFirstEx)
+        {
             // pick the right overrides
             Dictionary<string, SettingValue<TTier, TDataCenter>> overridesBySetting = null;
+            List<Exception> exceptions = null;
 
             if (overrides != null)
             {
@@ -107,6 +120,7 @@ namespace NFig
             }
 
             var s = _initializer();
+            settings = s;
             s.Tier = tier;
             s.DataCenter = dataCenter;
 
@@ -120,10 +134,11 @@ namespace NFig
                     try
                     {
                         setting.SetValueFromString(s, over.Value);
+                        continue;
                     }
                     catch (Exception ex)
                     {
-                        throw new InvalidSettingValueException<TTier, TDataCenter>(
+                        var invalidEx = new InvalidSettingValueException<TTier, TDataCenter>(
                             $"Invalid override value for setting \"{setting.Name}\". Cannot convert the string override to a real value.",
                             setting.Name,
                             over.Value,
@@ -131,15 +146,21 @@ namespace NFig
                             over.Tier,
                             over.DataCenter,
                             ex);
+
+                        if (throwOnFirstEx)
+                            throw invalidEx;
+
+                        if (exceptions == null)
+                            exceptions = new List<Exception>();
+
+                        exceptions.Add(invalidEx);
                     }
                 }
-                else
-                {
-                    setting.SetValueFromString(s, settingValue.Value);
-                }
+
+                setting.SetValueFromString(s, settingValue.Value);
             }
 
-            return s;
+            return exceptions;
         }
 
         public SettingInfo<TTier, TDataCenter>[] GetAllSettingInfos(IEnumerable<SettingValue<TTier, TDataCenter>> overrides = null)

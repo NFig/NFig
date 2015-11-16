@@ -47,6 +47,7 @@
     <Compile Include="CustomConverterTests.cs" />
     <Compile Include="EnumTests.cs" />
     <Compile Include="NestedSettingsTests.cs" />
+    <Compile Include="OverrideTests.cs" />
     <Compile Include="PrimitiveTests.cs" />
     <Compile Include="Common.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
