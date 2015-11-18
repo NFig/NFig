@@ -84,18 +84,15 @@ namespace NFig
         public TSettings GetAppSettings(TTier tier, TDataCenter dataCenter, IEnumerable<SettingValue<TTier, TDataCenter>> overrides = null)
         {
             TSettings settings;
-            GetAppSettingsImpl(out settings, tier, dataCenter, overrides, true);
+            var ex = TryGetAppSettings(out settings, tier, dataCenter, overrides);
+            if (ex != null)
+                throw ex;
+
             return settings;
         }
 
         public InvalidSettingOverridesException<TTier, TDataCenter> TryGetAppSettings
             (out TSettings settings, TTier tier, TDataCenter dataCenter, IEnumerable<SettingValue<TTier, TDataCenter>> overrides = null)
-        {
-            return GetAppSettingsImpl(out settings, tier, dataCenter, overrides, false);
-        }
-
-        private InvalidSettingOverridesException<TTier, TDataCenter> GetAppSettingsImpl(
-            out TSettings settings, TTier tier, TDataCenter dataCenter, IEnumerable<SettingValue<TTier, TDataCenter>> overrides, bool throwOnFirstEx)
         {
             // pick the right overrides
             Dictionary<string, SettingValue<TTier, TDataCenter>> overridesBySetting = null;
@@ -150,13 +147,11 @@ namespace NFig
                             over.DataCenter,
                             ex);
 
-                        if (throwOnFirstEx)
-                            throw invalidEx;
+                        invalidEx.UnthrownStackTrace = new StackTrace(true).ToString();
 
                         if (exceptions == null)
                             exceptions = new List<InvalidSettingValueException<TTier, TDataCenter>>();
 
-                        invalidEx.UnthrownStackTrace = new StackTrace(true).ToString();
                         exceptions.Add(invalidEx);
                     }
                 }
