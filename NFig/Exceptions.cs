@@ -9,6 +9,22 @@ namespace NFig
         public NFigException (string message, Exception innerException = null) : base(message, innerException)
         {
         }
+
+        internal string UnthrownStackTrace { get; set; }
+
+        public override string StackTrace
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(UnthrownStackTrace))
+                    return base.StackTrace;
+
+                if (string.IsNullOrEmpty(base.StackTrace))
+                    return UnthrownStackTrace;
+
+                return "--- Original Stack Trace ---\r\n" + UnthrownStackTrace + "\r\n\r\n--- Thrown From ---\r\n" + base.StackTrace;
+            }
+        }
     }
     public class InvalidSettingConverterException : NFigException
     {
@@ -31,9 +47,6 @@ namespace NFig
         public bool IsOverride => !IsDefault;
         public TTier Tier { get; }
         public TDataCenter DataCenter { get; }
-
-        internal string UnthrownStackTrace { get; set; }
-        public override string StackTrace => base.StackTrace ?? UnthrownStackTrace;
 
         public InvalidSettingValueException(
             string message,
@@ -59,12 +72,11 @@ namespace NFig
         where TDataCenter : struct
     {
         public IList<InvalidSettingValueException<TTier, TDataCenter>> Exceptions { get; }
-        public override string StackTrace { get; }
 
         public InvalidSettingOverridesException(IList<InvalidSettingValueException<TTier, TDataCenter>> exceptions, string stackTrace) : base(GetMessage(exceptions))
         {
             Exceptions = exceptions;
-            StackTrace = stackTrace;
+            UnthrownStackTrace = stackTrace;
         }
 
         private static string GetMessage(IList<InvalidSettingValueException<TTier, TDataCenter>> exceptions)
