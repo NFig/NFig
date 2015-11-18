@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace NFig
 {
@@ -22,12 +24,16 @@ namespace NFig
         where TTier : struct
         where TDataCenter : struct
     {
+
         public string SettingName { get; }
         public object Value { get; }
         public bool IsDefault { get; }
         public bool IsOverride => !IsDefault;
         public TTier Tier { get; }
         public TDataCenter DataCenter { get; }
+
+        internal string UnthrownStackTrace { get; set; }
+        public override string StackTrace => base.StackTrace ?? UnthrownStackTrace;
 
         public InvalidSettingValueException(
             string message,
@@ -45,6 +51,25 @@ namespace NFig
             Data["IsOverride"] = !isDefault;
             Data["Tier"] = Tier = tier;
             Data["DataCenter"] = DataCenter = dataCenter;
+        }
+    }
+
+    public class InvalidSettingOverridesException<TTier, TDataCenter> : NFigException
+        where TTier : struct
+        where TDataCenter : struct
+    {
+        public IList<InvalidSettingValueException<TTier, TDataCenter>> Exceptions { get; }
+        public override string StackTrace { get; }
+
+        public InvalidSettingOverridesException(IList<InvalidSettingValueException<TTier, TDataCenter>> exceptions, string stackTrace) : base(GetMessage(exceptions))
+        {
+            Exceptions = exceptions;
+            StackTrace = stackTrace;
+        }
+
+        private static string GetMessage(IList<InvalidSettingValueException<TTier, TDataCenter>> exceptions)
+        {
+            return $"{exceptions.Count} invalid setting overrides were not applied ({string.Join(", ", exceptions.Select(e => e.SettingName))}). You should edit or clear these overrides.";
         }
     }
 }

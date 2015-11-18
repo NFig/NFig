@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using NUnit.Framework;
 
 namespace NFig.Tests
@@ -37,11 +38,12 @@ namespace NFig.Tests
             };
 
             OverrideSettings s;
-            var exceptions = factory.TryGetAppSettings(out s, Tier.Local, DataCenter.Local, overrides);
+            var invalidOverrides = factory.TryGetAppSettings(out s, Tier.Local, DataCenter.Local, overrides);
+            Console.WriteLine(invalidOverrides.Message);
 
-            Assert.True(exceptions != null && exceptions.Count == 2);
+            Assert.True(invalidOverrides != null && invalidOverrides.Exceptions.Count == 2);
 
-            var ex = (InvalidSettingValueException<Tier, DataCenter>) exceptions[0];
+            var ex = invalidOverrides.Exceptions[0];
             Assert.True(ex.IsOverride);
             Assert.True(ex.SettingName == "A");
 

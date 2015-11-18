@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -87,16 +88,18 @@ namespace NFig
             return settings;
         }
 
-        public IList<Exception> TryGetAppSettings(out TSettings settings, TTier tier, TDataCenter dataCenter, IEnumerable<SettingValue<TTier, TDataCenter>> overrides = null)
+        public InvalidSettingOverridesException<TTier, TDataCenter> TryGetAppSettings
+            (out TSettings settings, TTier tier, TDataCenter dataCenter, IEnumerable<SettingValue<TTier, TDataCenter>> overrides = null)
         {
             return GetAppSettingsImpl(out settings, tier, dataCenter, overrides, false);
         }
 
-        private IList<Exception> GetAppSettingsImpl(out TSettings settings, TTier tier, TDataCenter dataCenter, IEnumerable<SettingValue<TTier, TDataCenter>> overrides, bool throwOnFirstEx)
+        private InvalidSettingOverridesException<TTier, TDataCenter> GetAppSettingsImpl(
+            out TSettings settings, TTier tier, TDataCenter dataCenter, IEnumerable<SettingValue<TTier, TDataCenter>> overrides, bool throwOnFirstEx)
         {
             // pick the right overrides
             Dictionary<string, SettingValue<TTier, TDataCenter>> overridesBySetting = null;
-            List<Exception> exceptions = null;
+            List<InvalidSettingValueException<TTier, TDataCenter>> exceptions = null;
 
             if (overrides != null)
             {
@@ -151,8 +154,9 @@ namespace NFig
                             throw invalidEx;
 
                         if (exceptions == null)
-                            exceptions = new List<Exception>();
+                            exceptions = new List<InvalidSettingValueException<TTier, TDataCenter>>();
 
+                        invalidEx.UnthrownStackTrace = new StackTrace(true).ToString();
                         exceptions.Add(invalidEx);
                     }
                 }
@@ -160,7 +164,10 @@ namespace NFig
                 setting.SetValueFromString(s, settingValue.Value);
             }
 
-            return exceptions;
+            if (exceptions != null)
+                return new InvalidSettingOverridesException<TTier, TDataCenter>(exceptions, new StackTrace(true).ToString());
+
+            return null;
         }
 
         public SettingInfo<TTier, TDataCenter>[] GetAllSettingInfos(IEnumerable<SettingValue<TTier, TDataCenter>> overrides = null)
