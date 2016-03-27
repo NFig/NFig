@@ -8,7 +8,7 @@ using System.Reflection.Emit;
 
 namespace NFig
 {
-    public class SettingsFactory<TSettings, TTier, TDataCenter>
+    internal class SettingsFactory<TSettings, TTier, TDataCenter>
         where TSettings : class, INFigSettings<TTier, TDataCenter>, new()
         where TTier : struct
         where TDataCenter : struct
@@ -42,7 +42,7 @@ namespace NFig
             {typeof(decimal), new DecimalSettingConverter()},
         };
 
-        public SettingsFactory(Dictionary<Type, SettingConverterAttribute> additionalDefaultConverters = null)
+        public SettingsFactory(Dictionary<Type, object> additionalDefaultConverters = null)
         {
             TSettingsType = typeof(TSettings);
             TTierType = typeof(TTier);
@@ -220,6 +220,20 @@ namespace NFig
             return _settingsByName.ContainsKey(settingName);
         }
 
+        public Type GetSettingType(string settingName)
+        {
+            return _settingsByName[settingName].PropertyInfo.PropertyType;
+        }
+
+        public object GetSettingValue(TSettings obj, string settingName)
+        {
+            Setting setting;
+            if (!_settingsByName.TryGetValue(settingName, out setting))
+                throw new ArgumentException($"No setting named \"{settingName}\" exists on type {TSettingsType.FullName}");
+
+            return setting.GetValue(obj);
+        }
+
         public TValue GetSettingValue<TValue>(TSettings obj, string settingName)
         {
             Setting setting;
@@ -235,7 +249,7 @@ namespace NFig
 
         private Setting[] BuildSettings(Type type)
         {
-            // parallize the top-level class. Call ToList() at the end to get out of the parallel query.
+            // parallize the top-level class. Call ToArray() at the end to get out of the parallel query.
             return type.GetProperties().AsParallel().Select(pi => GetSettingsFromProperty(pi, null, "")).SelectMany(s => s).ToArray();
         }
 
@@ -337,7 +351,7 @@ namespace NFig
             if (converter == null)
             {
                 throw new InvalidSettingConverterException(
-                    $"Cannot use {convObj.GetType().Name} as setting converter for \"{name}\". The converter must implement SettingConverter<{pi.PropertyType.Name}>.", pi.PropertyType);
+                    $"Cannot use {convObj.GetType().Name} as setting converter for \"{name}\". The converter must implement ISettingConverter<{pi.PropertyType.Name}>.", pi.PropertyType);
             }
 
             // description
@@ -632,6 +646,7 @@ namespace NFig
             public SettingAttribute SettingAttribute { get; protected set; }
             public SettingValue<TTier, TDataCenter>[] Defaults { get; protected set; }
 
+            public abstract object GetValue(TSettings settings);
             public abstract void SetValueFromString(TSettings settings, string str);
             public abstract bool TryGetValueFromString(string str, out object value);
             public abstract bool TryGetStringFromValue(object value, out string str);
@@ -667,6 +682,11 @@ namespace NFig
 
                 _setter = setter;
                 _converter = converter;
+            }
+
+            public override object GetValue(TSettings settings)
+            {
+                return Getter(settings);
             }
 
             public override void SetValueFromString(TSettings settings, string str)

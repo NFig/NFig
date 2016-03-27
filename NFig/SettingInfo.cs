@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Reflection;
 
 namespace NFig
@@ -10,6 +11,7 @@ namespace NFig
         public string Name { get; }
         public string Description { get; }
         public bool ChangeRequiresRestart { get; }
+        public Type Type { get; }
         public PropertyInfo PropertyInfo { get; }
         public IList<SettingValue<TTier, TDataCenter>> Defaults { get; }
         public IList<SettingValue<TTier, TDataCenter>> Overrides { get; }
@@ -26,6 +28,7 @@ namespace NFig
             Name = name;
             Description = description;
             ChangeRequiresRestart = changeRequiresRestart;
+            Type = propertyInfo.PropertyType;
             PropertyInfo = propertyInfo;
             Defaults = defaults;
             Overrides = overrides;
