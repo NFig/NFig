@@ -43,6 +43,7 @@
     <Compile Include="EnumConverters.cs" />
     <Compile Include="Exceptions.cs" />
     <Compile Include="INFigSettings.cs" />
+    <Compile Include="NFigMemoryStore.cs" />
     <Compile Include="NFigStore.cs" />
     <Compile Include="ChangeRequiresRestartAttribute.cs" />
     <Compile Include="SettingAttribute.cs" />

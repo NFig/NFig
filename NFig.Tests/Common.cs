@@ -25,9 +25,9 @@ namespace NFig.Tests
         public DataCenter DataCenter { get; set; }
     }
 
-    public class DataCenterDefaultAttribute : DefaultSettingValueAttribute
+    public class DataCenterAttribute : DefaultSettingValueAttribute
     {
-        public DataCenterDefaultAttribute(DataCenter dataCenter, object defaultValue, bool allowOverrides = true)
+        public DataCenterAttribute(DataCenter dataCenter, object defaultValue, bool allowOverrides = true)
         {
             DataCenter = dataCenter;
             DefaultValue = defaultValue;
@@ -35,9 +35,9 @@ namespace NFig.Tests
         }
     }
 
-    public class TierDefaultAttribute : DefaultSettingValueAttribute
+    public class TierAttribute : DefaultSettingValueAttribute
     {
-        public TierDefaultAttribute(Tier tier, object defaultValue, bool allowOverrides = true)
+        public TierAttribute(Tier tier, object defaultValue, bool allowOverrides = true)
         {
             Tier = tier;
             DefaultValue = defaultValue;
@@ -45,9 +45,9 @@ namespace NFig.Tests
         }
     }
 
-    public class TierDataCenterDefaultAttribute : DefaultSettingValueAttribute
+    public class TierDataCenterAttribute : DefaultSettingValueAttribute
     {
-        public TierDataCenterDefaultAttribute(Tier tier, DataCenter dataCenter, object defaultValue, bool allowOverrides = true)
+        public TierDataCenterAttribute(Tier tier, DataCenter dataCenter, object defaultValue, bool allowOverrides = true)
         {
             Tier = tier;
             DataCenter = dataCenter;

@@ -46,6 +46,7 @@
   <ItemGroup>
     <Compile Include="CustomConverterTests.cs" />
     <Compile Include="EnumTests.cs" />
+    <Compile Include="InMemoryStoreTests.cs" />
     <Compile Include="NestedSettingsTests.cs" />
     <Compile Include="OverrideTests.cs" />
     <Compile Include="PrimitiveTests.cs" />
