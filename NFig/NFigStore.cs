@@ -35,12 +35,6 @@ namespace NFig
             public IList<SettingValue<TTier, TDataCenter>> Overrides { get; set; }
         }
 
-        private class SettingInfoData
-        {
-            public string Commit { get; set; }
-            public Dictionary<string, SettingInfo<TTier, TDataCenter>> InfoBySetting { get; set; }
-        }
-
         private readonly SettingsFactory<TSettings, TTier, TDataCenter> _factory;
 
         private readonly object _callbacksLock = new object();
@@ -49,10 +43,7 @@ namespace NFig
         private readonly object _dataCacheLock = new object();
         private readonly Dictionary<string, AppData> _dataCache = new Dictionary<string, AppData>();
 
-        private readonly object _infoCacheLock = new object();
-        private readonly Dictionary<string, SettingInfoData> _infoCache = new Dictionary<string, SettingInfoData>();
-
-        private Timer _contingencyPollingTimer;
+        private Timer _pollingTimer;
 
         public int PollingInterval { get; }
 
@@ -69,7 +60,7 @@ namespace NFig
             _factory = new SettingsFactory<TSettings, TTier, TDataCenter>(additionalDefaultConverters);
             
             if (pollingInterval > 0)
-                _contingencyPollingTimer = new Timer(PollForChanges, null, pollingInterval * 1000, pollingInterval * 1000);
+                _pollingTimer = new Timer(PollForChanges, null, pollingInterval * 1000, pollingInterval * 1000);
         }
 
 // === Virtual Methods ===
