@@ -1,1 +1,0 @@
-nuget pack .\NFig.Redis\NFig.Redis.csproj -IncludeReferencedProjects
