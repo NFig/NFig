@@ -45,6 +45,7 @@ namespace NFig
 
         private Timer _pollingTimer;
 
+        public TTier Tier { get; }
         public int PollingInterval { get; }
 
         /// <summary>
@@ -53,9 +54,11 @@ namespace NFig
         /// <param name="additionalDefaultConverters">
         /// Allows you to specify additional (or replacement) default converters for types. Each key/value pair must be in the form of (typeof(T), ISettingConverter&lt;T&gt;).
         /// </param>
+        /// <param name="tier">The <see cref="TTier"/> that this store manages.</param>
         /// <param name="pollingInterval">The interval, in seconds, to poll for override changes. Use 0 to disable polling.</param>
-        protected NFigStore(Dictionary<Type, object> additionalDefaultConverters = null, int pollingInterval = 60)
+        protected NFigStore(TTier tier, Dictionary<Type, object> additionalDefaultConverters = null, int pollingInterval = 60)
         {
+            Tier = tier;
             PollingInterval = pollingInterval;
             _factory = new SettingsFactory<TSettings, TTier, TDataCenter>(additionalDefaultConverters);
             
@@ -69,28 +72,28 @@ namespace NFig
         /// Sets an override for the specified application, setting name, tier, and data center combination. If an existing override shares that exact
         /// combination, it will be replaced.
         /// </summary>
-        public abstract Task SetOverrideAsync(string appName, string settingName, string value, TTier tier, TDataCenter dataCenter);
+        public abstract Task SetOverrideAsync(string appName, string settingName, string value, TDataCenter dataCenter);
 
         /// <summary>
         /// Synchronous version of SetOverrideAsync. You should use the async version if possible because it may have a lower risk of deadlocking in some circumstances.
         /// </summary>
-        public virtual void SetOverride(string appName, string settingName, string value, TTier tier, TDataCenter dataCenter)
+        public virtual void SetOverride(string appName, string settingName, string value, TDataCenter dataCenter)
         {
-            Task.Run(async () => { await SetOverrideAsync(appName, settingName, value, tier, dataCenter); }).Wait();
+            Task.Run(async () => { await SetOverrideAsync(appName, settingName, value, dataCenter); }).Wait();
         }
 
         /// <summary>
         /// Clears an override with the specified application, setting name, tier, and data center combination. Even if the override does not exist, this
         /// operation may result in a change of the current commit, depending on the store's implementation.
         /// </summary>
-        public abstract Task ClearOverrideAsync(string appName, string settingName, TTier tier, TDataCenter dataCenter);
+        public abstract Task ClearOverrideAsync(string appName, string settingName, TDataCenter dataCenter);
 
         /// <summary>
         /// Synchronous version of ClearOverrideAsync. You should use the async version if possible because it may have a lower risk of deadlocking in some circumstances.
         /// </summary>
-        public virtual void ClearOverride(string appName, string settingName, TTier tier, TDataCenter dataCenter)
+        public virtual void ClearOverride(string appName, string settingName, TDataCenter dataCenter)
         {
-            Task.Run(async () => { await ClearOverrideAsync(appName, settingName, tier, dataCenter); }).Wait();
+            Task.Run(async () => { await ClearOverrideAsync(appName, settingName, dataCenter); }).Wait();
         }
 
         /// <summary>
@@ -144,12 +147,12 @@ namespace NFig
         /// <summary>
         /// Synchronous version of GetAppSettingsAsync.
         /// </summary>
-        public virtual TSettings GetAppSettings(string appName, TTier tier, TDataCenter dataCenter)
+        public virtual TSettings GetAppSettings(string appName, TDataCenter dataCenter)
         {
             var data = GetAppData(appName);
 
             TSettings settings;
-            var ex = GetSettingsObjectFromData(data, tier, dataCenter, out settings);
+            var ex = GetSettingsObjectFromData(data, Tier, dataCenter, out settings);
             if (ex != null)
                 throw ex;
 

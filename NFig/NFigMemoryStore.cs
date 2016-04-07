@@ -18,21 +18,22 @@ namespace NFig
         private readonly object _lock = new object();
         private readonly Dictionary<string, InMemoryAppData> _dataByApp = new Dictionary<string, InMemoryAppData>();
 
-        public NFigMemoryStore(Dictionary<Type, object> additionalDefaultConverters = null) : base(additionalDefaultConverters, pollingInterval: 0)
+        public NFigMemoryStore(TTier tier, Dictionary<Type, object> additionalDefaultConverters = null)
+            : base(tier, additionalDefaultConverters, pollingInterval: 0)
         {
         }
 
-        public override Task SetOverrideAsync(string appName, string settingName, string value, TTier tier, TDataCenter dataCenter)
+        public override Task SetOverrideAsync(string appName, string settingName, string value, TDataCenter dataCenter)
         {
-            SetOverride(appName, settingName, value, tier, dataCenter);
+            SetOverride(appName, settingName, value, dataCenter);
             return Task.FromResult(0);
         }
 
-        public override void SetOverride(string appName, string settingName, string value, TTier tier, TDataCenter dataCenter)
+        public override void SetOverride(string appName, string settingName, string value, TDataCenter dataCenter)
         {
-            AssertValidStringForSetting(settingName, value, tier, dataCenter);
+            AssertValidStringForSetting(settingName, value, Tier, dataCenter);
 
-            var key = GetOverrideKey(settingName, tier, dataCenter);
+            var key = GetOverrideKey(settingName, Tier, dataCenter);
             var data = GetInMemoryAppData(appName);
 
             lock (data)
@@ -44,17 +45,17 @@ namespace NFig
             TriggerUpdate(appName);
         }
 
-        public override Task ClearOverrideAsync(string appName, string settingName, TTier tier, TDataCenter dataCenter)
+        public override Task ClearOverrideAsync(string appName, string settingName, TDataCenter dataCenter)
         {
-            ClearOverride(appName, settingName, tier, dataCenter);
+            ClearOverride(appName, settingName, dataCenter);
             return Task.FromResult(0);
         }
 
-        public override void ClearOverride(string appName, string settingName, TTier tier, TDataCenter dataCenter)
+        public override void ClearOverride(string appName, string settingName, TDataCenter dataCenter)
         {
-            var key = GetOverrideKey(settingName, tier, dataCenter);
+            var key = GetOverrideKey(settingName, Tier, dataCenter);
             var data = GetInMemoryAppData(appName);
-            
+
             lock (data)
             {
                 data.Overrides.Remove(key);
