@@ -65,7 +65,7 @@ namespace NFig.Tests
 
             Assert.AreEqual(1, callbackCount);
             Assert.IsNotNull(settings);
-            Assert.IsNull(settings.Commit);
+            Assert.AreEqual(NFigStore.InitialCommit, settings.Commit);
 
             store.SetOverride(AppName, "Nested.Integer", "32", DataCenter.Any);
 
@@ -73,7 +73,7 @@ namespace NFig.Tests
             Assert.IsNotNull(settings.Commit);
         }
 
-        private class InMemorySettings : SettingsBase
+        internal class InMemorySettings : SettingsBase
         {
             [Setting(23)]
             public int TopInteger { get; private set; }

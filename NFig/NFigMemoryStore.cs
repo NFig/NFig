@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -11,7 +11,7 @@ namespace NFig
     {
         private class InMemoryAppData
         {
-            public string Commit { get; set; }
+            public string Commit { get; set; } = NFigStore.InitialCommit;
             public Dictionary<string, string> Overrides { get; set; } = new Dictionary<string, string>();
         }
 
@@ -23,21 +23,22 @@ namespace NFig
         {
         }
 
-        public override Task SetOverrideAsync(string appName, string settingName, string value, TDataCenter dataCenter)
+        public override Task SetOverrideAsync(string appName, string settingName, string value, TDataCenter dataCenter, string commitId = null)
         {
             SetOverride(appName, settingName, value, dataCenter);
             return Task.FromResult(0);
         }
 
-        public override void SetOverride(string appName, string settingName, string value, TDataCenter dataCenter)
+        public override void SetOverride(string appName, string settingName, string value, TDataCenter dataCenter, string commitId = null)
         {
-            AssertValidStringForSetting(settingName, value, Tier, dataCenter);
+            AssertValidStringForSetting(settingName, value, dataCenter);
 
             var key = GetOverrideKey(settingName, Tier, dataCenter);
             var data = GetInMemoryAppData(appName);
 
             lock (data)
             {
+                VerifyCommitId(data.Commit, commitId);
                 data.Overrides[key] = value;
                 data.Commit = NewCommit();
             }
@@ -45,19 +46,20 @@ namespace NFig
             TriggerUpdate(appName);
         }
 
-        public override Task ClearOverrideAsync(string appName, string settingName, TDataCenter dataCenter)
+        public override Task ClearOverrideAsync(string appName, string settingName, TDataCenter dataCenter, string commitId = null)
         {
             ClearOverride(appName, settingName, dataCenter);
             return Task.FromResult(0);
         }
 
-        public override void ClearOverride(string appName, string settingName, TDataCenter dataCenter)
+        public override void ClearOverride(string appName, string settingName, TDataCenter dataCenter, string commitId = null)
         {
             var key = GetOverrideKey(settingName, Tier, dataCenter);
             var data = GetInMemoryAppData(appName);
 
             lock (data)
             {
+                VerifyCommitId(data.Commit, commitId);
                 data.Overrides.Remove(key);
                 data.Commit = NewCommit();
             }

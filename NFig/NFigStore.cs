@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -6,6 +6,11 @@ using System.Threading.Tasks;
 
 namespace NFig
 {
+    internal static class NFigStore
+    {
+        public const string InitialCommit = "00000000-0000-0000-0000-000000000000";
+    }
+
     public abstract class NFigStore<TSettings, TTier, TDataCenter>
         where TSettings : class, INFigSettings<TTier, TDataCenter>, new()
         where TTier : struct
@@ -31,7 +36,7 @@ namespace NFig
         protected class AppData
         {
             public string ApplicationName { get; set; }
-            public string Commit { get; set; }
+            public string Commit { get; set; } = NFigStore.InitialCommit;
             public IList<SettingValue<TTier, TDataCenter>> Overrides { get; set; }
         }
 
@@ -49,7 +54,7 @@ namespace NFig
         public int PollingInterval { get; }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="additionalDefaultConverters">
         /// Allows you to specify additional (or replacement) default converters for types. Each key/value pair must be in the form of (typeof(T), ISettingConverter&lt;T&gt;).
@@ -61,7 +66,7 @@ namespace NFig
             Tier = tier;
             PollingInterval = pollingInterval;
             _factory = new SettingsFactory<TSettings, TTier, TDataCenter>(additionalDefaultConverters);
-            
+
             if (pollingInterval > 0)
                 _pollingTimer = new Timer(PollForChanges, null, pollingInterval * 1000, pollingInterval * 1000);
         }
@@ -72,28 +77,28 @@ namespace NFig
         /// Sets an override for the specified application, setting name, tier, and data center combination. If an existing override shares that exact
         /// combination, it will be replaced.
         /// </summary>
-        public abstract Task SetOverrideAsync(string appName, string settingName, string value, TDataCenter dataCenter);
+        public abstract Task SetOverrideAsync(string appName, string settingName, string value, TDataCenter dataCenter, string commitId = null);
 
         /// <summary>
         /// Synchronous version of SetOverrideAsync. You should use the async version if possible because it may have a lower risk of deadlocking in some circumstances.
         /// </summary>
-        public virtual void SetOverride(string appName, string settingName, string value, TDataCenter dataCenter)
+        public virtual void SetOverride(string appName, string settingName, string value, TDataCenter dataCenter, string commitId = null)
         {
-            Task.Run(async () => { await SetOverrideAsync(appName, settingName, value, dataCenter); }).Wait();
+            Task.Run(async () => { await SetOverrideAsync(appName, settingName, value, dataCenter, commitId); }).Wait();
         }
 
         /// <summary>
         /// Clears an override with the specified application, setting name, tier, and data center combination. Even if the override does not exist, this
         /// operation may result in a change of the current commit, depending on the store's implementation.
         /// </summary>
-        public abstract Task ClearOverrideAsync(string appName, string settingName, TDataCenter dataCenter);
+        public abstract Task ClearOverrideAsync(string appName, string settingName, TDataCenter dataCenter, string commitId = null);
 
         /// <summary>
         /// Synchronous version of ClearOverrideAsync. You should use the async version if possible because it may have a lower risk of deadlocking in some circumstances.
         /// </summary>
-        public virtual void ClearOverride(string appName, string settingName, TDataCenter dataCenter)
+        public virtual void ClearOverride(string appName, string settingName, TDataCenter dataCenter, string commitId = null)
         {
-            Task.Run(async () => { await ClearOverrideAsync(appName, settingName, dataCenter); }).Wait();
+            Task.Run(async () => { await ClearOverrideAsync(appName, settingName, dataCenter, commitId); }).Wait();
         }
 
         /// <summary>
@@ -132,12 +137,12 @@ namespace NFig
         /// <summary>
         /// Gets a hydrated TSettings object with the correct values for the specified application, tier, and data center combination.
         /// </summary>
-        public async Task<TSettings> GetAppSettingsAsync(string appName, TTier tier, TDataCenter dataCenter)
+        public async Task<TSettings> GetAppSettingsAsync(string appName, TDataCenter dataCenter)
         {
             var data = await GetAppDataAsync(appName).ConfigureAwait(false);
 
             TSettings settings;
-            var ex = GetSettingsObjectFromData(data, tier, dataCenter, out settings);
+            var ex = GetSettingsObjectFromData(data, dataCenter, out settings);
             if (ex != null)
                 throw ex;
 
@@ -152,7 +157,7 @@ namespace NFig
             var data = GetAppData(appName);
 
             TSettings settings;
-            var ex = GetSettingsObjectFromData(data, Tier, dataCenter, out settings);
+            var ex = GetSettingsObjectFromData(data, dataCenter, out settings);
             if (ex != null)
                 throw ex;
 
@@ -204,7 +209,7 @@ namespace NFig
         }
 
         /// <summary>
-        /// Returns the property type 
+        /// Returns the property type
         /// </summary>
         public Type GetSettingType(string settingName)
         {
@@ -228,7 +233,7 @@ namespace NFig
         }
 
         /// <summary>
-        /// Returns true if the given string can be converted into a valid value 
+        /// Returns true if the given string can be converted into a valid value
         /// </summary>
         public bool IsValidStringForSetting(string settingName, string value)
         {
@@ -299,7 +304,7 @@ namespace NFig
                 {
                     try
                     {
-                        ex = GetSettingsObjectFromData(data, c.Tier, c.DataCenter, out settings);
+                        ex = GetSettingsObjectFromData(data, c.DataCenter, out settings);
                         c.LastNotifiedCommit = data.Commit;
                     }
                     catch (Exception e)
@@ -474,7 +479,7 @@ namespace NFig
         {
             return ":" + Convert.ToUInt32(tier) + ":" + Convert.ToUInt32(dataCenter) + ";" + settingName;
         }
-        
+
         private static readonly Regex s_keyRegex = new Regex(@"^:(?<Tier>\d+):(?<DataCenter>\d+);(?<Name>.+)$");
         protected static bool TryGetValueFromOverride(string key, string stringValue, out SettingValue<TTier, TDataCenter> value)
         {
@@ -494,7 +499,7 @@ namespace NFig
             return false;
         }
 
-        protected void AssertValidStringForSetting(string settingName, string value, TTier tier, TDataCenter dataCenter)
+        protected void AssertValidStringForSetting(string settingName, string value, TDataCenter dataCenter)
         {
             if (!IsValidStringForSetting(settingName, value))
             {
@@ -503,15 +508,30 @@ namespace NFig
                     settingName,
                     value,
                     false,
-                    tier,
+                    Tier,
                     dataCenter);
             }
         }
 
-        private InvalidSettingOverridesException<TTier, TDataCenter> GetSettingsObjectFromData(AppData data, TTier tier, TDataCenter dataCenter, out TSettings settings)
+        protected static void VerifyCommitId(string expectedCommitId, string receivedCommitId)
+        {
+            if (receivedCommitId == null || receivedCommitId == expectedCommitId)
+                return;
+
+            throw new CommitVerificationException
+            {
+                Data =
+                {
+                    ["Expected commit"] = expectedCommitId,
+                    ["Received commit"] = receivedCommitId
+                }
+            };
+        }
+
+        private InvalidSettingOverridesException<TTier, TDataCenter> GetSettingsObjectFromData(AppData data, TDataCenter dataCenter, out TSettings settings)
         {
             // create new settings object
-            var ex = _factory.TryGetAppSettings(out settings, tier, dataCenter, data.Overrides);
+            var ex = _factory.TryGetAppSettings(out settings, Tier, dataCenter, data.Overrides);
             settings.ApplicationName = data.ApplicationName;
             settings.Commit = data.Commit;
 
