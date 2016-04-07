@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -55,7 +55,7 @@ namespace NFig
             bool isDefault,
             TTier tier,
             TDataCenter dataCenter,
-            Exception innerException = null) 
+            Exception innerException = null)
             : base(message, innerException)
         {
             Data["SettingName"] = SettingName = settingName;
@@ -82,6 +82,14 @@ namespace NFig
         private static string GetMessage(IList<InvalidSettingValueException<TTier, TDataCenter>> exceptions)
         {
             return $"{exceptions.Count} invalid setting overrides were not applied ({string.Join(", ", exceptions.Select(e => e.SettingName))}). You should edit or clear these overrides.";
+        }
+    }
+
+    public class CommitVerificationException : NFigException
+    {
+        public CommitVerificationException(Exception innerException = null)
+            : base("Could not verify settings. They may have changed since they were last read. Retrieve the latest settings and try again with the updated commit id.", innerException)
+        {
         }
     }
 }
