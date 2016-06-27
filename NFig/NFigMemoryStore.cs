@@ -79,7 +79,7 @@ namespace NFig
 
         protected override void PushUpdateNotification(string appName)
         {
-            TriggerUpdate(appName);
+            TriggerReload(appName);
         }
 
         protected override Task<AppSnapshot<TTier, TDataCenter>> GetAppDataNoCacheAsync(string appName)

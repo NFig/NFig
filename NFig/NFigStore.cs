@@ -410,7 +410,11 @@ namespace NFig
             }
         }
 
-        protected void TriggerUpdate(string appName)
+        /// <summary>
+        /// Causes NFig to reload settings for the app, and notifies all registered callbacks. However,
+        /// if the settings haven't changed since the last time a callback was called, it will be skipped.
+        /// </summary>
+        protected void TriggerReload(string appName)
         {
             ReloadAndNotifyCallback(appName, GetCallbacks(appName));
         }
@@ -443,7 +447,7 @@ namespace NFig
 
                 if (notify)
                 {
-                    TriggerUpdate(name);
+                    TriggerReload(name);
                 }
             }
         }
