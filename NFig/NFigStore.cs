@@ -28,20 +28,13 @@ namespace NFig
             }
         }
 
-        public class AppData
-        {
-            public string ApplicationName { get; set; }
-            public string Commit { get; set; }
-            public IList<SettingValue<TTier, TDataCenter>> Overrides { get; set; }
-        }
-
         private readonly SettingsFactory<TSettings, TTier, TDataCenter> _factory;
 
         private readonly object _callbacksLock = new object();
         private readonly Dictionary<string, TierDataCenterCallback[]> _callbacksByApp = new Dictionary<string, TierDataCenterCallback[]>();
 
         private readonly object _dataCacheLock = new object();
-        private readonly Dictionary<string, AppData> _dataCache = new Dictionary<string, AppData>();
+        private readonly Dictionary<string, AppSnapshot<TTier, TDataCenter>> _dataCache = new Dictionary<string, AppSnapshot<TTier, TDataCenter>>();
 
         private Timer _pollingTimer;
 
@@ -250,18 +243,18 @@ namespace NFig
 
         // restore
 
-        protected abstract Task<AppData> GetAppDataNoCacheAsync(string appName);
+        protected abstract Task<AppSnapshot<TTier, TDataCenter>> GetAppDataNoCacheAsync(string appName);
 
-        protected virtual AppData GetAppDataNoCache(string appName)
+        protected virtual AppSnapshot<TTier, TDataCenter> GetAppDataNoCache(string appName)
         {
             return Task.Run(async () => await GetAppDataNoCacheAsync(appName)).Result;
         }
 
-        protected abstract Task DeleteOrphanedOverridesAsync(AppData data);
+        protected abstract Task DeleteOrphanedOverridesAsync(AppSnapshot<TTier, TDataCenter> snapshot);
 
-        protected virtual void DeleteOrphanedOverrides(AppData data)
+        protected virtual void DeleteOrphanedOverrides(AppSnapshot<TTier, TDataCenter> snapshot)
         {
-            Task.Run(async () => await DeleteOrphanedOverridesAsync(data)).Wait();
+            Task.Run(async () => await DeleteOrphanedOverridesAsync(snapshot)).Wait();
         }
 
         protected virtual void OnSubscribe(string appName, TTier tier, TDataCenter dataCenter, SettingsUpdateDelegate callback)
@@ -308,10 +301,10 @@ namespace NFig
                 return;
 
             Exception ex = null;
-            AppData data = null;
+            AppSnapshot<TTier, TDataCenter> snapshot = null;
             try
             {
-                data = GetAppData(appName);
+                snapshot = GetAppData(appName);
             }
             catch (Exception e)
             {
@@ -323,7 +316,7 @@ namespace NFig
                 if (c.Callback == null)
                     continue;
 
-                if (data != null && data.Commit == c.LastNotifiedCommit)
+                if (snapshot != null && snapshot.Commit == c.LastNotifiedCommit)
                     continue;
 
                 TSettings settings = null;
@@ -332,8 +325,8 @@ namespace NFig
                 {
                     try
                     {
-                        ex = GetSettingsObjectFromData(data, c.Tier, c.DataCenter, out settings);
-                        c.LastNotifiedCommit = data.Commit;
+                        ex = GetSettingsObjectFromData(snapshot, c.Tier, c.DataCenter, out settings);
+                        c.LastNotifiedCommit = snapshot.Commit;
                     }
                     catch (Exception e)
                     {
@@ -406,10 +399,10 @@ namespace NFig
                 var notify = true;
                 lock (_dataCacheLock)
                 {
-                    AppData data;
-                    if (_dataCache.TryGetValue(name, out data))
+                    AppSnapshot<TTier, TDataCenter> snapshot;
+                    if (_dataCache.TryGetValue(name, out snapshot))
                     {
-                        notify = data.Commit != commit;
+                        notify = snapshot.Commit != commit;
                     }
                 }
 
@@ -434,66 +427,66 @@ namespace NFig
 
 // === Data Cache ===
 
-        private async Task<AppData> GetAppDataAsync(string appName)
+        private async Task<AppSnapshot<TTier, TDataCenter>> GetAppDataAsync(string appName)
         {
-            AppData data;
+            AppSnapshot<TTier, TDataCenter> snapshot;
 
             // check cache first
             bool cacheExisted;
             lock (_dataCacheLock)
             {
-                cacheExisted = _dataCache.TryGetValue(appName, out data);
+                cacheExisted = _dataCache.TryGetValue(appName, out snapshot);
             }
 
             if (cacheExisted)
             {
                 var commit = await GetCurrentCommitAsync(appName).ConfigureAwait(false);
-                if (data.Commit == commit)
-                    return data;
+                if (snapshot.Commit == commit)
+                    return snapshot;
             }
 
-            data = await GetAppDataNoCacheAsync(appName);
+            snapshot = await GetAppDataNoCacheAsync(appName);
 
             lock (_dataCacheLock)
             {
-                _dataCache[appName] = data;
+                _dataCache[appName] = snapshot;
             }
 
             if (!cacheExisted)
-                await DeleteOrphanedOverridesAsync(data);
+                await DeleteOrphanedOverridesAsync(snapshot);
 
-            return data;
+            return snapshot;
         }
 
-        private AppData GetAppData(string appName)
+        private AppSnapshot<TTier, TDataCenter> GetAppData(string appName)
         {
-            AppData data;
+            AppSnapshot<TTier, TDataCenter> snapshot;
 
             // check cache first
             bool cacheExisted;
             lock (_dataCacheLock)
             {
-                cacheExisted = _dataCache.TryGetValue(appName, out data);
+                cacheExisted = _dataCache.TryGetValue(appName, out snapshot);
             }
 
             if (cacheExisted)
             {
                 var commit = GetCurrentCommit(appName);
-                if (data.Commit == commit)
-                    return data;
+                if (snapshot.Commit == commit)
+                    return snapshot;
             }
 
-            data = GetAppDataNoCache(appName);
+            snapshot = GetAppDataNoCache(appName);
 
             lock (_dataCacheLock)
             {
-                _dataCache[appName] = data;
+                _dataCache[appName] = snapshot;
             }
 
             if (!cacheExisted)
-                DeleteOrphanedOverrides(data);
+                DeleteOrphanedOverrides(snapshot);
 
-            return data;
+            return snapshot;
         }
 
 // === Helpers ===
@@ -539,12 +532,12 @@ namespace NFig
             }
         }
 
-        private InvalidSettingOverridesException GetSettingsObjectFromData(AppData data, TTier tier, TDataCenter dataCenter, out TSettings settings)
+        private InvalidSettingOverridesException GetSettingsObjectFromData(AppSnapshot<TTier, TDataCenter> snapshot, TTier tier, TDataCenter dataCenter, out TSettings settings)
         {
             // create new settings object
-            var ex = _factory.TryGetAppSettings(out settings, tier, dataCenter, data.Overrides);
-            settings.ApplicationName = data.ApplicationName;
-            settings.Commit = data.Commit;
+            var ex = _factory.TryGetAppSettings(out settings, tier, dataCenter, snapshot.Overrides);
+            settings.ApplicationName = snapshot.ApplicationName;
+            settings.Commit = snapshot.Commit;
 
             return ex;
         }

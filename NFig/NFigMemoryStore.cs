@@ -75,15 +75,15 @@ namespace NFig
             return GetInMemoryAppData(appName).Commit;
         }
 
-        protected override Task<AppData> GetAppDataNoCacheAsync(string appName)
+        protected override Task<AppSnapshot<TTier, TDataCenter>> GetAppDataNoCacheAsync(string appName)
         {
             return Task.FromResult(GetAppDataNoCache(appName));
         }
 
-        protected override AppData GetAppDataNoCache(string appName)
+        protected override AppSnapshot<TTier, TDataCenter> GetAppDataNoCache(string appName)
         {
             var data = GetInMemoryAppData(appName);
-            var appData = new AppData();
+            var appData = new AppSnapshot<TTier, TDataCenter>();
             lock (data)
             {
                 appData.ApplicationName = appName;
@@ -103,13 +103,13 @@ namespace NFig
             return appData;
         }
 
-        protected override Task DeleteOrphanedOverridesAsync(AppData data)
+        protected override Task DeleteOrphanedOverridesAsync(AppSnapshot<TTier, TDataCenter> snapshot)
         {
             // there's never going to be orphaned overrides for an in-memory store
             return Task.FromResult(0);
         }
 
-        protected override void DeleteOrphanedOverrides(AppData data)
+        protected override void DeleteOrphanedOverrides(AppSnapshot<TTier, TDataCenter> snapshot)
         {
             // there's never going to be orphaned overrides for an in-memory store
         }
