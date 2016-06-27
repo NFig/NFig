@@ -62,9 +62,9 @@ namespace NFig
         /// Sets an override for the specified application, setting name, tier, and data center combination. If an existing override shares that exact
         /// combination, it will be replaced.
         /// </summary>
-        public async Task SetOverrideAsync(string appName, string settingName, string value, TDataCenter dataCenter, string user)
+        public async Task<AppSnapshot<TTier, TDataCenter>> SetOverrideAsync(string appName, string settingName, string value, TDataCenter dataCenter, string user)
         {
-            await SetOverrideAsyncImpl(appName, settingName, value, dataCenter, user);
+            var snapshot = await SetOverrideAsyncImpl(appName, settingName, value, dataCenter, user);
 
             try
             {
@@ -74,14 +74,16 @@ namespace NFig
             {
                 // log
             }
+
+            return snapshot;
         }
 
         /// <summary>
         /// Synchronous version of SetOverrideAsync. You should use the async version if possible because it may have a lower risk of deadlocking in some circumstances.
         /// </summary>
-        public void SetOverride(string appName, string settingName, string value, TDataCenter dataCenter, string user)
+        public AppSnapshot<TTier, TDataCenter> SetOverride(string appName, string settingName, string value, TDataCenter dataCenter, string user)
         {
-            SetOverrideImpl(appName, settingName, value, dataCenter, user);
+            var snapshot = SetOverrideImpl(appName, settingName, value, dataCenter, user);
 
             try
             {
@@ -91,15 +93,17 @@ namespace NFig
             {
                 // log
             }
+
+            return snapshot;
         }
 
         /// <summary>
         /// Clears an override with the specified application, setting name, tier, and data center combination. Even if the override does not exist, this
         /// operation may result in a change of the current commit, depending on the store's implementation.
         /// </summary>
-        public async Task ClearOverrideAsync(string appName, string settingName, TDataCenter dataCenter, string user)
+        public async Task<AppSnapshot<TTier, TDataCenter>> ClearOverrideAsync(string appName, string settingName, TDataCenter dataCenter, string user)
         {
-            await ClearOverrideAsyncImpl(appName, settingName, dataCenter, user);
+            var snapshot = await ClearOverrideAsyncImpl(appName, settingName, dataCenter, user);
 
             try
             {
@@ -109,14 +113,16 @@ namespace NFig
             {
                 // log
             }
+
+            return snapshot;
         }
 
         /// <summary>
         /// Synchronous version of ClearOverrideAsync. You should use the async version if possible because it may have a lower risk of deadlocking in some circumstances.
         /// </summary>
-        public void ClearOverride(string appName, string settingName, TDataCenter dataCenter, string user)
+        public AppSnapshot<TTier, TDataCenter> ClearOverride(string appName, string settingName, TDataCenter dataCenter, string user)
         {
-            ClearOverrideImpl(appName, settingName, dataCenter, user);
+            var snapshot = ClearOverrideImpl(appName, settingName, dataCenter, user);
 
             try
             {
@@ -126,6 +132,8 @@ namespace NFig
             {
                 // log
             }
+
+            return snapshot;
         }
 
         /// <summary>
