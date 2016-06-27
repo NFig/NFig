@@ -65,8 +65,15 @@ namespace NFig
         public async Task SetOverrideAsync(string appName, string settingName, string value, TDataCenter dataCenter, string user)
         {
             await SetOverrideAsyncImpl(appName, settingName, value, dataCenter, user);
-            // log
-            // publish
+
+            try
+            {
+                await PushUpdateNotificationAsync(appName);
+            }
+            finally
+            {
+                // log
+            }
         }
 
         /// <summary>
@@ -75,8 +82,15 @@ namespace NFig
         public void SetOverride(string appName, string settingName, string value, TDataCenter dataCenter, string user)
         {
             SetOverrideImpl(appName, settingName, value, dataCenter, user);
-            // log
-            // publish
+
+            try
+            {
+                PushUpdateNotification(appName);
+            }
+            finally
+            {
+                // log
+            }
         }
 
         /// <summary>
@@ -86,8 +100,15 @@ namespace NFig
         public async Task ClearOverrideAsync(string appName, string settingName, TDataCenter dataCenter, string user)
         {
             await ClearOverrideAsyncImpl(appName, settingName, dataCenter, user);
-            // log
-            // publish
+
+            try
+            {
+                await PushUpdateNotificationAsync(appName);
+            }
+            finally
+            {
+                // log
+            }
         }
 
         /// <summary>
@@ -96,8 +117,15 @@ namespace NFig
         public void ClearOverride(string appName, string settingName, TDataCenter dataCenter, string user)
         {
             ClearOverrideImpl(appName, settingName, dataCenter, user);
-            // log
-            // publish
+
+            try
+            {
+                PushUpdateNotification(appName);
+            }
+            finally
+            {
+                // log
+            }
         }
 
         /// <summary>
@@ -233,6 +261,13 @@ namespace NFig
         protected virtual void ClearOverrideImpl(string appName, string settingName, TDataCenter dataCenter, string user)
         {
             Task.Run(async () => { await ClearOverrideAsyncImpl(appName, settingName, dataCenter, user); }).Wait();
+        }
+
+        protected abstract Task PushUpdateNotificationAsync(string appName);
+
+        protected virtual void PushUpdateNotification(string appName)
+        {
+            Task.Run(async () => { await PushUpdateNotificationAsync(appName); }).Wait();
         }
 
         // log

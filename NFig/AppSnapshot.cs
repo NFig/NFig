@@ -9,5 +9,6 @@ namespace NFig
         public string ApplicationName { get; set; }
         public string Commit { get; set; }
         public IList<SettingValue<TTier, TDataCenter>> Overrides { get; set; }
+        public NFigEventInfo<TTier, TDataCenter> LastEvent { get; set; }
     }
 }

@@ -40,8 +40,6 @@ namespace NFig
                 data.Overrides[key] = value;
                 data.Commit = NewCommit();
             }
-
-            TriggerUpdate(appName);
         }
 
         protected override Task ClearOverrideAsyncImpl(string appName, string settingName, TDataCenter dataCenter, string user)
@@ -60,8 +58,6 @@ namespace NFig
                 data.Overrides.Remove(key);
                 data.Commit = NewCommit();
             }
-
-            TriggerUpdate(appName);
         }
 
         public override Task<string> GetCurrentCommitAsync(string appName)
@@ -73,6 +69,17 @@ namespace NFig
         public override string GetCurrentCommit(string appName)
         {
             return GetInMemoryAppData(appName).Commit;
+        }
+
+        protected override Task PushUpdateNotificationAsync(string appName)
+        {
+            PushUpdateNotification(appName);
+            return Task.FromResult(0);
+        }
+
+        protected override void PushUpdateNotification(string appName)
+        {
+            TriggerUpdate(appName);
         }
 
         protected override Task<AppSnapshot<TTier, TDataCenter>> GetAppDataNoCacheAsync(string appName)
