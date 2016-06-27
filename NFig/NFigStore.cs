@@ -40,6 +40,8 @@ namespace NFig
 
         public int PollingInterval { get; }
 
+        public event Action<AppSnapshot<TTier, TDataCenter>> LogEvent;
+
         /// <summary>
         /// 
         /// </summary>
@@ -65,16 +67,7 @@ namespace NFig
         public async Task<AppSnapshot<TTier, TDataCenter>> SetOverrideAsync(string appName, string settingName, string value, TDataCenter dataCenter, string user)
         {
             var snapshot = await SetOverrideAsyncImpl(appName, settingName, value, dataCenter, user);
-
-            try
-            {
-                await PushUpdateNotificationAsync(appName);
-            }
-            finally
-            {
-                // log
-            }
-
+            LogAndNotifyChange(snapshot);
             return snapshot;
         }
 
@@ -84,16 +77,7 @@ namespace NFig
         public AppSnapshot<TTier, TDataCenter> SetOverride(string appName, string settingName, string value, TDataCenter dataCenter, string user)
         {
             var snapshot = SetOverrideImpl(appName, settingName, value, dataCenter, user);
-
-            try
-            {
-                PushUpdateNotification(appName);
-            }
-            finally
-            {
-                // log
-            }
-
+            LogAndNotifyChange(snapshot);
             return snapshot;
         }
 
@@ -104,16 +88,7 @@ namespace NFig
         public async Task<AppSnapshot<TTier, TDataCenter>> ClearOverrideAsync(string appName, string settingName, TDataCenter dataCenter, string user)
         {
             var snapshot = await ClearOverrideAsyncImpl(appName, settingName, dataCenter, user);
-
-            try
-            {
-                await PushUpdateNotificationAsync(appName);
-            }
-            finally
-            {
-                // log
-            }
-
+            LogAndNotifyChange(snapshot);
             return snapshot;
         }
 
@@ -123,16 +98,7 @@ namespace NFig
         public AppSnapshot<TTier, TDataCenter> ClearOverride(string appName, string settingName, TDataCenter dataCenter, string user)
         {
             var snapshot = ClearOverrideImpl(appName, settingName, dataCenter, user);
-
-            try
-            {
-                PushUpdateNotification(appName);
-            }
-            finally
-            {
-                // log
-            }
-
+            LogAndNotifyChange(snapshot);
             return snapshot;
         }
 
@@ -592,6 +558,19 @@ namespace NFig
             settings.Commit = snapshot.Commit;
 
             return ex;
+        }
+
+        private void LogAndNotifyChange(AppSnapshot<TTier, TDataCenter> snapshot)
+        {
+            try
+            {
+                PushUpdateNotification(snapshot.ApplicationName);
+            }
+            finally
+            {
+                // still want to try logging even if the push notification throws an exception
+                LogEvent?.Invoke(snapshot);
+            }
         }
     }
 }
