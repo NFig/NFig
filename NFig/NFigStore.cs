@@ -28,7 +28,7 @@ namespace NFig
             }
         }
 
-        protected class AppData
+        public class AppData
         {
             public string ApplicationName { get; set; }
             public string Commit { get; set; }
