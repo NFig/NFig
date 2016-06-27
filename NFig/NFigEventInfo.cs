@@ -8,28 +8,13 @@ namespace NFig
         OverrideCleared = 2,
     }
 
-    public class NFigEventInfo<TTier, TDataCenter>
-        where TTier : struct
+    public class NFigEventInfo<TDataCenter>
         where TDataCenter : struct
     {
-        public NFigEventType Type { get; }
-        public DateTimeOffset Timestamp { get; }
-        public string SettingName { get; }
-        public TDataCenter DataCenter { get; }
-        public string User { get; }
-
-        internal NFigEventInfo(
-            NFigEventType type,
-            DateTimeOffset timestamp,
-            string settingName,
-            TDataCenter dataCenter,
-            string user)
-        {
-            Type = type;
-            Timestamp = timestamp;
-            SettingName = settingName;
-            DataCenter = dataCenter;
-            User = user;
-        }
+        public NFigEventType Type { get; set; }
+        public DateTimeOffset Timestamp { get; set; }
+        public string SettingName { get; set; }
+        public TDataCenter DataCenter { get; set; }
+        public string User { get; set; }
     }
 }

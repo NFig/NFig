@@ -148,7 +148,7 @@ namespace NFig
         /// </summary>
         public virtual TSettings GetAppSettings(string appName, TTier tier, TDataCenter dataCenter)
         {
-            var data = GetAppData(appName);
+            var data = GetAppSnapshot(appName);
 
             TSettings settings;
             var ex = GetSettingsObjectFromData(data, tier, dataCenter, out settings);
@@ -172,7 +172,7 @@ namespace NFig
         /// </summary>
         public SettingInfo<TTier, TDataCenter>[] GetAllSettingInfos(string appName)
         {
-            var data = GetAppData(appName);
+            var data = GetAppSnapshot(appName);
             return _factory.GetAllSettingInfos(data.Overrides);
         }
 
@@ -249,18 +249,23 @@ namespace NFig
             return Task.Run(async () => await GetCurrentCommitAsync(appName)).Result;
         }
 
-        protected abstract Task SetOverrideAsyncImpl(string appName, string settingName, string value, TDataCenter dataCenter, string user);
+        protected abstract Task<AppSnapshot<TTier, TDataCenter>> SetOverrideAsyncImpl(
+            string appName,
+            string settingName,
+            string value,
+            TDataCenter dataCenter,
+            string user);
 
-        protected virtual void SetOverrideImpl(string appName, string settingName, string value, TDataCenter dataCenter, string user)
+        protected virtual AppSnapshot<TTier, TDataCenter> SetOverrideImpl(string appName, string settingName, string value, TDataCenter dataCenter, string user)
         {
-            Task.Run(async () => { await SetOverrideAsyncImpl(appName, settingName, value, dataCenter, user); }).Wait();
+            return Task.Run(async () => await SetOverrideAsyncImpl(appName, settingName, value, dataCenter, user)).Result;
         }
 
-        protected abstract Task ClearOverrideAsyncImpl(string appName, string settingName, TDataCenter dataCenter, string user);
+        protected abstract Task<AppSnapshot<TTier, TDataCenter>> ClearOverrideAsyncImpl(string appName, string settingName, TDataCenter dataCenter, string user);
         
-        protected virtual void ClearOverrideImpl(string appName, string settingName, TDataCenter dataCenter, string user)
+        protected virtual AppSnapshot<TTier, TDataCenter> ClearOverrideImpl(string appName, string settingName, TDataCenter dataCenter, string user)
         {
-            Task.Run(async () => { await ClearOverrideAsyncImpl(appName, settingName, dataCenter, user); }).Wait();
+            return Task.Run(async () => await ClearOverrideAsyncImpl(appName, settingName, dataCenter, user)).Result;
         }
 
         protected abstract Task PushUpdateNotificationAsync(string appName);
@@ -339,7 +344,7 @@ namespace NFig
             AppSnapshot<TTier, TDataCenter> snapshot = null;
             try
             {
-                snapshot = GetAppData(appName);
+                snapshot = GetAppSnapshot(appName);
             }
             catch (Exception e)
             {
@@ -497,7 +502,7 @@ namespace NFig
             return snapshot;
         }
 
-        private AppSnapshot<TTier, TDataCenter> GetAppData(string appName)
+        private AppSnapshot<TTier, TDataCenter> GetAppSnapshot(string appName)
         {
             AppSnapshot<TTier, TDataCenter> snapshot;
 
