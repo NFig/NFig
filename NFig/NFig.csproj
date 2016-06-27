@@ -44,6 +44,7 @@
     <Compile Include="Exceptions.cs" />
     <Compile Include="INFigSettings.cs" />
     <Compile Include="AppSnapshot.cs" />
+    <Compile Include="NFigEventInfo.cs" />
     <Compile Include="NFigMemoryStore.cs" />
     <Compile Include="NFigStore.cs" />
     <Compile Include="ChangeRequiresRestartAttribute.cs" />
