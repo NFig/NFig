@@ -22,8 +22,8 @@ namespace NFig
         public bool HasTier => !s_tierComparer.Equals(Tier, default(TTier));
         public bool HasDataCenter => !s_dataCenterComparer.Equals(DataCenter, default(TDataCenter));
 
-        public SettingValue(string name, string value, TTier tier, TDataCenter dataCenter)
-            : this(name, value, tier, dataCenter, false, false)
+        public SettingValue(string name, string value, TDataCenter dataCenter)
+            : this(name, value, default(TTier), dataCenter, false, false)
         {
         }
 

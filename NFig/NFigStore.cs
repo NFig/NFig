@@ -508,7 +508,7 @@ namespace NFig
             return ":0:" + Convert.ToUInt32(dataCenter) + ";" + settingName;
         }
         
-        private static readonly Regex s_keyRegex = new Regex(@"^:(?<Tier>\d+):(?<DataCenter>\d+);(?<Name>.+)$");
+        private static readonly Regex s_keyRegex = new Regex(@"^:\d+:(?<DataCenter>\d+);(?<Name>.+)$");
         protected static bool TryGetValueFromOverride(string key, string stringValue, out SettingValue<TTier, TDataCenter> value)
         {
             var match = s_keyRegex.Match(key);
@@ -517,7 +517,6 @@ namespace NFig
                 value = new SettingValue<TTier, TDataCenter>(
                     match.Groups["Name"].Value,
                     stringValue,
-                    (TTier)Enum.ToObject(typeof(TTier), int.Parse(match.Groups["Tier"].Value)),
                     (TDataCenter)Enum.ToObject(typeof(TDataCenter), int.Parse(match.Groups["DataCenter"].Value)));
 
                 return true;

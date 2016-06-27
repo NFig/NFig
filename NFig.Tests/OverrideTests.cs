@@ -14,8 +14,8 @@ namespace NFig.Tests
 
             var overrides = new List<SettingValue<Tier, DataCenter>>()
             {
-                new SettingValue<Tier, DataCenter>("A", "10", Tier.Any, DataCenter.Any),
-                new SettingValue<Tier, DataCenter>("B", "11", Tier.Any, DataCenter.Any),
+                new SettingValue<Tier, DataCenter>("A", "10", DataCenter.Any),
+                new SettingValue<Tier, DataCenter>("B", "11", DataCenter.Any),
             };
 
             var s = factory.GetAppSettings(Tier.Local, DataCenter.Local, overrides);
@@ -32,9 +32,9 @@ namespace NFig.Tests
 
             var overrides = new List<SettingValue<Tier, DataCenter>>()
             {
-                new SettingValue<Tier, DataCenter>("A", "a", Tier.Any, DataCenter.Any),
-                new SettingValue<Tier, DataCenter>("B", "b", Tier.Any, DataCenter.Any),
-                new SettingValue<Tier, DataCenter>("C", "12", Tier.Any, DataCenter.Any),
+                new SettingValue<Tier, DataCenter>("A", "a", DataCenter.Any),
+                new SettingValue<Tier, DataCenter>("B", "b", DataCenter.Any),
+                new SettingValue<Tier, DataCenter>("C", "12", DataCenter.Any),
             };
 
             OverrideSettings s;
