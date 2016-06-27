@@ -63,68 +63,49 @@ namespace NFig
                 _pollingTimer = new Timer(PollForChanges, null, pollingInterval * 1000, pollingInterval * 1000);
         }
 
-// === Virtual Methods ===
+// === Public Non-Virtual Methods ===
 
         /// <summary>
         /// Sets an override for the specified application, setting name, tier, and data center combination. If an existing override shares that exact
         /// combination, it will be replaced.
         /// </summary>
-        public abstract Task SetOverrideAsync(string appName, string settingName, string value, TTier tier, TDataCenter dataCenter);
+        public async Task SetOverrideAsync(string appName, string settingName, string value, TDataCenter dataCenter, string user)
+        {
+            await SetOverrideAsyncImpl(appName, settingName, value, dataCenter, user);
+            // log
+            // publish
+        }
 
         /// <summary>
         /// Synchronous version of SetOverrideAsync. You should use the async version if possible because it may have a lower risk of deadlocking in some circumstances.
         /// </summary>
-        public virtual void SetOverride(string appName, string settingName, string value, TTier tier, TDataCenter dataCenter)
+        public void SetOverride(string appName, string settingName, string value, TDataCenter dataCenter, string user)
         {
-            Task.Run(async () => { await SetOverrideAsync(appName, settingName, value, tier, dataCenter); }).Wait();
+            SetOverrideImpl(appName, settingName, value, dataCenter, user);
+            // log
+            // publish
         }
 
         /// <summary>
         /// Clears an override with the specified application, setting name, tier, and data center combination. Even if the override does not exist, this
         /// operation may result in a change of the current commit, depending on the store's implementation.
         /// </summary>
-        public abstract Task ClearOverrideAsync(string appName, string settingName, TTier tier, TDataCenter dataCenter);
+        public async Task ClearOverrideAsync(string appName, string settingName, TDataCenter dataCenter, string user)
+        {
+            await ClearOverrideAsyncImpl(appName, settingName, dataCenter, user);
+            // log
+            // publish
+        }
 
         /// <summary>
         /// Synchronous version of ClearOverrideAsync. You should use the async version if possible because it may have a lower risk of deadlocking in some circumstances.
         /// </summary>
-        public virtual void ClearOverride(string appName, string settingName, TTier tier, TDataCenter dataCenter)
+        public void ClearOverride(string appName, string settingName, TDataCenter dataCenter, string user)
         {
-            Task.Run(async () => { await ClearOverrideAsync(appName, settingName, tier, dataCenter); }).Wait();
+            ClearOverrideImpl(appName, settingName, dataCenter, user);
+            // log
+            // publish
         }
-
-        /// <summary>
-        /// Returns the most current Commit ID for a given application. The commit may be null if there are no overrides set.
-        /// </summary>
-        public abstract Task<string> GetCurrentCommitAsync(string appName);
-
-        /// <summary>
-        /// Synchronous version of GetCurrentCommitAsync. You should use the async version if possible because it has a lower risk of deadlocking in some circumstances.
-        /// </summary>
-        public virtual string GetCurrentCommit(string appName)
-        {
-            return Task.Run(async () => await GetCurrentCommitAsync(appName)).Result;
-        }
-
-        protected abstract Task<AppData> GetAppDataNoCacheAsync(string appName);
-
-        protected virtual AppData GetAppDataNoCache(string appName)
-        {
-            return Task.Run(async () => await GetAppDataNoCacheAsync(appName)).Result;
-        }
-
-        protected abstract Task DeleteOrphanedOverridesAsync(AppData data);
-
-        protected virtual void DeleteOrphanedOverrides(AppData data)
-        {
-            Task.Run(async () => await DeleteOrphanedOverridesAsync(data)).Wait();
-        }
-
-        protected virtual void OnSubscribe(string appName, TTier tier, TDataCenter dataCenter, SettingsUpdateDelegate callback)
-        {
-        }
-
-// === Public Non-Virtual Methods ===
 
         /// <summary>
         /// Gets a hydrated TSettings object with the correct values for the specified application, tier, and data center combination.
@@ -230,6 +211,61 @@ namespace NFig
         public bool IsValidStringForSetting(string settingName, string value)
         {
             return _factory.IsValidStringForSetting(settingName, value);
+        }
+
+// === Virtual Methods ===
+
+        /// <summary>
+        /// Returns the most current Commit ID for a given application. The commit may be null if there are no overrides set.
+        /// </summary>
+        public abstract Task<string> GetCurrentCommitAsync(string appName);
+
+        /// <summary>
+        /// Synchronous version of GetCurrentCommitAsync. You should use the async version if possible because it has a lower risk of deadlocking in some circumstances.
+        /// </summary>
+        public virtual string GetCurrentCommit(string appName)
+        {
+            return Task.Run(async () => await GetCurrentCommitAsync(appName)).Result;
+        }
+
+        protected abstract Task SetOverrideAsyncImpl(string appName, string settingName, string value, TDataCenter dataCenter, string user);
+
+        protected virtual void SetOverrideImpl(string appName, string settingName, string value, TDataCenter dataCenter, string user)
+        {
+            Task.Run(async () => { await SetOverrideAsyncImpl(appName, settingName, value, dataCenter, user); }).Wait();
+        }
+
+        protected abstract Task ClearOverrideAsyncImpl(string appName, string settingName, TDataCenter dataCenter, string user);
+        
+        protected virtual void ClearOverrideImpl(string appName, string settingName, TDataCenter dataCenter, string user)
+        {
+            Task.Run(async () => { await ClearOverrideAsyncImpl(appName, settingName, dataCenter, user); }).Wait();
+        }
+
+        // log
+
+        // publish
+
+        // backup
+
+        // restore
+
+        protected abstract Task<AppData> GetAppDataNoCacheAsync(string appName);
+
+        protected virtual AppData GetAppDataNoCache(string appName)
+        {
+            return Task.Run(async () => await GetAppDataNoCacheAsync(appName)).Result;
+        }
+
+        protected abstract Task DeleteOrphanedOverridesAsync(AppData data);
+
+        protected virtual void DeleteOrphanedOverrides(AppData data)
+        {
+            Task.Run(async () => await DeleteOrphanedOverridesAsync(data)).Wait();
+        }
+
+        protected virtual void OnSubscribe(string appName, TTier tier, TDataCenter dataCenter, SettingsUpdateDelegate callback)
+        {
         }
 
 // === Subscriptions ===
@@ -467,9 +503,9 @@ namespace NFig
             return Guid.NewGuid().ToString();
         }
 
-        protected static string GetOverrideKey(string settingName, TTier tier, TDataCenter dataCenter)
+        protected static string GetOverrideKey(string settingName, TDataCenter dataCenter)
         {
-            return ":" + Convert.ToUInt32(tier) + ":" + Convert.ToUInt32(dataCenter) + ";" + settingName;
+            return ":0:" + Convert.ToUInt32(dataCenter) + ";" + settingName;
         }
         
         private static readonly Regex s_keyRegex = new Regex(@"^:(?<Tier>\d+):(?<DataCenter>\d+);(?<Name>.+)$");
@@ -491,21 +527,20 @@ namespace NFig
             return false;
         }
 
-        protected void AssertValidStringForSetting(string settingName, string value, TTier tier, TDataCenter dataCenter)
+        protected void AssertValidStringForSetting(string settingName, string value, TDataCenter dataCenter)
         {
             if (!IsValidStringForSetting(settingName, value))
             {
-                throw new InvalidSettingValueException<TTier, TDataCenter>(
+                throw new InvalidSettingValueException(
                     "\"" + value + "\" is not a valid value for setting \"" + settingName + "\"",
                     settingName,
                     value,
                     false,
-                    tier,
-                    dataCenter);
+                    dataCenter.ToString());
             }
         }
 
-        private InvalidSettingOverridesException<TTier, TDataCenter> GetSettingsObjectFromData(AppData data, TTier tier, TDataCenter dataCenter, out TSettings settings)
+        private InvalidSettingOverridesException GetSettingsObjectFromData(AppData data, TTier tier, TDataCenter dataCenter, out TSettings settings)
         {
             // create new settings object
             var ex = _factory.TryGetAppSettings(out settings, tier, dataCenter, data.Overrides);

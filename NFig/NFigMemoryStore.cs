@@ -22,17 +22,17 @@ namespace NFig
         {
         }
 
-        public override Task SetOverrideAsync(string appName, string settingName, string value, TTier tier, TDataCenter dataCenter)
+        protected override Task SetOverrideAsyncImpl(string appName, string settingName, string value, TDataCenter dataCenter, string user)
         {
-            SetOverride(appName, settingName, value, tier, dataCenter);
+            SetOverrideImpl(appName, settingName, value, dataCenter, user);
             return Task.FromResult(0);
         }
 
-        public override void SetOverride(string appName, string settingName, string value, TTier tier, TDataCenter dataCenter)
+        protected override void SetOverrideImpl(string appName, string settingName, string value, TDataCenter dataCenter, string user)
         {
-            AssertValidStringForSetting(settingName, value, tier, dataCenter);
+            AssertValidStringForSetting(settingName, value, dataCenter);
 
-            var key = GetOverrideKey(settingName, tier, dataCenter);
+            var key = GetOverrideKey(settingName, dataCenter);
             var data = GetInMemoryAppData(appName);
 
             lock (data)
@@ -44,15 +44,15 @@ namespace NFig
             TriggerUpdate(appName);
         }
 
-        public override Task ClearOverrideAsync(string appName, string settingName, TTier tier, TDataCenter dataCenter)
+        protected override Task ClearOverrideAsyncImpl(string appName, string settingName, TDataCenter dataCenter, string user)
         {
-            ClearOverride(appName, settingName, tier, dataCenter);
+            ClearOverrideImpl(appName, settingName, dataCenter, user);
             return Task.FromResult(0);
         }
 
-        public override void ClearOverride(string appName, string settingName, TTier tier, TDataCenter dataCenter)
+        protected override void ClearOverrideImpl(string appName, string settingName, TDataCenter dataCenter, string user)
         {
-            var key = GetOverrideKey(settingName, tier, dataCenter);
+            var key = GetOverrideKey(settingName, dataCenter);
             var data = GetInMemoryAppData(appName);
             
             lock (data)

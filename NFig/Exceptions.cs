@@ -36,25 +36,20 @@ namespace NFig
         }
     }
 
-    public class InvalidSettingValueException<TTier, TDataCenter> : NFigException
-        where TTier : struct
-        where TDataCenter : struct
+    public class InvalidSettingValueException : NFigException
     {
 
         public string SettingName { get; }
         public object Value { get; }
         public bool IsDefault { get; }
         public bool IsOverride => !IsDefault;
-        public TTier Tier { get; }
-        public TDataCenter DataCenter { get; }
 
         public InvalidSettingValueException(
             string message,
             string settingName,
             object value,
             bool isDefault,
-            TTier tier,
-            TDataCenter dataCenter,
+            string dataCenter,
             Exception innerException = null) 
             : base(message, innerException)
         {
@@ -62,24 +57,21 @@ namespace NFig
             Data["Value"] = Value = value;
             Data["IsDefault"] = IsDefault = isDefault;
             Data["IsOverride"] = !isDefault;
-            Data["Tier"] = Tier = tier;
-            Data["DataCenter"] = DataCenter = dataCenter;
+            Data["DataCenter"] = dataCenter;
         }
     }
 
-    public class InvalidSettingOverridesException<TTier, TDataCenter> : NFigException
-        where TTier : struct
-        where TDataCenter : struct
+    public class InvalidSettingOverridesException : NFigException
     {
-        public IList<InvalidSettingValueException<TTier, TDataCenter>> Exceptions { get; }
+        public IList<InvalidSettingValueException> Exceptions { get; }
 
-        public InvalidSettingOverridesException(IList<InvalidSettingValueException<TTier, TDataCenter>> exceptions, string stackTrace) : base(GetMessage(exceptions))
+        public InvalidSettingOverridesException(IList<InvalidSettingValueException> exceptions, string stackTrace) : base(GetMessage(exceptions))
         {
             Exceptions = exceptions;
             UnthrownStackTrace = stackTrace;
         }
 
-        private static string GetMessage(IList<InvalidSettingValueException<TTier, TDataCenter>> exceptions)
+        private static string GetMessage(IList<InvalidSettingValueException> exceptions)
         {
             return $"{exceptions.Count} invalid setting overrides were not applied ({string.Join(", ", exceptions.Select(e => e.SettingName))}). You should edit or clear these overrides.";
         }

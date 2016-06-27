@@ -91,12 +91,12 @@ namespace NFig
             return settings;
         }
 
-        public InvalidSettingOverridesException<TTier, TDataCenter> TryGetAppSettings
+        public InvalidSettingOverridesException TryGetAppSettings
             (out TSettings settings, TTier tier, TDataCenter dataCenter, IEnumerable<SettingValue<TTier, TDataCenter>> overrides = null)
         {
             // pick the right overrides
             Dictionary<string, SettingValue<TTier, TDataCenter>> overridesBySetting = null;
-            List<InvalidSettingValueException<TTier, TDataCenter>> exceptions = null;
+            List<InvalidSettingValueException> exceptions = null;
 
             if (overrides != null)
             {
@@ -138,19 +138,18 @@ namespace NFig
                     }
                     catch (Exception ex)
                     {
-                        var invalidEx = new InvalidSettingValueException<TTier, TDataCenter>(
+                        var invalidEx = new InvalidSettingValueException(
                             $"Invalid override value for setting \"{setting.Name}\". Cannot convert the string override to a real value.",
                             setting.Name,
                             over.Value,
                             false,
-                            over.Tier,
-                            over.DataCenter,
+                            over.DataCenter.ToString(),
                             ex);
 
                         invalidEx.UnthrownStackTrace = new StackTrace(true).ToString();
 
                         if (exceptions == null)
-                            exceptions = new List<InvalidSettingValueException<TTier, TDataCenter>>();
+                            exceptions = new List<InvalidSettingValueException>();
 
                         exceptions.Add(invalidEx);
                     }
@@ -160,7 +159,7 @@ namespace NFig
             }
 
             if (exceptions != null)
-                return new InvalidSettingOverridesException<TTier, TDataCenter>(exceptions, new StackTrace(true).ToString());
+                return new InvalidSettingOverridesException(exceptions, new StackTrace(true).ToString());
 
             return null;
         }
@@ -443,13 +442,12 @@ namespace NFig
                 }
                 catch (Exception ex)
                 {
-                    throw new InvalidSettingValueException<TTier, TDataCenter>(
+                    throw new InvalidSettingValueException(
                         $"Invalid default for setting \"{name}\". Cannot convert to a string representation.",
                         name,
                         value,
                         true,
-                        tier,
-                        dataCenter,
+                        dataCenter.ToString(),
                         ex);
                 }
             }
@@ -461,13 +459,12 @@ namespace NFig
             }
             catch (Exception ex)
             {
-                throw new InvalidSettingValueException<TTier, TDataCenter>(
+                throw new InvalidSettingValueException(
                     $"Invalid default value for setting \"{name}\". Cannot convert string representation back into a real value.",
                     name,
                     value,
                     true,
-                    tier,
-                    dataCenter,
+                    dataCenter.ToString(),
                     ex);
             }
 

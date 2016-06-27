@@ -29,20 +29,15 @@ namespace NFig.Tests
         {
             var store = new NFigMemoryStore<InMemorySettings, Tier, DataCenter>();
 
-            store.SetOverride(AppName, "TopInteger", "3", Tier.Any, DataCenter.Any);
-            store.SetOverride(AppName, "Nested.Integer", "5", Tier.Local, DataCenter.Any);
+            store.SetOverride(AppName, "TopInteger", "3", DataCenter.Any, "Bret");
+            store.SetOverride(AppName, "Nested.Integer", "7", DataCenter.East, "Bret");
+            store.SetOverride(AppName, "Nested.String", "Something", DataCenter.West, "Bret");
 
             var settings = store.GetAppSettings(AppName, Tier.Local, DataCenter.East);
             Assert.AreEqual(3, settings.TopInteger);
             Assert.AreEqual("Twenty-Three", settings.TopString);
-            Assert.AreEqual(5, settings.Nested.Integer);
-            Assert.AreEqual("Seventeen", settings.Nested.String);
-
-            settings = store.GetAppSettings(AppName, Tier.Prod, DataCenter.East);
-            Assert.AreEqual(3, settings.TopInteger);
-            Assert.AreEqual("Twenty-Three", settings.TopString);
             Assert.AreEqual(7, settings.Nested.Integer);
-            Assert.AreEqual("Seven", settings.Nested.String);
+            Assert.AreEqual("Seventeen", settings.Nested.String);
         }
 
         [Test]
@@ -67,7 +62,7 @@ namespace NFig.Tests
             Assert.IsNotNull(settings);
             Assert.IsNull(settings.Commit);
 
-            store.SetOverride(AppName, "Nested.Integer", "32", Tier.Any, DataCenter.Any);
+            store.SetOverride(AppName, "Nested.Integer", "32", DataCenter.Any, "Bret");
 
             Assert.AreEqual(2, callbackCount);
             Assert.IsNotNull(settings.Commit);
