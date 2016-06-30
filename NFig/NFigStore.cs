@@ -285,6 +285,13 @@ namespace NFig
             return Task.Run(async () => await GetCurrentCommitAsync(appName)).Result;
         }
 
+        public abstract Task RestoreSnapshotAsync(AppSnapshot<TTier, TDataCenter> snapshot);
+
+        public virtual void RestoreSnapshot(AppSnapshot<TTier, TDataCenter> snapshot)
+        {
+            Task.Run(async () => { await RestoreSnapshotAsync(snapshot); }).Wait();
+        }
+
         protected abstract Task<AppSnapshot<TTier, TDataCenter>> SetOverrideAsyncImpl(
             string appName,
             string settingName,
@@ -310,8 +317,6 @@ namespace NFig
         {
             Task.Run(async () => { await PushUpdateNotificationAsync(appName); }).Wait();
         }
-
-        // restore
 
         protected abstract Task<AppSnapshot<TTier, TDataCenter>> GetAppSnapshotNoCacheAsync(string appName);
 
