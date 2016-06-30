@@ -101,12 +101,12 @@ namespace NFig
             TriggerReload(appName);
         }
 
-        protected override Task<AppSnapshot<TTier, TDataCenter>> GetAppDataNoCacheAsync(string appName)
+        protected override Task<AppSnapshot<TTier, TDataCenter>> GetAppSnapshotNoCacheAsync(string appName)
         {
-            return Task.FromResult(GetAppDataNoCache(appName));
+            return Task.FromResult(GetAppSnapshotNoCache(appName));
         }
 
-        protected override AppSnapshot<TTier, TDataCenter> GetAppDataNoCache(string appName)
+        protected override AppSnapshot<TTier, TDataCenter> GetAppSnapshotNoCache(string appName)
         {
             var data = GetInMemoryAppData(appName);
             lock (data)

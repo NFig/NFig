@@ -107,7 +107,7 @@ namespace NFig
         /// </summary>
         public async Task<TSettings> GetAppSettingsAsync(string appName, TTier tier, TDataCenter dataCenter)
         {
-            var data = await GetAppDataAsync(appName).ConfigureAwait(false);
+            var data = await GetAppSnapshotAsync(appName).ConfigureAwait(false);
 
             TSettings settings;
             var ex = GetSettingsObjectFromData(data, tier, dataCenter, out settings);
@@ -120,7 +120,7 @@ namespace NFig
         /// <summary>
         /// Synchronous version of GetAppSettingsAsync.
         /// </summary>
-        public virtual TSettings GetAppSettings(string appName, TTier tier, TDataCenter dataCenter)
+        public TSettings GetAppSettings(string appName, TTier tier, TDataCenter dataCenter)
         {
             var data = GetAppSnapshot(appName);
 
@@ -137,7 +137,7 @@ namespace NFig
         /// </summary>
         public async Task<SettingInfo<TTier, TDataCenter>[]> GetAllSettingInfosAsync(string appName)
         {
-            var data = await GetAppDataAsync(appName).ConfigureAwait(false);
+            var data = await GetAppSnapshotAsync(appName).ConfigureAwait(false);
             return _factory.GetAllSettingInfos(data.Overrides);
         }
 
@@ -208,6 +208,68 @@ namespace NFig
             return _factory.IsValidStringForSetting(settingName, value);
         }
 
+        public async Task<AppSnapshot<TTier, TDataCenter>> GetAppSnapshotAsync(string appName)
+        {
+            AppSnapshot<TTier, TDataCenter> snapshot;
+
+            // check cache first
+            bool cacheExisted;
+            lock (_dataCacheLock)
+            {
+                cacheExisted = _dataCache.TryGetValue(appName, out snapshot);
+            }
+
+            if (cacheExisted)
+            {
+                var commit = await GetCurrentCommitAsync(appName).ConfigureAwait(false);
+                if (snapshot.Commit == commit)
+                    return snapshot;
+            }
+
+            snapshot = await GetAppSnapshotNoCacheAsync(appName);
+
+            lock (_dataCacheLock)
+            {
+                _dataCache[appName] = snapshot;
+            }
+
+            if (!cacheExisted)
+                await DeleteOrphanedOverridesAsync(snapshot);
+
+            return snapshot;
+        }
+
+        public AppSnapshot<TTier, TDataCenter> GetAppSnapshot(string appName)
+        {
+            AppSnapshot<TTier, TDataCenter> snapshot;
+
+            // check cache first
+            bool cacheExisted;
+            lock (_dataCacheLock)
+            {
+                cacheExisted = _dataCache.TryGetValue(appName, out snapshot);
+            }
+
+            if (cacheExisted)
+            {
+                var commit = GetCurrentCommit(appName);
+                if (snapshot.Commit == commit)
+                    return snapshot;
+            }
+
+            snapshot = GetAppSnapshotNoCache(appName);
+
+            lock (_dataCacheLock)
+            {
+                _dataCache[appName] = snapshot;
+            }
+
+            if (!cacheExisted)
+                DeleteOrphanedOverrides(snapshot);
+
+            return snapshot;
+        }
+
 // === Virtual Methods ===
 
         /// <summary>
@@ -249,19 +311,13 @@ namespace NFig
             Task.Run(async () => { await PushUpdateNotificationAsync(appName); }).Wait();
         }
 
-        // log
-
-        // publish
-
-        // backup
-
         // restore
 
-        protected abstract Task<AppSnapshot<TTier, TDataCenter>> GetAppDataNoCacheAsync(string appName);
+        protected abstract Task<AppSnapshot<TTier, TDataCenter>> GetAppSnapshotNoCacheAsync(string appName);
 
-        protected virtual AppSnapshot<TTier, TDataCenter> GetAppDataNoCache(string appName)
+        protected virtual AppSnapshot<TTier, TDataCenter> GetAppSnapshotNoCache(string appName)
         {
-            return Task.Run(async () => await GetAppDataNoCacheAsync(appName)).Result;
+            return Task.Run(async () => await GetAppSnapshotNoCacheAsync(appName)).Result;
         }
 
         protected abstract Task DeleteOrphanedOverridesAsync(AppSnapshot<TTier, TDataCenter> snapshot);
@@ -441,70 +497,6 @@ namespace NFig
 
                 return new TierDataCenterCallback[0];
             }
-        }
-
-// === Data Cache ===
-
-        private async Task<AppSnapshot<TTier, TDataCenter>> GetAppDataAsync(string appName)
-        {
-            AppSnapshot<TTier, TDataCenter> snapshot;
-
-            // check cache first
-            bool cacheExisted;
-            lock (_dataCacheLock)
-            {
-                cacheExisted = _dataCache.TryGetValue(appName, out snapshot);
-            }
-
-            if (cacheExisted)
-            {
-                var commit = await GetCurrentCommitAsync(appName).ConfigureAwait(false);
-                if (snapshot.Commit == commit)
-                    return snapshot;
-            }
-
-            snapshot = await GetAppDataNoCacheAsync(appName);
-
-            lock (_dataCacheLock)
-            {
-                _dataCache[appName] = snapshot;
-            }
-
-            if (!cacheExisted)
-                await DeleteOrphanedOverridesAsync(snapshot);
-
-            return snapshot;
-        }
-
-        private AppSnapshot<TTier, TDataCenter> GetAppSnapshot(string appName)
-        {
-            AppSnapshot<TTier, TDataCenter> snapshot;
-
-            // check cache first
-            bool cacheExisted;
-            lock (_dataCacheLock)
-            {
-                cacheExisted = _dataCache.TryGetValue(appName, out snapshot);
-            }
-
-            if (cacheExisted)
-            {
-                var commit = GetCurrentCommit(appName);
-                if (snapshot.Commit == commit)
-                    return snapshot;
-            }
-
-            snapshot = GetAppDataNoCache(appName);
-
-            lock (_dataCacheLock)
-            {
-                _dataCache[appName] = snapshot;
-            }
-
-            if (!cacheExisted)
-                DeleteOrphanedOverrides(snapshot);
-
-            return snapshot;
         }
 
 // === Helpers ===
