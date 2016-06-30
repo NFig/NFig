@@ -270,6 +270,20 @@ namespace NFig
             return snapshot;
         }
 
+        public async Task<AppSnapshot<TTier, TDataCenter>> RestoreSnapshotAsync(AppSnapshot<TTier, TDataCenter> snapshot, string user)
+        {
+            var newSnapshot = await RestoreSnapshotAsyncImpl(snapshot, user);
+            LogAndNotifyChange(newSnapshot);
+            return newSnapshot;
+        }
+
+        public AppSnapshot<TTier, TDataCenter> RestoreSnapshot(AppSnapshot<TTier, TDataCenter> snapshot, string user)
+        {
+            var newSnapshot = RestoreSnapshotImpl(snapshot, user);
+            LogAndNotifyChange(newSnapshot);
+            return newSnapshot;
+        }
+
 // === Virtual Methods ===
 
         /// <summary>
@@ -285,11 +299,11 @@ namespace NFig
             return Task.Run(async () => await GetCurrentCommitAsync(appName)).Result;
         }
 
-        public abstract Task RestoreSnapshotAsync(AppSnapshot<TTier, TDataCenter> snapshot);
+        public abstract Task<AppSnapshot<TTier, TDataCenter>> RestoreSnapshotAsyncImpl(AppSnapshot<TTier, TDataCenter> snapshot, string user);
 
-        public virtual void RestoreSnapshot(AppSnapshot<TTier, TDataCenter> snapshot)
+        public virtual AppSnapshot<TTier, TDataCenter> RestoreSnapshotImpl(AppSnapshot<TTier, TDataCenter> snapshot, string user)
         {
-            Task.Run(async () => { await RestoreSnapshotAsync(snapshot); }).Wait();
+            return Task.Run(async () => await RestoreSnapshotAsyncImpl(snapshot, user)).Result;
         }
 
         protected abstract Task<AppSnapshot<TTier, TDataCenter>> SetOverrideAsyncImpl(

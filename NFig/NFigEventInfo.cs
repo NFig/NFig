@@ -6,6 +6,7 @@ namespace NFig
     {
         OverrideSet = 1,
         OverrideCleared = 2,
+        SnapshotRestored = 3,
     }
 
     public class NFigEventInfo<TDataCenter>

@@ -101,6 +101,34 @@ namespace NFig
             TriggerReload(appName);
         }
 
+        public override Task<AppSnapshot<TTier, TDataCenter>> RestoreSnapshotAsyncImpl(AppSnapshot<TTier, TDataCenter> snapshot, string user)
+        {
+            return Task.FromResult(RestoreSnapshot(snapshot, user));
+        }
+
+        public override AppSnapshot<TTier, TDataCenter> RestoreSnapshotImpl(AppSnapshot<TTier, TDataCenter> snapshot, string user)
+        {
+            var data = GetInMemoryAppData(snapshot.ApplicationName);
+            lock (data)
+            {
+                data.Commit = NewCommit();
+                data.LastDataCenter = default(TDataCenter);
+                data.LastEvent = NFigEventType.SnapshotRestored;
+                data.LastSetting = null;
+                data.LastTime = DateTimeOffset.UtcNow;
+                data.LastUser = user;
+
+                data.Overrides.Clear();
+                foreach (var o in snapshot.Overrides)
+                {
+                    var key = GetOverrideKey(o.Name, o.DataCenter);
+                    data.Overrides.Add(key, o.Value);
+                }
+
+                return CreateSnapshot(snapshot.ApplicationName, data);
+            }
+        }
+
         protected override Task<AppSnapshot<TTier, TDataCenter>> GetAppSnapshotNoCacheAsync(string appName)
         {
             return Task.FromResult(GetAppSnapshotNoCache(appName));
