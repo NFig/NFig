@@ -5,20 +5,21 @@ namespace NFig.Tests
 {
     public class InMemoryStoreTests
     {
-        private const string AppName = "TestApp";
+        private const string APP_NAME = "TestApp";
+        private const string USER = "Bret";
 
         [Test]
         public void Defaults()
         {
             var store = new NFigMemoryStore<InMemorySettings, Tier, DataCenter>(Tier.Local, DataCenter.East);
-            var settings = store.GetAppSettings(AppName);
+            var settings = store.GetAppSettings(APP_NAME);
             Assert.AreEqual(23, settings.TopInteger);
             Assert.AreEqual("Twenty-Three", settings.TopString);
             Assert.AreEqual(17, settings.Nested.Integer);
             Assert.AreEqual("Seventeen", settings.Nested.String);
 
             store = new NFigMemoryStore<InMemorySettings, Tier, DataCenter>(Tier.Prod, DataCenter.East);
-            settings = store.GetAppSettings(AppName);
+            settings = store.GetAppSettings(APP_NAME);
             Assert.AreEqual(23, settings.TopInteger);
             Assert.AreEqual("Twenty-Three", settings.TopString);
             Assert.AreEqual(7, settings.Nested.Integer);
@@ -30,11 +31,11 @@ namespace NFig.Tests
         {
             var store = new NFigMemoryStore<InMemorySettings, Tier, DataCenter>(Tier.Local, DataCenter.East);
 
-            store.SetOverride(AppName, "TopInteger", "3", DataCenter.Any, "Bret");
-            store.SetOverride(AppName, "Nested.Integer", "7", DataCenter.East, "Bret");
-            store.SetOverride(AppName, "Nested.String", "Something", DataCenter.West, "Bret");
+            store.SetOverride(APP_NAME, "TopInteger", "3", DataCenter.Any, USER);
+            store.SetOverride(APP_NAME, "Nested.Integer", "7", DataCenter.East, USER);
+            store.SetOverride(APP_NAME, "Nested.String", "Something", DataCenter.West, USER);
 
-            var settings = store.GetAppSettings(AppName);
+            var settings = store.GetAppSettings(APP_NAME);
             Assert.AreEqual(3, settings.TopInteger);
             Assert.AreEqual("Twenty-Three", settings.TopString);
             Assert.AreEqual(7, settings.Nested.Integer);
@@ -49,7 +50,7 @@ namespace NFig.Tests
             InMemorySettings settings = null;
             var callbackCount = 0;
 
-            store.SubscribeToAppSettings(AppName, (ex, settingsObj, storeObj) =>
+            store.SubscribeToAppSettings(APP_NAME, (ex, settingsObj, storeObj) =>
             {
                 if (ex != null)
                     throw ex;
@@ -63,7 +64,7 @@ namespace NFig.Tests
             Assert.IsNotNull(settings);
             Assert.IsNull(settings.Commit);
 
-            store.SetOverride(AppName, "Nested.Integer", "32", DataCenter.Any, "Bret");
+            store.SetOverride(APP_NAME, "Nested.Integer", "32", DataCenter.Any, USER);
 
             Assert.AreEqual(2, callbackCount);
             Assert.IsNotNull(settings.Commit);
