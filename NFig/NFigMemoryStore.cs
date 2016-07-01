@@ -102,12 +102,12 @@ namespace NFig
             TriggerReload(appName);
         }
 
-        public override Task<AppSnapshot<TTier, TDataCenter>> RestoreSnapshotAsyncImpl(AppSnapshot<TTier, TDataCenter> snapshot, string user)
+        protected override Task<AppSnapshot<TTier, TDataCenter>> RestoreSnapshotAsyncImpl(AppSnapshot<TTier, TDataCenter> snapshot, string user)
         {
             return Task.FromResult(RestoreSnapshot(snapshot, user));
         }
 
-        public override AppSnapshot<TTier, TDataCenter> RestoreSnapshotImpl(AppSnapshot<TTier, TDataCenter> snapshot, string user)
+        protected override AppSnapshot<TTier, TDataCenter> RestoreSnapshotImpl(AppSnapshot<TTier, TDataCenter> snapshot, string user)
         {
             var data = GetInMemoryAppData(snapshot.ApplicationName);
             lock (data)

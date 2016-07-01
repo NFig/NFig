@@ -313,9 +313,9 @@ namespace NFig
             return Task.Run(async () => await GetCurrentCommitAsync(appName)).Result;
         }
 
-        public abstract Task<AppSnapshot<TTier, TDataCenter>> RestoreSnapshotAsyncImpl(AppSnapshot<TTier, TDataCenter> snapshot, string user);
+        protected abstract Task<AppSnapshot<TTier, TDataCenter>> RestoreSnapshotAsyncImpl(AppSnapshot<TTier, TDataCenter> snapshot, string user);
 
-        public virtual AppSnapshot<TTier, TDataCenter> RestoreSnapshotImpl(AppSnapshot<TTier, TDataCenter> snapshot, string user)
+        protected virtual AppSnapshot<TTier, TDataCenter> RestoreSnapshotImpl(AppSnapshot<TTier, TDataCenter> snapshot, string user)
         {
             return Task.Run(async () => await RestoreSnapshotAsyncImpl(snapshot, user)).Result;
         }
