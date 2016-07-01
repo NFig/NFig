@@ -11,7 +11,7 @@ namespace NFig
     {
         private class InMemoryAppData
         {
-            public string Commit { get; set; }
+            public string Commit { get; set; } = INITIAL_COMMIT;
             public NFigEventType LastEvent { get; set; }
             public DateTimeOffset LastTime { get; set; }
             public string LastUser { get; set; }

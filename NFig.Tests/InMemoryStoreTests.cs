@@ -64,7 +64,7 @@ namespace NFig.Tests
             
             Assert.AreEqual(1, callbackCount);
             Assert.IsNotNull(settings);
-            Assert.IsNull(settings.Commit);
+            Assert.AreEqual(NFigMemoryStore < InMemorySettings, Tier, DataCenter >.INITIAL_COMMIT, settings.Commit);
 
             store.SetOverride(APP_NAME, "Nested.Integer", "32", DataCenter.Any, USER_A);
 
