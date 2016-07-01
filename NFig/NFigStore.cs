@@ -15,15 +15,11 @@ namespace NFig
 
         private class TierDataCenterCallback
         {
-            public TTier Tier { get; }
-            public TDataCenter DataCenter { get; }
             public SettingsUpdateDelegate Callback { get; }
             public string LastNotifiedCommit { get; set; } = "NONE";
 
-            public TierDataCenterCallback(TTier tier, TDataCenter dataCenter, SettingsUpdateDelegate callback)
+            public TierDataCenterCallback(SettingsUpdateDelegate callback)
             {
-                Tier = tier;
-                DataCenter = dataCenter;
                 Callback = callback;
             }
         }
@@ -38,6 +34,9 @@ namespace NFig
 
         private Timer _pollingTimer;
 
+        public TTier Tier { get; }
+        public TDataCenter DataCenter { get; }
+
         public int PollingInterval { get; }
 
         public event Action<AppSnapshot<TTier, TDataCenter>> LogEvent;
@@ -45,15 +44,30 @@ namespace NFig
         /// <summary>
         /// 
         /// </summary>
+        /// <param name="tier">Tier the application is running on (cannot be the default "Any" value).</param>
+        /// <param name="dataCenter">DataCenter the application is running in (cannot be the default "Any" value).</param>
         /// <param name="additionalDefaultConverters">
         /// Allows you to specify additional (or replacement) default converters for types. Each key/value pair must be in the form of (typeof(T), ISettingConverter&lt;T&gt;).
         /// </param>
         /// <param name="pollingInterval">The interval, in seconds, to poll for override changes. Use 0 to disable polling.</param>
-        protected NFigStore(Dictionary<Type, object> additionalDefaultConverters = null, int pollingInterval = 60)
+        protected NFigStore(TTier tier, TDataCenter dataCenter, Dictionary<Type, object> additionalDefaultConverters = null, int pollingInterval = 60)
         {
             PollingInterval = pollingInterval;
             _factory = new SettingsFactory<TSettings, TTier, TDataCenter>(additionalDefaultConverters);
-            
+
+            if (tier.Equals(default(TTier)))
+                throw new ArgumentOutOfRangeException(nameof(tier), $"Tier cannot be the default enum value ({tier}) because it represents the \"Any\" tier.");
+
+            if (dataCenter.Equals(default(TDataCenter)))
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(dataCenter),
+                    $"DataCenter cannot be the default enum value ({dataCenter}) because it represents the \"Any\" data center.");
+            }
+
+            Tier = tier;
+            DataCenter = dataCenter;
+
             if (pollingInterval > 0)
                 _pollingTimer = new Timer(PollForChanges, null, pollingInterval * 1000, pollingInterval * 1000);
         }
@@ -105,12 +119,12 @@ namespace NFig
         /// <summary>
         /// Gets a hydrated TSettings object with the correct values for the specified application, tier, and data center combination.
         /// </summary>
-        public async Task<TSettings> GetAppSettingsAsync(string appName, TTier tier, TDataCenter dataCenter)
+        public async Task<TSettings> GetAppSettingsAsync(string appName)
         {
             var data = await GetAppSnapshotAsync(appName).ConfigureAwait(false);
 
             TSettings settings;
-            var ex = GetSettingsObjectFromData(data, tier, dataCenter, out settings);
+            var ex = GetSettingsObjectFromData(data, out settings);
             if (ex != null)
                 throw ex;
 
@@ -120,12 +134,12 @@ namespace NFig
         /// <summary>
         /// Synchronous version of GetAppSettingsAsync.
         /// </summary>
-        public TSettings GetAppSettings(string appName, TTier tier, TDataCenter dataCenter)
+        public TSettings GetAppSettings(string appName)
         {
             var data = GetAppSnapshot(appName);
 
             TSettings settings;
-            var ex = GetSettingsObjectFromData(data, tier, dataCenter, out settings);
+            var ex = GetSettingsObjectFromData(data, out settings);
             if (ex != null)
                 throw ex;
 
@@ -346,23 +360,23 @@ namespace NFig
             Task.Run(async () => await DeleteOrphanedOverridesAsync(snapshot)).Wait();
         }
 
-        protected virtual void OnSubscribe(string appName, TTier tier, TDataCenter dataCenter, SettingsUpdateDelegate callback)
+        protected virtual void OnSubscribe(string appName, SettingsUpdateDelegate callback)
         {
         }
 
 // === Subscriptions ===
 
-        public void SubscribeToAppSettings(string appName, TTier tier, TDataCenter dataCenter, SettingsUpdateDelegate callback)
+        public void SubscribeToAppSettings(string appName, SettingsUpdateDelegate callback)
         {
             TierDataCenterCallback[] callbacks;
             lock (_callbacksLock)
             {
-                var info = new TierDataCenterCallback(tier, dataCenter, callback);
+                var info = new TierDataCenterCallback(callback);
                 if (_callbacksByApp.TryGetValue(appName, out callbacks))
                 {
                     foreach (var c in callbacks)
                     {
-                        if (c.Tier.Equals(tier) && c.DataCenter.Equals(dataCenter) && c.Callback == callback)
+                        if (c.Callback == callback)
                             return; // callback already exists, no need to add it again
                     }
 
@@ -380,7 +394,7 @@ namespace NFig
                 }
             }
 
-            OnSubscribe(appName, tier, dataCenter, callback);
+            OnSubscribe(appName, callback);
             ReloadAndNotifyCallback(appName, callbacks);
         }
 
@@ -414,7 +428,7 @@ namespace NFig
                 {
                     try
                     {
-                        ex = GetSettingsObjectFromData(snapshot, c.Tier, c.DataCenter, out settings);
+                        ex = GetSettingsObjectFromData(snapshot, out settings);
                         c.LastNotifiedCommit = snapshot.Commit;
                     }
                     catch (Exception e)
@@ -432,11 +446,9 @@ namespace NFig
         /// Note that there is a potential race condition if you unsibscribe while an update is in progress, the prior callback may still get called.
         /// </summary>
         /// <param name="appName">The name of the app.</param>
-        /// <param name="tier"></param>
-        /// <param name="dataCenter"></param>
         /// <param name="callback">(optional) If null, any callback will be removed. If specified, a current callback will only be removed if it is equal to this param.</param>
         /// <returns>The number of callbacks removed.</returns>
-        public int UnsubscribeFromAppSettings(string appName, TTier? tier = null, TDataCenter? dataCenter = null, SettingsUpdateDelegate callback = null)
+        public int UnsubscribeFromAppSettings(string appName, SettingsUpdateDelegate callback = null)
         {
             lock (_callbacksLock)
             {
@@ -449,7 +461,7 @@ namespace NFig
                     {
                         var c = callbackList[i];
 
-                        if ((tier == null || c.Tier.Equals(tier.Value)) && (dataCenter == null || c.DataCenter.Equals(dataCenter.Value)) && (callback == null || c.Callback == callback))
+                        if (callback == null || c.Callback == callback)
                         {
                             callbackList.RemoveAt(i);
                             removedCount++;
@@ -561,10 +573,10 @@ namespace NFig
             }
         }
 
-        private InvalidSettingOverridesException GetSettingsObjectFromData(AppSnapshot<TTier, TDataCenter> snapshot, TTier tier, TDataCenter dataCenter, out TSettings settings)
+        private InvalidSettingOverridesException GetSettingsObjectFromData(AppSnapshot<TTier, TDataCenter> snapshot, out TSettings settings)
         {
             // create new settings object
-            var ex = _factory.TryGetAppSettings(out settings, tier, dataCenter, snapshot.Overrides);
+            var ex = _factory.TryGetAppSettings(out settings, Tier, DataCenter, snapshot.Overrides);
             settings.ApplicationName = snapshot.ApplicationName;
             settings.Commit = snapshot.Commit;
 

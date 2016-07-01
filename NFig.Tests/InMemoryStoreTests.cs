@@ -9,15 +9,15 @@ namespace NFig.Tests
         [Test]
         public void Defaults()
         {
-            var store = new NFigMemoryStore<InMemorySettings, Tier, DataCenter>();
-
-            var settings = store.GetAppSettings(AppName, Tier.Local, DataCenter.East);
+            var store = new NFigMemoryStore<InMemorySettings, Tier, DataCenter>(Tier.Local, DataCenter.East);
+            var settings = store.GetAppSettings(AppName);
             Assert.AreEqual(23, settings.TopInteger);
             Assert.AreEqual("Twenty-Three", settings.TopString);
             Assert.AreEqual(17, settings.Nested.Integer);
             Assert.AreEqual("Seventeen", settings.Nested.String);
 
-            settings = store.GetAppSettings(AppName, Tier.Prod, DataCenter.East);
+            store = new NFigMemoryStore<InMemorySettings, Tier, DataCenter>(Tier.Prod, DataCenter.East);
+            settings = store.GetAppSettings(AppName);
             Assert.AreEqual(23, settings.TopInteger);
             Assert.AreEqual("Twenty-Three", settings.TopString);
             Assert.AreEqual(7, settings.Nested.Integer);
@@ -27,13 +27,13 @@ namespace NFig.Tests
         [Test]
         public void Overrides()
         {
-            var store = new NFigMemoryStore<InMemorySettings, Tier, DataCenter>();
+            var store = new NFigMemoryStore<InMemorySettings, Tier, DataCenter>(Tier.Local, DataCenter.East);
 
             store.SetOverride(AppName, "TopInteger", "3", DataCenter.Any, "Bret");
             store.SetOverride(AppName, "Nested.Integer", "7", DataCenter.East, "Bret");
             store.SetOverride(AppName, "Nested.String", "Something", DataCenter.West, "Bret");
 
-            var settings = store.GetAppSettings(AppName, Tier.Local, DataCenter.East);
+            var settings = store.GetAppSettings(AppName);
             Assert.AreEqual(3, settings.TopInteger);
             Assert.AreEqual("Twenty-Three", settings.TopString);
             Assert.AreEqual(7, settings.Nested.Integer);
@@ -43,12 +43,12 @@ namespace NFig.Tests
         [Test]
         public void SubscribeToUpdates()
         {
-            var store = new NFigMemoryStore<InMemorySettings, Tier, DataCenter>();
+            var store = new NFigMemoryStore<InMemorySettings, Tier, DataCenter>(Tier.Local, DataCenter.West);
 
             InMemorySettings settings = null;
             var callbackCount = 0;
 
-            store.SubscribeToAppSettings(AppName, Tier.Local, DataCenter.West, (ex, settingsObj, storeObj) =>
+            store.SubscribeToAppSettings(AppName, (ex, settingsObj, storeObj) =>
             {
                 if (ex != null)
                     throw ex;

@@ -17,13 +17,14 @@ namespace NFig
             public string LastUser { get; set; }
             public string LastSetting { get; set; }
             public TDataCenter LastDataCenter { get; set; }
-            public Dictionary<string, string> Overrides { get; set; } = new Dictionary<string, string>();
+            public Dictionary<string, string> Overrides { get; } = new Dictionary<string, string>();
         }
 
         private readonly object _lock = new object();
         private readonly Dictionary<string, InMemoryAppData> _dataByApp = new Dictionary<string, InMemoryAppData>();
 
-        public NFigMemoryStore(Dictionary<Type, object> additionalDefaultConverters = null) : base(additionalDefaultConverters, pollingInterval: 0)
+        public NFigMemoryStore(TTier tier, TDataCenter dataCenter, Dictionary<Type, object> additionalDefaultConverters = null)
+            : base(tier, dataCenter, additionalDefaultConverters, pollingInterval: 0)
         {
         }
 
