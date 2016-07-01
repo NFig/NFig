@@ -1,4 +1,5 @@
-﻿using NUnit.Framework;
+﻿using System;
+using NUnit.Framework;
 
 namespace NFig.Tests
 {
@@ -66,6 +67,16 @@ namespace NFig.Tests
 
             Assert.AreEqual(2, callbackCount);
             Assert.IsNotNull(settings.Commit);
+        }
+
+        [Test]
+        public void AnyTierOrDataCenterStoreThrows()
+        {
+            TestDelegate anyTier = () => { new NFigMemoryStore<InMemorySettings, Tier, DataCenter>(Tier.Any, DataCenter.East); };
+            Assert.Throws<ArgumentOutOfRangeException>(anyTier, "NFigStore with Tier.Any should have thrown an exception.");
+
+            TestDelegate anyDc = () => { new NFigMemoryStore<InMemorySettings, Tier, DataCenter>(Tier.Local, DataCenter.Any); };
+            Assert.Throws<ArgumentOutOfRangeException>(anyDc, "NFigStore with DataCenter.Any should have thrown an exception.");
         }
 
         private class InMemorySettings : SettingsBase
