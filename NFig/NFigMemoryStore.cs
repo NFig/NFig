@@ -45,7 +45,7 @@ namespace NFig
             {
                 data.Overrides[key] = value;
                 data.Commit = NewCommit();
-                data.LastEvent = NFigEventType.OverrideSet;
+                data.LastEvent = NFigEventType.SetOverride;
                 data.LastTime = DateTimeOffset.UtcNow;
                 data.LastUser = user;
                 data.LastSetting = settingName;
@@ -70,7 +70,7 @@ namespace NFig
             {
                 data.Overrides.Remove(key);
                 data.Commit = NewCommit();
-                data.LastEvent = NFigEventType.OverrideCleared;
+                data.LastEvent = NFigEventType.ClearOverride;
                 data.LastTime = DateTimeOffset.UtcNow;
                 data.LastUser = user;
                 data.LastSetting = settingName;
@@ -114,7 +114,7 @@ namespace NFig
             {
                 data.Commit = NewCommit();
                 data.LastDataCenter = default(TDataCenter);
-                data.LastEvent = NFigEventType.SnapshotRestored;
+                data.LastEvent = NFigEventType.RestoreSnapshot;
                 data.LastSetting = null;
                 data.LastTime = DateTimeOffset.UtcNow;
                 data.LastUser = user;

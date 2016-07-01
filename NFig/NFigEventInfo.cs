@@ -4,9 +4,9 @@ namespace NFig
 {
     public enum NFigEventType
     {
-        OverrideSet = 1,
-        OverrideCleared = 2,
-        SnapshotRestored = 3,
+        SetOverride = 1,
+        ClearOverride = 2,
+        RestoreSnapshot = 3,
     }
 
     public class NFigEventInfo<TDataCenter>
