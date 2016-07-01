@@ -6,7 +6,9 @@ namespace NFig.Tests
     public class InMemoryStoreTests
     {
         private const string APP_NAME = "TestApp";
-        private const string USER = "Bret";
+        private const string USER_A = "Andrew";
+        private const string USER_B = "Bret";
+        private const string USER_C = "Charlie";
 
         [Test]
         public void Defaults()
@@ -31,9 +33,9 @@ namespace NFig.Tests
         {
             var store = new NFigMemoryStore<InMemorySettings, Tier, DataCenter>(Tier.Local, DataCenter.East);
 
-            store.SetOverride(APP_NAME, "TopInteger", "3", DataCenter.Any, USER);
-            store.SetOverride(APP_NAME, "Nested.Integer", "7", DataCenter.East, USER);
-            store.SetOverride(APP_NAME, "Nested.String", "Something", DataCenter.West, USER);
+            store.SetOverride(APP_NAME, "TopInteger", "3", DataCenter.Any, USER_A);
+            store.SetOverride(APP_NAME, "Nested.Integer", "7", DataCenter.East, USER_A);
+            store.SetOverride(APP_NAME, "Nested.String", "Something", DataCenter.West, USER_A);
 
             var settings = store.GetAppSettings(APP_NAME);
             Assert.AreEqual(3, settings.TopInteger);
@@ -64,10 +66,70 @@ namespace NFig.Tests
             Assert.IsNotNull(settings);
             Assert.IsNull(settings.Commit);
 
-            store.SetOverride(APP_NAME, "Nested.Integer", "32", DataCenter.Any, USER);
+            store.SetOverride(APP_NAME, "Nested.Integer", "32", DataCenter.Any, USER_A);
 
             Assert.AreEqual(2, callbackCount);
             Assert.IsNotNull(settings.Commit);
+        }
+
+        [Test]
+        public void BackupAndRestore()
+        {
+            var store = new NFigMemoryStore<InMemorySettings, Tier, DataCenter>(Tier.Local, DataCenter.West);
+
+            // test SET snapshot
+            store.SetOverride(APP_NAME, "TopInteger", "7", DataCenter.Any, USER_A);
+            store.SetOverride(APP_NAME, "Nested.Integer", "3", DataCenter.West, USER_A);
+
+            var settings = store.GetAppSettings(APP_NAME);
+            Assert.AreEqual(7, settings.TopInteger);
+            Assert.AreEqual(3, settings.Nested.Integer);
+            Assert.AreEqual("Seventeen", settings.Nested.String);
+
+            var snapshot1 = store.GetAppSnapshot(APP_NAME);
+            Assert.AreEqual(APP_NAME, snapshot1.ApplicationName);
+            Assert.AreEqual(settings.Commit, snapshot1.Commit);
+            Assert.AreEqual(2, snapshot1.Overrides.Count);
+            Assert.AreEqual(NFigEventType.OverrideSet, snapshot1.LastEvent.Type);
+            Assert.AreEqual(USER_A, snapshot1.LastEvent.User);
+            Assert.AreEqual("Nested.Integer", snapshot1.LastEvent.SettingName);
+            Assert.AreEqual(DataCenter.West, snapshot1.LastEvent.DataCenter);
+
+            // test CLEAR snapshot
+            store.ClearOverride(APP_NAME, "TopInteger", DataCenter.Any, USER_B);
+
+            settings = store.GetAppSettings(APP_NAME);
+            Assert.AreEqual(23, settings.TopInteger);
+            Assert.AreEqual(3, settings.Nested.Integer);
+
+            var snapshot2 = store.GetAppSnapshot(APP_NAME);
+            Assert.AreEqual(APP_NAME, snapshot2.ApplicationName);
+            Assert.AreEqual(settings.Commit, snapshot2.Commit);
+            Assert.AreEqual(1, snapshot2.Overrides.Count);
+            Assert.AreEqual(NFigEventType.OverrideCleared, snapshot2.LastEvent.Type);
+            Assert.AreEqual(USER_B, snapshot2.LastEvent.User);
+            Assert.AreEqual("TopInteger", snapshot2.LastEvent.SettingName);
+            Assert.AreEqual(DataCenter.Any, snapshot2.LastEvent.DataCenter);
+
+            // test RESTORE
+            store.SetOverride(APP_NAME, "Nested.String", "Seventy", DataCenter.Any, USER_A);
+            settings = store.GetAppSettings(APP_NAME);
+            Assert.AreEqual("Seventy", settings.Nested.String);
+
+            var snapshot3 = store.RestoreSnapshot(snapshot1, USER_C);
+            settings = store.GetAppSettings(APP_NAME);
+
+            Assert.AreEqual(7, settings.TopInteger);
+            Assert.AreEqual(3, settings.Nested.Integer);
+            Assert.AreEqual("Seventeen", settings.Nested.String);
+
+            Assert.AreEqual(APP_NAME, snapshot3.ApplicationName);
+            Assert.AreEqual(settings.Commit, snapshot3.Commit);
+            Assert.AreEqual(2, snapshot3.Overrides.Count);
+            Assert.AreEqual(NFigEventType.SnapshotRestored, snapshot3.LastEvent.Type);
+            Assert.AreEqual(USER_C, snapshot3.LastEvent.User);
+//            Assert.AreEqual(snapshot1.Commit, snapshot2.LastEvent.SettingName);
+            Assert.AreEqual(DataCenter.Any, snapshot2.LastEvent.DataCenter);
         }
 
         [Test]
