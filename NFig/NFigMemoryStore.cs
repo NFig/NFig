@@ -16,6 +16,7 @@ namespace NFig
             public DateTimeOffset LastTime { get; set; }
             public string LastUser { get; set; }
             public string LastSetting { get; set; }
+            public string LastRestoreCommit { get; set; }
             public TDataCenter LastDataCenter { get; set; }
             public Dictionary<string, string> Overrides { get; } = new Dictionary<string, string>();
         }
@@ -116,6 +117,7 @@ namespace NFig
                 data.LastDataCenter = default(TDataCenter);
                 data.LastEvent = NFigEventType.RestoreSnapshot;
                 data.LastSetting = null;
+                data.LastRestoreCommit = snapshot.Commit;
                 data.LastTime = DateTimeOffset.UtcNow;
                 data.LastUser = user;
 
@@ -161,14 +163,18 @@ namespace NFig
 
             snapshot.Overrides = overrides;
 
-            snapshot.LastEvent = new NFigEventInfo<TDataCenter>()
-            {
-                Type = data.LastEvent,
-                Timestamp = data.LastTime,
-                SettingName = data.LastSetting,
-                DataCenter = data.LastDataCenter,
-                User = data.LastUser,
-            };
+            var ev = new NFigEventInfo<TDataCenter>();
+            ev.Type = data.LastEvent;
+            ev.Timestamp = data.LastTime;
+            ev.DataCenter = data.LastDataCenter;
+            ev.User = data.LastUser;
+
+            if (ev.Type == NFigEventType.RestoreSnapshot)
+                ev.RestoredCommit = data.LastRestoreCommit;
+            else
+                ev.SettingName = data.LastSetting;
+
+            snapshot.LastEvent = ev;
 
             return snapshot;
         }

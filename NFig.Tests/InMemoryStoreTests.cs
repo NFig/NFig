@@ -93,6 +93,7 @@ namespace NFig.Tests
             Assert.AreEqual(NFigEventType.SetOverride, snapshot1.LastEvent.Type);
             Assert.AreEqual(USER_A, snapshot1.LastEvent.User);
             Assert.AreEqual("Nested.Integer", snapshot1.LastEvent.SettingName);
+            Assert.IsNull(snapshot1.LastEvent.RestoredCommit);
             Assert.AreEqual(DataCenter.West, snapshot1.LastEvent.DataCenter);
 
             // test CLEAR snapshot
@@ -109,6 +110,7 @@ namespace NFig.Tests
             Assert.AreEqual(NFigEventType.ClearOverride, snapshot2.LastEvent.Type);
             Assert.AreEqual(USER_B, snapshot2.LastEvent.User);
             Assert.AreEqual("TopInteger", snapshot2.LastEvent.SettingName);
+            Assert.IsNull(snapshot2.LastEvent.RestoredCommit);
             Assert.AreEqual(DataCenter.Any, snapshot2.LastEvent.DataCenter);
 
             // test RESTORE
@@ -128,7 +130,8 @@ namespace NFig.Tests
             Assert.AreEqual(2, snapshot3.Overrides.Count);
             Assert.AreEqual(NFigEventType.RestoreSnapshot, snapshot3.LastEvent.Type);
             Assert.AreEqual(USER_C, snapshot3.LastEvent.User);
-//            Assert.AreEqual(snapshot1.Commit, snapshot2.LastEvent.SettingName);
+            Assert.AreEqual(snapshot1.Commit, snapshot3.LastEvent.RestoredCommit);
+            Assert.IsNull(snapshot3.LastEvent.SettingName);
             Assert.AreEqual(DataCenter.Any, snapshot2.LastEvent.DataCenter);
         }
 
