@@ -12,12 +12,7 @@ namespace NFig
         private class InMemoryAppData
         {
             public string Commit { get; set; } = INITIAL_COMMIT;
-            public NFigEventType LastEvent { get; set; }
-            public DateTimeOffset LastTime { get; set; }
-            public string LastUser { get; set; }
-            public string LastSetting { get; set; }
-            public string LastRestoreCommit { get; set; }
-            public TDataCenter LastDataCenter { get; set; }
+            public NFigLogEvent<TDataCenter> LastEvent { get; set; }
             public Dictionary<string, string> Overrides { get; } = new Dictionary<string, string>();
         }
 
@@ -46,11 +41,17 @@ namespace NFig
             {
                 data.Overrides[key] = value;
                 data.Commit = NewCommit();
-                data.LastEvent = NFigEventType.SetOverride;
-                data.LastTime = DateTimeOffset.UtcNow;
-                data.LastUser = user;
-                data.LastSetting = settingName;
-                data.LastDataCenter = dataCenter;
+
+                data.LastEvent = new NFigLogEvent<TDataCenter>(
+                    type: NFigEventType.SetOverride,
+                    appName: appName,
+                    commit: data.Commit,
+                    timestamp: DateTimeOffset.UtcNow,
+                    settingName: settingName,
+                    settingValue: value,
+                    restoredCommit: null,
+                    dataCenter: dataCenter,
+                    user: user);
 
                 return CreateSnapshot(appName, data);
             }
@@ -71,11 +72,17 @@ namespace NFig
             {
                 data.Overrides.Remove(key);
                 data.Commit = NewCommit();
-                data.LastEvent = NFigEventType.ClearOverride;
-                data.LastTime = DateTimeOffset.UtcNow;
-                data.LastUser = user;
-                data.LastSetting = settingName;
-                data.LastDataCenter = dataCenter;
+
+                data.LastEvent = new NFigLogEvent<TDataCenter>(
+                    type: NFigEventType.ClearOverride,
+                    appName: appName,
+                    commit: data.Commit,
+                    timestamp: DateTimeOffset.UtcNow,
+                    settingName: settingName,
+                    settingValue: null,
+                    restoredCommit: null,
+                    dataCenter: dataCenter,
+                    user: user);
 
                 return CreateSnapshot(appName, data);
             }
@@ -114,12 +121,17 @@ namespace NFig
             lock (data)
             {
                 data.Commit = NewCommit();
-                data.LastDataCenter = default(TDataCenter);
-                data.LastEvent = NFigEventType.RestoreSnapshot;
-                data.LastSetting = null;
-                data.LastRestoreCommit = snapshot.Commit;
-                data.LastTime = DateTimeOffset.UtcNow;
-                data.LastUser = user;
+
+                data.LastEvent = new NFigLogEvent<TDataCenter>(
+                    type: NFigEventType.RestoreSnapshot,
+                    appName: snapshot.ApplicationName,
+                    commit: data.Commit,
+                    timestamp: DateTimeOffset.UtcNow,
+                    settingName: null,
+                    settingValue: null,
+                    restoredCommit: snapshot.Commit,
+                    dataCenter: default(TDataCenter),
+                    user: user);
 
                 data.Overrides.Clear();
                 foreach (var o in snapshot.Overrides)
@@ -163,18 +175,7 @@ namespace NFig
 
             snapshot.Overrides = overrides;
 
-            var ev = new NFigLogEvent<TDataCenter>();
-            ev.Type = data.LastEvent;
-            ev.Timestamp = data.LastTime;
-            ev.DataCenter = data.LastDataCenter;
-            ev.User = data.LastUser;
-
-            if (ev.Type == NFigEventType.RestoreSnapshot)
-                ev.RestoredCommit = data.LastRestoreCommit;
-            else
-                ev.SettingName = data.LastSetting;
-
-            snapshot.LastEvent = ev;
+            snapshot.LastEvent = data.LastEvent?.Clone();
 
             return snapshot;
         }

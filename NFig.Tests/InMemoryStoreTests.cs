@@ -88,11 +88,14 @@ namespace NFig.Tests
 
             var snapshot1 = store.GetAppSnapshot(APP_NAME);
             Assert.AreEqual(APP_NAME, snapshot1.ApplicationName);
+            Assert.AreEqual(APP_NAME, snapshot1.LastEvent.ApplicationName);
             Assert.AreEqual(settings.Commit, snapshot1.Commit);
+            Assert.AreEqual(settings.Commit, snapshot1.LastEvent.Commit);
             Assert.AreEqual(2, snapshot1.Overrides.Count);
             Assert.AreEqual(NFigEventType.SetOverride, snapshot1.LastEvent.Type);
             Assert.AreEqual(USER_A, snapshot1.LastEvent.User);
             Assert.AreEqual("Nested.Integer", snapshot1.LastEvent.SettingName);
+            Assert.AreEqual("3", snapshot1.LastEvent.SettingValue);
             Assert.IsNull(snapshot1.LastEvent.RestoredCommit);
             Assert.AreEqual(DataCenter.West, snapshot1.LastEvent.DataCenter);
 
@@ -105,11 +108,14 @@ namespace NFig.Tests
 
             var snapshot2 = store.GetAppSnapshot(APP_NAME);
             Assert.AreEqual(APP_NAME, snapshot2.ApplicationName);
+            Assert.AreEqual(APP_NAME, snapshot2.LastEvent.ApplicationName);
             Assert.AreEqual(settings.Commit, snapshot2.Commit);
+            Assert.AreEqual(settings.Commit, snapshot2.LastEvent.Commit);
             Assert.AreEqual(1, snapshot2.Overrides.Count);
             Assert.AreEqual(NFigEventType.ClearOverride, snapshot2.LastEvent.Type);
             Assert.AreEqual(USER_B, snapshot2.LastEvent.User);
             Assert.AreEqual("TopInteger", snapshot2.LastEvent.SettingName);
+            Assert.IsNull(snapshot2.LastEvent.SettingValue);
             Assert.IsNull(snapshot2.LastEvent.RestoredCommit);
             Assert.AreEqual(DataCenter.Any, snapshot2.LastEvent.DataCenter);
 
@@ -126,12 +132,15 @@ namespace NFig.Tests
             Assert.AreEqual("Seventeen", settings.Nested.String);
 
             Assert.AreEqual(APP_NAME, snapshot3.ApplicationName);
+            Assert.AreEqual(APP_NAME, snapshot3.LastEvent.ApplicationName);
             Assert.AreEqual(settings.Commit, snapshot3.Commit);
+            Assert.AreEqual(settings.Commit, snapshot3.LastEvent.Commit);
             Assert.AreEqual(2, snapshot3.Overrides.Count);
             Assert.AreEqual(NFigEventType.RestoreSnapshot, snapshot3.LastEvent.Type);
             Assert.AreEqual(USER_C, snapshot3.LastEvent.User);
             Assert.AreEqual(snapshot1.Commit, snapshot3.LastEvent.RestoredCommit);
             Assert.IsNull(snapshot3.LastEvent.SettingName);
+            Assert.IsNull(snapshot3.LastEvent.SettingValue);
             Assert.AreEqual(DataCenter.Any, snapshot2.LastEvent.DataCenter);
         }
 
