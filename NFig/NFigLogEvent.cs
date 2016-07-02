@@ -9,7 +9,7 @@ namespace NFig
         RestoreSnapshot = 3,
     }
 
-    public class NFigEventInfo<TDataCenter>
+    public class NFigLogEvent<TDataCenter>
         where TDataCenter : struct
     {
         /// <summary>

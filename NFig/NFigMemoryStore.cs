@@ -163,7 +163,7 @@ namespace NFig
 
             snapshot.Overrides = overrides;
 
-            var ev = new NFigEventInfo<TDataCenter>();
+            var ev = new NFigLogEvent<TDataCenter>();
             ev.Type = data.LastEvent;
             ev.Timestamp = data.LastTime;
             ev.DataCenter = data.LastDataCenter;
