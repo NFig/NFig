@@ -92,7 +92,7 @@ namespace NFig.Tests
             Assert.AreEqual(settings.Commit, snapshot1.Commit);
             Assert.AreEqual(settings.Commit, snapshot1.LastEvent.Commit);
             Assert.AreEqual(2, snapshot1.Overrides.Count);
-            Assert.AreEqual(NFigEventType.SetOverride, snapshot1.LastEvent.Type);
+            Assert.AreEqual(NFigLogEventType.SetOverride, snapshot1.LastEvent.Type);
             Assert.AreEqual(USER_A, snapshot1.LastEvent.User);
             Assert.AreEqual("Nested.Integer", snapshot1.LastEvent.SettingName);
             Assert.AreEqual("3", snapshot1.LastEvent.SettingValue);
@@ -112,7 +112,7 @@ namespace NFig.Tests
             Assert.AreEqual(settings.Commit, snapshot2.Commit);
             Assert.AreEqual(settings.Commit, snapshot2.LastEvent.Commit);
             Assert.AreEqual(1, snapshot2.Overrides.Count);
-            Assert.AreEqual(NFigEventType.ClearOverride, snapshot2.LastEvent.Type);
+            Assert.AreEqual(NFigLogEventType.ClearOverride, snapshot2.LastEvent.Type);
             Assert.AreEqual(USER_B, snapshot2.LastEvent.User);
             Assert.AreEqual("TopInteger", snapshot2.LastEvent.SettingName);
             Assert.IsNull(snapshot2.LastEvent.SettingValue);
@@ -136,7 +136,7 @@ namespace NFig.Tests
             Assert.AreEqual(settings.Commit, snapshot3.Commit);
             Assert.AreEqual(settings.Commit, snapshot3.LastEvent.Commit);
             Assert.AreEqual(2, snapshot3.Overrides.Count);
-            Assert.AreEqual(NFigEventType.RestoreSnapshot, snapshot3.LastEvent.Type);
+            Assert.AreEqual(NFigLogEventType.RestoreSnapshot, snapshot3.LastEvent.Type);
             Assert.AreEqual(USER_C, snapshot3.LastEvent.User);
             Assert.AreEqual(snapshot1.Commit, snapshot3.LastEvent.RestoredCommit);
             Assert.IsNull(snapshot3.LastEvent.SettingName);

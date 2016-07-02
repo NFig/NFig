@@ -12,7 +12,7 @@ namespace NFig
         private class InMemoryAppData
         {
             public string Commit { get; set; } = INITIAL_COMMIT;
-            public NFigLogEvent<TDataCenter> LastEvent { get; set; }
+            public byte[] LastEvent { get; set; }
             public Dictionary<string, string> Overrides { get; } = new Dictionary<string, string>();
         }
 
@@ -42,16 +42,18 @@ namespace NFig
                 data.Overrides[key] = value;
                 data.Commit = NewCommit();
 
-                data.LastEvent = new NFigLogEvent<TDataCenter>(
-                    type: NFigEventType.SetOverride,
+                var log = new NFigLogEvent<TDataCenter>(
+                    type: NFigLogEventType.SetOverride,
                     appName: appName,
                     commit: data.Commit,
-                    timestamp: DateTimeOffset.UtcNow,
+                    timestamp: DateTime.UtcNow,
                     settingName: settingName,
                     settingValue: value,
                     restoredCommit: null,
                     dataCenter: dataCenter,
                     user: user);
+
+                data.LastEvent = log.BinarySerialize();
 
                 return CreateSnapshot(appName, data);
             }
@@ -73,16 +75,18 @@ namespace NFig
                 data.Overrides.Remove(key);
                 data.Commit = NewCommit();
 
-                data.LastEvent = new NFigLogEvent<TDataCenter>(
-                    type: NFigEventType.ClearOverride,
+                var log = new NFigLogEvent<TDataCenter>(
+                    type: NFigLogEventType.ClearOverride,
                     appName: appName,
                     commit: data.Commit,
-                    timestamp: DateTimeOffset.UtcNow,
+                    timestamp: DateTime.UtcNow,
                     settingName: settingName,
                     settingValue: null,
                     restoredCommit: null,
                     dataCenter: dataCenter,
                     user: user);
+
+                data.LastEvent = log.BinarySerialize();
 
                 return CreateSnapshot(appName, data);
             }
@@ -122,16 +126,18 @@ namespace NFig
             {
                 data.Commit = NewCommit();
 
-                data.LastEvent = new NFigLogEvent<TDataCenter>(
-                    type: NFigEventType.RestoreSnapshot,
+                var log = new NFigLogEvent<TDataCenter>(
+                    type: NFigLogEventType.RestoreSnapshot,
                     appName: snapshot.ApplicationName,
                     commit: data.Commit,
-                    timestamp: DateTimeOffset.UtcNow,
+                    timestamp: DateTime.UtcNow,
                     settingName: null,
                     settingValue: null,
                     restoredCommit: snapshot.Commit,
                     dataCenter: default(TDataCenter),
                     user: user);
+
+                data.LastEvent = log.BinarySerialize();
 
                 data.Overrides.Clear();
                 foreach (var o in snapshot.Overrides)
@@ -175,7 +181,7 @@ namespace NFig
 
             snapshot.Overrides = overrides;
 
-            snapshot.LastEvent = data.LastEvent?.Clone();
+            snapshot.LastEvent = NFigLogEvent<TDataCenter>.BinaryDeserialize(data.LastEvent);
 
             return snapshot;
         }

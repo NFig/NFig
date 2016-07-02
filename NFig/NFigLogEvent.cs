@@ -1,8 +1,9 @@
 ﻿using System;
+using System.IO;
 
 namespace NFig
 {
-    public enum NFigEventType
+    public enum NFigLogEventType : byte
     {
         SetOverride = 1,
         ClearOverride = 2,
@@ -15,7 +16,7 @@ namespace NFig
         /// <summary>
         /// The type of event which occurred.
         /// </summary>
-        public NFigEventType Type { get; set; }
+        public NFigLogEventType Type { get; set; }
         /// <summary>
         /// The name of the application this event was applicable to.
         /// </summary>
@@ -27,7 +28,7 @@ namespace NFig
         /// <summary>
         /// The time the event occurred.
         /// </summary>
-        public DateTimeOffset Timestamp { get; set; }
+        public DateTime Timestamp { get; set; }
         /// <summary>
         /// If Type is SetOverride or ClearOverride, this property will indicate which setting was affected. 
         /// </summary>
@@ -52,10 +53,10 @@ namespace NFig
         public NFigLogEvent() { }
 
         public NFigLogEvent(
-            NFigEventType type,
+            NFigLogEventType type,
             string appName,
             string commit,
-            DateTimeOffset timestamp,
+            DateTime timestamp,
             string settingName,
             string settingValue,
             string restoredCommit,
@@ -76,6 +77,52 @@ namespace NFig
         public NFigLogEvent<TDataCenter> Clone()
         {
             return (NFigLogEvent<TDataCenter>)MemberwiseClone();
+        }
+
+        public byte[] BinarySerialize()
+        {
+            using (var s = new MemoryStream())
+            using (var w = new BinaryWriter(s))
+            {
+                w.Write((byte)1); // version - might be useful in the future
+                w.Write((byte)Type);
+                w.WriteNullableString(ApplicationName);
+                w.WriteNullableString(Commit);
+                w.Write(Timestamp.ToBinary());
+                w.WriteNullableString(SettingName);
+                w.WriteNullableString(SettingValue);
+                w.WriteNullableString(RestoredCommit);
+                w.Write(Convert.ToUInt32(DataCenter));
+                w.WriteNullableString(User);
+
+                return s.ToArray();
+            }
+        }
+
+        public static NFigLogEvent<TDataCenter> BinaryDeserialize(byte[] data)
+        {
+            if (data == null || data.Length == 0)
+                return null;
+
+            using (var s = new MemoryStream(data))
+            using (var r = new BinaryReader(s))
+            {
+                var version = r.ReadByte();
+
+                var log = new NFigLogEvent<TDataCenter>();
+
+                log.Type = (NFigLogEventType)r.ReadByte();
+                log.ApplicationName = r.ReadNullableString();
+                log.Commit = r.ReadNullableString();
+                log.Timestamp = DateTime.FromBinary(r.ReadInt64());
+                log.SettingName = r.ReadNullableString();
+                log.SettingValue = r.ReadNullableString();
+                log.RestoredCommit = r.ReadNullableString();
+                log.DataCenter = (TDataCenter)Enum.ToObject(typeof(TDataCenter), r.ReadUInt32());
+                log.User = r.ReadNullableString();
+
+                return log;
+            }
         }
     }
 }

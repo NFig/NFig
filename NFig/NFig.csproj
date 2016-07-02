@@ -39,6 +39,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BinaryExtensions.cs" />
     <Compile Include="DefaultValueAttribute.cs" />
     <Compile Include="EnumConverters.cs" />
     <Compile Include="Exceptions.cs" />
