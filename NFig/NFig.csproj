@@ -44,6 +44,8 @@
     <Compile Include="Exceptions.cs" />
     <Compile Include="INFigSettings.cs" />
     <Compile Include="AppSnapshot.cs" />
+    <Compile Include="SettingsLogger.cs" />
+    <Compile Include="MemoryLogger.cs" />
     <Compile Include="NFigLogEvent.cs" />
     <Compile Include="NFigMemoryStore.cs" />
     <Compile Include="NFigStore.cs" />
