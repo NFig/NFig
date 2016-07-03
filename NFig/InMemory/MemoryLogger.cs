@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using NFig.Logging;
 
-namespace NFig.Logging
+namespace NFig.InMemory
 {
     public class MemoryLogger<TTier, TDataCenter> : SettingsLogger<TTier, TDataCenter>
         where TTier : struct

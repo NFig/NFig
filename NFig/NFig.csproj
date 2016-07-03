@@ -46,10 +46,10 @@
     <Compile Include="INFigSettings.cs" />
     <Compile Include="AppSnapshot.cs" />
     <Compile Include="Encryption\ISettingEncrypter.cs" />
-    <Compile Include="Logging\MemoryLogger.cs" />
+    <Compile Include="InMemory\MemoryLogger.cs" />
+    <Compile Include="InMemory\NFigMemoryStore.cs" />
     <Compile Include="Logging\NFigLogEvent.cs" />
     <Compile Include="Logging\SettingsLogger.cs" />
-    <Compile Include="NFigMemoryStore.cs" />
     <Compile Include="NFigStore.cs" />
     <Compile Include="ChangeRequiresRestartAttribute.cs" />
     <Compile Include="SettingAttribute.cs" />
