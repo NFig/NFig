@@ -45,6 +45,7 @@
     <Compile Include="Exceptions.cs" />
     <Compile Include="INFigSettings.cs" />
     <Compile Include="AppSnapshot.cs" />
+    <Compile Include="Encryption\ISettingEncrypter.cs" />
     <Compile Include="SettingsLogger.cs" />
     <Compile Include="MemoryLogger.cs" />
     <Compile Include="NFigLogEvent.cs" />
@@ -59,6 +60,7 @@
     <Compile Include="SettingConverterAttribute.cs" />
     <Compile Include="SettingValue.cs" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
