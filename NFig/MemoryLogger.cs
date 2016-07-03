@@ -34,6 +34,7 @@ namespace NFig
             bool includeRestores = true,
             DateTime? minDate = null,
             DateTime? maxDate = null,
+            string user = null,
             int? limit = null,
             int skip = 0)
         {
@@ -62,6 +63,9 @@ namespace NFig
                         continue;
 
                     if (maxDate.HasValue && log.Timestamp >= maxDate.Value)
+                        continue;
+
+                    if (user != null && log.User != user)
                         continue;
 
                     if (skipped < skip)

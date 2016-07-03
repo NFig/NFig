@@ -41,6 +41,7 @@ namespace NFig
         /// <param name="includeRestores">If true, restore events will be included, even when filtering by setting name.</param>
         /// <param name="minDate">Minimum (inclusive) event date to include in results.</param>
         /// <param name="maxDate">Maximum (exclusive) event date to include in results.</param>
+        /// <param name="user">User to filter on. Null to include events by all users.</param>
         /// <param name="limit">Maximum number of results to return.</param>
         /// <param name="skip">Number of results to skip - useful for pagenation.</param>
         /// <returns></returns>
@@ -50,6 +51,7 @@ namespace NFig
             bool includeRestores = true,
             DateTime? minDate = null,
             DateTime? maxDate = null,
+            string user = null,
             int? limit = null,
             int skip = 0);
 
