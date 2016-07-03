@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 
-namespace NFig
+namespace NFig.Logging
 {
     public enum NFigLogEventType : byte
     {

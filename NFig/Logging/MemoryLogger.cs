@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace NFig
+namespace NFig.Logging
 {
     public class MemoryLogger<TTier, TDataCenter> : SettingsLogger<TTier, TDataCenter>
         where TTier : struct

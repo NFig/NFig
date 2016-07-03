@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using NFig.Logging;
 using NUnit.Framework;
 
 namespace NFig.Tests
