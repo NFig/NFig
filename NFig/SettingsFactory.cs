@@ -340,7 +340,7 @@ namespace NFig
                         if (!tValueType.IsPublic && !tValueType.IsNestedPublic)
                             throw new InvalidSettingConverterException($"Cannot create converter for enum type \"{tValueType.Name}\" because it is not public.", tValueType);
 
-                        convObj = EnumConverters.GetConverterFor(tValueType);
+                        convObj = EnumConverters.GetConverter<TValue>();
                     }
                     else
                     {

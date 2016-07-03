@@ -7,69 +7,77 @@ namespace NFig
 {
     internal static class EnumConverters
     {
-        private static readonly Dictionary<Type, object> _converters = new Dictionary<Type, object>();
-        private static readonly object _lock = new object();
-        private static readonly ModuleBuilder _moduleBuilder;
-
-        static EnumConverters()
+        private class EnumConverter<T> : ISettingConverter<T>
         {
-            var name = "NFigEnumConverters_" + Guid.NewGuid();
-            var asmName = new AssemblyName(name);
-            var asmBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(asmName, AssemblyBuilderAccess.Run);
-            _moduleBuilder = asmBuilder.DefineDynamicModule("Main");
+            private readonly Func<T, string> _getString;
+            private readonly Func<string, T> _getValue;
+
+            internal EnumConverter(Func<T, string> getString, Func<string, T> getValue)
+            {
+                _getString = getString;
+                _getValue = getValue;
+            }
+
+            public string GetString(T value)
+            {
+                return _getString(value);
+            }
+
+            public T GetValue(string s)
+            {
+                return _getValue(s);
+            }
         }
 
-        public static object GetConverterFor(Type enumType)
+        private static readonly Dictionary<Type, object> s_converters = new Dictionary<Type, object>();
+        private static readonly object s_lock = new object();
+
+        public static object GetConverter<TEnum>()
         {
+            var enumType = typeof(TEnum);
+
             object converter;
-            if (_converters.TryGetValue(enumType, out converter))
+            if (s_converters.TryGetValue(enumType, out converter))
                 return converter;
 
-            lock (_lock)
+            lock (s_lock)
             {
-                if (_converters.TryGetValue(enumType, out converter))
+                if (s_converters.TryGetValue(enumType, out converter))
                     return converter;
 
-                converter = CreateConverter(enumType);
-                _converters[enumType] = converter;
+                converter = CreateConverter<TEnum>();
+                s_converters[enumType] = converter;
                 return converter;
             }
         }
 
-        private static object CreateConverter(Type enumType)
+        private static ISettingConverter<TEnum> CreateConverter<TEnum>()
         {
-            var ifaceType = typeof(ISettingConverter<>).MakeGenericType(enumType);
+            var enumType = typeof(TEnum);
             var stringType = typeof(string);
             var underlyingType = enumType.GetEnumUnderlyingType();
             var toString = underlyingType.GetMethod("ToString", new Type[] { });
             var parse = underlyingType.GetMethod("Parse", new[] { stringType });
 
-            var typeBuilder = _moduleBuilder.DefineType($"{enumType.FullName}_SettingConverter_{Guid.NewGuid()}",
-                                TypeAttributes.Public |
-                                TypeAttributes.Class |
-                                TypeAttributes.AutoClass |
-                                TypeAttributes.AnsiClass |
-                                TypeAttributes.BeforeFieldInit |
-                                TypeAttributes.AutoLayout,
-                                null,
-                                new[] { ifaceType });
+            var getStringBuilder = new DynamicMethod($"Dynamic:EnumConverter<{enumType.Name}>.getString", stringType, new[] {enumType});
+            var il = getStringBuilder.GetILGenerator();
 
-            var getString = typeBuilder.DefineMethod("GetString", MethodAttributes.Public | MethodAttributes.Virtual, stringType, new[] { enumType });
-            var il = getString.GetILGenerator();
-
-            il.Emit(OpCodes.Ldarga, 1);      // [enumValue addr]
+            il.Emit(OpCodes.Ldarga, 0);      // [enumValue addr]
             il.Emit(OpCodes.Call, toString); // [stringValue]
             il.Emit(OpCodes.Ret);
 
-            var getValue = typeBuilder.DefineMethod("GetValue", MethodAttributes.Public | MethodAttributes.Virtual, enumType, new[] { stringType });
-            il = getValue.GetILGenerator();
+            var getString = (Func<TEnum, string>)getStringBuilder.CreateDelegate(typeof(Func<TEnum, string>));
 
-            il.Emit(OpCodes.Ldarg_1);     // [stringValue]
+            var getValueBuilder = new DynamicMethod($"Dynamic:EnumConverter<{enumType.Name}>.getValue", enumType, new[] {stringType});
+            il = getValueBuilder.GetILGenerator();
+
+            il.Emit(OpCodes.Ldarg_0);     // [stringValue]
             il.Emit(OpCodes.Call, parse); // [underlyingTypeValue]
             il.Emit(OpCodes.Ret);
 
-            var converterType = typeBuilder.CreateType();
-            return Activator.CreateInstance(converterType);
+            var getValue = (Func<string, TEnum>)getValueBuilder.CreateDelegate(typeof(Func<string, TEnum>));
+
+            return new EnumConverter<TEnum>(getString, getValue);
         }
     }
 }
