@@ -5,13 +5,13 @@ using NFig.Logging;
 
 namespace NFig.InMemory
 {
-    public class MemoryLogger<TTier, TDataCenter> : SettingsLogger<TTier, TDataCenter>
+    public class NFigMemoryLogger<TTier, TDataCenter> : SettingsLogger<TTier, TDataCenter>
         where TTier : struct
         where TDataCenter : struct
     {
         private readonly List<AppSnapshot<TTier, TDataCenter>> _history = new List<AppSnapshot<TTier, TDataCenter>>();
 
-        public MemoryLogger(Action<Exception, AppSnapshot<TTier, TDataCenter>> onLogException) : base(onLogException)
+        public NFigMemoryLogger(Action<Exception, AppSnapshot<TTier, TDataCenter>> onLogException) : base(onLogException)
         {
         }
 

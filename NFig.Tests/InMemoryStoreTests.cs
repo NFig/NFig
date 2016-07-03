@@ -162,7 +162,7 @@ namespace NFig.Tests
         [Test]
         public async Task Logging()
         {
-            var logger = new MemoryLogger<Tier, DataCenter>((ex, snapshot) =>
+            var logger = new NFigMemoryLogger<Tier, DataCenter>((ex, snapshot) =>
             {
                 throw ex;
             });

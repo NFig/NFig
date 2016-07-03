@@ -46,7 +46,7 @@
     <Compile Include="INFigSettings.cs" />
     <Compile Include="AppSnapshot.cs" />
     <Compile Include="Encryption\ISettingEncrypter.cs" />
-    <Compile Include="InMemory\MemoryLogger.cs" />
+    <Compile Include="InMemory\NFigMemoryLogger.cs" />
     <Compile Include="InMemory\NFigMemoryStore.cs" />
     <Compile Include="Logging\NFigLogEvent.cs" />
     <Compile Include="Logging\SettingsLogger.cs" />
