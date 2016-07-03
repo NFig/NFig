@@ -1,4 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using NUnit.Framework;
 
 namespace NFig.Tests
@@ -152,6 +155,96 @@ namespace NFig.Tests
 
             TestDelegate anyDc = () => { new NFigMemoryStore<InMemorySettings, Tier, DataCenter>(Tier.Local, DataCenter.Any); };
             Assert.Throws<ArgumentOutOfRangeException>(anyDc, "NFigStore with DataCenter.Any should have thrown an exception.");
+        }
+
+        [Test]
+        public async Task Logging()
+        {
+            var logger = new MemoryLogger<Tier, DataCenter>((ex, snapshot) =>
+            {
+                throw ex;
+            });
+
+            var store = new NFigMemoryStore<InMemorySettings, Tier, DataCenter>(Tier.Local, DataCenter.Local, logger);
+
+            const int iterations = 6;
+            var totalEvents = 0;
+            const string appB = "APP_B";
+            for (var i = 0; i < iterations; i++)
+            {
+                store.SetOverride(APP_NAME, "Nested.Integer", i.ToString(), DataCenter.Any, USER_A);
+                totalEvents++;
+                store.SetOverride(appB, "Nested.String", "value " + i, DataCenter.Any, USER_B);
+                totalEvents++;
+            }
+
+            await Task.Delay(10);
+            List<NFigLogEvent<DataCenter>> logs;
+
+            // no filter
+            logs = (await logger.GetLogsAsync()).ToList();
+            Assert.AreEqual(totalEvents, logs.Count);
+
+            // get snapshot by commit
+            foreach (var l in logs)
+            {
+                var snapshot = await logger.GetSnapshotAsync(l.ApplicationName, l.Commit);
+
+                Assert.AreEqual(l.ApplicationName, snapshot.ApplicationName);
+                Assert.AreEqual(l.Commit, snapshot.Commit);
+                Assert.AreEqual(l.DataCenter, snapshot.LastEvent.DataCenter);
+                Assert.AreEqual(l.SettingName, snapshot.LastEvent.SettingName);
+                Assert.AreEqual(l.SettingValue, snapshot.LastEvent.SettingValue);
+                Assert.AreEqual(l.RestoredCommit, snapshot.LastEvent.RestoredCommit);
+                Assert.AreEqual(l.Timestamp, snapshot.LastEvent.Timestamp);
+                Assert.AreEqual(l.Type, snapshot.LastEvent.Type);
+                Assert.AreEqual(l.User, snapshot.LastEvent.User);
+            }
+
+            // by app name
+            logs = (await logger.GetLogsAsync(appName: APP_NAME)).ToList();
+            Assert.AreEqual(iterations, logs.Count);
+            Assert.IsTrue(logs.All(l => l.ApplicationName == APP_NAME));
+
+            logs = (await logger.GetLogsAsync(appName: appB)).ToList();
+            Assert.AreEqual(iterations, logs.Count);
+            Assert.IsTrue(logs.All(l => l.ApplicationName == appB));
+
+            // by setting
+            logs = (await logger.GetLogsAsync(settingName: "Nested.Integer")).ToList();
+            Assert.AreEqual(iterations, logs.Count);
+            Assert.IsTrue(logs.All(l => l.SettingName == "Nested.Integer"));
+
+            logs = (await logger.GetLogsAsync(settingName: "Nested.String")).ToList();
+            Assert.AreEqual(iterations, logs.Count);
+            Assert.IsTrue(logs.All(l => l.SettingName == "Nested.String"));
+
+            // by date
+            logs = (await logger.GetLogsAsync(minDate: DateTime.MinValue)).ToList();
+            Assert.AreEqual(totalEvents, logs.Count);
+            logs = (await logger.GetLogsAsync(minDate: DateTime.MaxValue)).ToList();
+            Assert.AreEqual(0, logs.Count);
+            logs = (await logger.GetLogsAsync(maxDate: DateTime.MaxValue)).ToList();
+            Assert.AreEqual(totalEvents, logs.Count);
+            logs = (await logger.GetLogsAsync(maxDate: DateTime.MinValue)).ToList();
+            Assert.AreEqual(0, logs.Count);
+
+            // by user
+            logs = (await logger.GetLogsAsync(user: USER_A)).ToList();
+            Assert.AreEqual(iterations, logs.Count);
+            Assert.IsTrue(logs.All(l => l.User == USER_A));
+
+            logs = (await logger.GetLogsAsync(user: USER_B)).ToList();
+            Assert.AreEqual(iterations, logs.Count);
+            Assert.IsTrue(logs.All(l => l.User == USER_B));
+
+            // limit
+            logs = (await logger.GetLogsAsync(limit: 3)).ToList();
+            Assert.AreEqual(3, logs.Count);
+
+            // skip
+            logs = (await logger.GetLogsAsync(skip: 3)).ToList();
+            Assert.AreEqual(totalEvents - 3, logs.Count);
         }
 
         private class InMemorySettings : SettingsBase
