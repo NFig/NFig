@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace NFig
@@ -32,8 +33,28 @@ namespace NFig
             });
         }
 
-        protected abstract Task LogAsyncImpl(AppSnapshot<TTier, TDataCenter> snapshot);
+        /// <summary>
+        /// Gets log entries filtered by the provided criteria. Results are always returned in descending chronological order.
+        /// </summary>
+        /// <param name="appName">Application name to filter on. Null to include all applications.</param>
+        /// <param name="settingName">Setting name to filter on. Null to include all settings.</param>
+        /// <param name="includeRestores">If true, restore events will be included, even when filtering by setting name.</param>
+        /// <param name="minDate">Minimum (inclusive) event date to include in results.</param>
+        /// <param name="maxDate">Maximum (exclusive) event date to include in results.</param>
+        /// <param name="limit">Maximum number of results to return.</param>
+        /// <param name="skip">Number of results to skip - useful for pagenation.</param>
+        /// <returns></returns>
+        public abstract Task<IEnumerable<NFigLogEvent<TDataCenter>>> GetLogsAsync(
+            string appName = null,
+            string settingName = null,
+            bool includeRestores = true,
+            DateTime? minDate = null,
+            DateTime? maxDate = null,
+            int? limit = null,
+            int skip = 0);
 
-        protected abstract Task<AppSnapshot<TTier, TDataCenter>> GetSnapshotAsync(string commit);
+        public abstract Task<AppSnapshot<TTier, TDataCenter>> GetSnapshotAsync(string appName, string commit);
+
+        protected abstract Task LogAsyncImpl(AppSnapshot<TTier, TDataCenter> snapshot);
     }
 }
