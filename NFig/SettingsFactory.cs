@@ -299,7 +299,7 @@ namespace NFig
                 if (_propertyToSettingDelegatesCache.TryGetValue(type, out del))
                     return del;
 
-                var methodInfo = GetType().GetMethod("PropertyToSetting", BindingFlags.NonPublic | BindingFlags.Instance).MakeGenericMethod(type);
+                var methodInfo = GetType().GetMethod(nameof(PropertyToSetting), BindingFlags.NonPublic | BindingFlags.Instance).MakeGenericMethod(type);
                 del = (PropertyToSettingDelegate)Delegate.CreateDelegate(typeof(PropertyToSettingDelegate), this, methodInfo);
                 _propertyToSettingDelegatesCache[type] = del;
 
@@ -307,7 +307,6 @@ namespace NFig
             }
         }
 
-        // ReSharper disable once UnusedMember.Local
         private Setting PropertyToSetting<TValue>(PropertyInfo pi, PropertyAndParent parent, SettingAttribute sa, string prefix)
         {
             var name = prefix + pi.Name;
