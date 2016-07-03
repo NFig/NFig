@@ -19,8 +19,12 @@ namespace NFig
         private readonly object _lock = new object();
         private readonly Dictionary<string, InMemoryAppData> _dataByApp = new Dictionary<string, InMemoryAppData>();
 
-        public NFigMemoryStore(TTier tier, TDataCenter dataCenter, Dictionary<Type, object> additionalDefaultConverters = null)
-            : base(tier, dataCenter, additionalDefaultConverters, pollingInterval: 0)
+        public NFigMemoryStore(
+            TTier tier,
+            TDataCenter dataCenter,
+            SettingsLogger<TTier, TDataCenter> logger = null,
+            Dictionary<Type, object> additionalDefaultConverters = null)
+            : base(tier, dataCenter, logger, additionalDefaultConverters, pollingInterval: 0)
         {
         }
 

@@ -42,21 +42,28 @@ namespace NFig
         public TTier Tier { get; }
         public TDataCenter DataCenter { get; }
 
-        public int PollingInterval { get; }
+        public SettingsLogger<TTier, TDataCenter> Logger { get; }
 
-        public event Action<AppSnapshot<TTier, TDataCenter>> LogEvent;
+        public int PollingInterval { get; }
 
         /// <summary>
         /// 
         /// </summary>
         /// <param name="tier">Tier the application is running on (cannot be the default "Any" value).</param>
         /// <param name="dataCenter">DataCenter the application is running in (cannot be the default "Any" value).</param>
+        /// <param name="logger">The logger which events will be sent to.</param>
         /// <param name="additionalDefaultConverters">
         /// Allows you to specify additional (or replacement) default converters for types. Each key/value pair must be in the form of (typeof(T), ISettingConverter&lt;T&gt;).
         /// </param>
         /// <param name="pollingInterval">The interval, in seconds, to poll for override changes. Use 0 to disable polling.</param>
-        protected NFigStore(TTier tier, TDataCenter dataCenter, Dictionary<Type, object> additionalDefaultConverters = null, int pollingInterval = 60)
+        protected NFigStore(
+            TTier tier,
+            TDataCenter dataCenter,
+            SettingsLogger<TTier, TDataCenter> logger,
+            Dictionary<Type, object> additionalDefaultConverters,
+            int pollingInterval = 60)
         {
+            Logger = logger;
             PollingInterval = pollingInterval;
             _factory = new SettingsFactory<TSettings, TTier, TDataCenter>(additionalDefaultConverters);
 
@@ -597,7 +604,7 @@ namespace NFig
             finally
             {
                 // still want to try logging even if the push notification throws an exception
-                LogEvent?.Invoke(snapshot);
+                Logger?.Log(snapshot);
             }
         }
     }
