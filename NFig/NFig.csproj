@@ -48,6 +48,7 @@
     <Compile Include="Encryption\ISettingEncrypter.cs" />
     <Compile Include="InMemory\NFigMemoryLogger.cs" />
     <Compile Include="InMemory\NFigMemoryStore.cs" />
+    <Compile Include="SettingConverters.cs" />
     <Compile Include="Logging\NFigLogEvent.cs" />
     <Compile Include="Logging\SettingsLogger.cs" />
     <Compile Include="NFigStore.cs" />
