@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using NFig.Encryption;
 using NFig.Logging;
 
 namespace NFig
@@ -61,12 +62,13 @@ namespace NFig
             TTier tier,
             TDataCenter dataCenter,
             SettingsLogger<TTier, TDataCenter> logger,
+            ISettingEncrypter encrypter,
             Dictionary<Type, object> additionalDefaultConverters,
             int pollingInterval = 60)
         {
             Logger = logger;
             PollingInterval = pollingInterval;
-            _factory = new SettingsFactory<TSettings, TTier, TDataCenter>(additionalDefaultConverters);
+            _factory = new SettingsFactory<TSettings, TTier, TDataCenter>(encrypter, additionalDefaultConverters);
 
             if (tier.Equals(default(TTier)))
                 throw new ArgumentOutOfRangeException(nameof(tier), $"Tier cannot be the default enum value ({tier}) because it represents the \"Any\" tier.");

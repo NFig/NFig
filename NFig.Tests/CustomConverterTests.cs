@@ -9,7 +9,7 @@ namespace NFig.Tests
         [Test]
         public void CustomConverterTest()
         {
-            var factory = new SettingsFactory<CustomConverterSettings, Tier, DataCenter>();
+            var factory = new SettingsFactory<CustomConverterSettings, Tier, DataCenter>(null, null);
             var s = factory.GetAppSettings(Tier.Local, DataCenter.Local);
 
             Assert.True(s.Ints != null, "Ints should not be null");

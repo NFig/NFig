@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
+using NFig.Encryption;
 
 namespace NFig
 {
@@ -42,11 +43,15 @@ namespace NFig
             {typeof(decimal), new DecimalSettingConverter()},
         };
 
-        public SettingsFactory(Dictionary<Type, object> additionalDefaultConverters = null)
+        public ISettingEncrypter Encrypter { get; }
+
+        public SettingsFactory(ISettingEncrypter encrypter, Dictionary<Type, object> additionalDefaultConverters)
         {
             TSettingsType = typeof(TSettings);
             TTierType = typeof(TTier);
             TDataCenterType = typeof(TDataCenter);
+
+            Encrypter = encrypter;
 
             if (!TTierType.IsEnum || !TDataCenterType.IsEnum)
                 throw new InvalidOperationException("TTier and TDataCenter must be enum types.");

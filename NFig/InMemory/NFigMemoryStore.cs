@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using NFig.Encryption;
 using NFig.Logging;
 
 namespace NFig.InMemory
@@ -24,8 +25,9 @@ namespace NFig.InMemory
             TTier tier,
             TDataCenter dataCenter,
             SettingsLogger<TTier, TDataCenter> logger = null,
+            ISettingEncrypter encrypter = null,
             Dictionary<Type, object> additionalDefaultConverters = null)
-            : base(tier, dataCenter, logger, additionalDefaultConverters, pollingInterval: 0)
+            : base(tier, dataCenter, logger, encrypter, additionalDefaultConverters, pollingInterval: 0)
         {
         }
 

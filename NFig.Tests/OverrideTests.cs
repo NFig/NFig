@@ -10,7 +10,7 @@ namespace NFig.Tests
         [Test]
         public void ValidOverrideTest()
         {
-            var factory = new SettingsFactory<OverrideSettings, Tier, DataCenter>();
+            var factory = new SettingsFactory<OverrideSettings, Tier, DataCenter>(null, null);
 
             var overrides = new List<SettingValue<Tier, DataCenter>>()
             {
@@ -28,7 +28,7 @@ namespace NFig.Tests
         [Test]
         public void InvalidOverrideTest()
         {
-            var factory = new SettingsFactory<OverrideSettings, Tier, DataCenter>();
+            var factory = new SettingsFactory<OverrideSettings, Tier, DataCenter>(null, null);
 
             var overrides = new List<SettingValue<Tier, DataCenter>>()
             {
