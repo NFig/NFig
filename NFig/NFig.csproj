@@ -41,6 +41,7 @@
   <ItemGroup>
     <Compile Include="BinaryExtensions.cs" />
     <Compile Include="DefaultValueAttribute.cs" />
+    <Compile Include="Encryption\PassThroughEncryptor.cs" />
     <Compile Include="EnumConverters.cs" />
     <Compile Include="Exceptions.cs" />
     <Compile Include="INFigSettings.cs" />
