@@ -423,7 +423,7 @@ namespace NFig
             var setter = CreateSetterMethod<TValue>(pi, parent, name);
             var getter = CreateGetterMethod<TValue>(pi, parent, name);
 
-            return new Setting<TValue>(name, description, changeRequiresRestart, pi, sa, defaults.ToArray(), setter, converter, getter);
+            return new Setting<TValue>(name, description, changeRequiresRestart, pi, defaults.ToArray(), setter, converter, getter);
         }
 
         private static string GetStringFromDefaultAndValidate<TValue>(string name, object value, TTier tier, TDataCenter dataCenter, ISettingConverter<TValue> converter)
@@ -644,7 +644,6 @@ namespace NFig
             public string Description { get; protected set; }
             public bool ChangeRequiresRestart { get; protected set; }
             public PropertyInfo PropertyInfo { get; protected set; }
-            public SettingAttribute SettingAttribute { get; protected set; }
             public SettingValue<TTier, TDataCenter>[] Defaults { get; protected set; }
 
             public abstract object GetValue(TSettings settings);
@@ -666,7 +665,6 @@ namespace NFig
                 string description,
                 bool changeRequiresRestart,
                 PropertyInfo propertyInfo,
-                SettingAttribute settingAttribute,
                 SettingValue<TTier, TDataCenter>[] defaults,
                 SettingSetterDelegate<TValue> setter,
                 ISettingConverter<TValue> converter,
@@ -677,7 +675,6 @@ namespace NFig
                 Description = description;
                 ChangeRequiresRestart = changeRequiresRestart;
                 PropertyInfo = propertyInfo;
-                SettingAttribute = settingAttribute;
                 Defaults = defaults;
                 Getter = getter;
 
