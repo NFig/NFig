@@ -3,6 +3,6 @@
     public interface ISettingEncryptor
     {
         string Encrypt(string value);
-        string Unencrypt(string encryptedValue);
+        string Decrypt(string encryptedValue);
     }
 }
