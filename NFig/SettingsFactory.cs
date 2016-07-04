@@ -43,15 +43,15 @@ namespace NFig
             {typeof(decimal), new DecimalSettingConverter()},
         };
 
-        public ISettingEncrypter Encrypter { get; }
+        public ISettingEncryptor Encryptor { get; }
 
-        public SettingsFactory(ISettingEncrypter encrypter, Dictionary<Type, object> additionalDefaultConverters)
+        public SettingsFactory(ISettingEncryptor encryptor, Dictionary<Type, object> additionalDefaultConverters)
         {
             TSettingsType = typeof(TSettings);
             TTierType = typeof(TTier);
             TDataCenterType = typeof(TDataCenter);
 
-            Encrypter = encrypter;
+            Encryptor = encryptor;
 
             if (!TTierType.IsEnum || !TDataCenterType.IsEnum)
                 throw new InvalidOperationException("TTier and TDataCenter must be enum types.");

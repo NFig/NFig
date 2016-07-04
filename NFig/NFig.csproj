@@ -45,7 +45,7 @@
     <Compile Include="Exceptions.cs" />
     <Compile Include="INFigSettings.cs" />
     <Compile Include="AppSnapshot.cs" />
-    <Compile Include="Encryption\ISettingEncrypter.cs" />
+    <Compile Include="Encryption\ISettingEncryptor.cs" />
     <Compile Include="InMemory\NFigMemoryLogger.cs" />
     <Compile Include="InMemory\NFigMemoryStore.cs" />
     <Compile Include="SettingConverters.cs" />

@@ -25,9 +25,9 @@ namespace NFig.InMemory
             TTier tier,
             TDataCenter dataCenter,
             SettingsLogger<TTier, TDataCenter> logger = null,
-            ISettingEncrypter encrypter = null,
+            ISettingEncryptor encryptor = null,
             Dictionary<Type, object> additionalDefaultConverters = null)
-            : base(tier, dataCenter, logger, encrypter, additionalDefaultConverters, pollingInterval: 0)
+            : base(tier, dataCenter, logger, encryptor, additionalDefaultConverters, pollingInterval: 0)
         {
         }
 

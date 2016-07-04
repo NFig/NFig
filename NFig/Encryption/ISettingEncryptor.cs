@@ -1,6 +1,6 @@
 ﻿namespace NFig.Encryption
 {
-    public interface ISettingEncrypter
+    public interface ISettingEncryptor
     {
         string Encrypt(string value);
         string Unencrypt(string encryptedValue);

@@ -62,13 +62,13 @@ namespace NFig
             TTier tier,
             TDataCenter dataCenter,
             SettingsLogger<TTier, TDataCenter> logger,
-            ISettingEncrypter encrypter,
+            ISettingEncryptor encryptor,
             Dictionary<Type, object> additionalDefaultConverters,
             int pollingInterval = 60)
         {
             Logger = logger;
             PollingInterval = pollingInterval;
-            _factory = new SettingsFactory<TSettings, TTier, TDataCenter>(encrypter, additionalDefaultConverters);
+            _factory = new SettingsFactory<TSettings, TTier, TDataCenter>(encryptor, additionalDefaultConverters);
 
             if (tier.Equals(default(TTier)))
                 throw new ArgumentOutOfRangeException(nameof(tier), $"Tier cannot be the default enum value ({tier}) because it represents the \"Any\" tier.");
