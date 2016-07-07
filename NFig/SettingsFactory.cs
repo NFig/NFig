@@ -316,8 +316,7 @@ namespace NFig
 
         private Setting[] BuildSettings(Type type)
         {
-            // parallize the top-level class. Call ToArray() at the end to get out of the parallel query.
-            return type.GetProperties().AsParallel().Select(pi => GetSettingsFromProperty(pi, null, "")).SelectMany(s => s).ToArray();
+            return type.GetProperties().Select(pi => GetSettingsFromProperty(pi, null, "")).SelectMany(s => s).ToArray();
         }
 
         private IEnumerable<Setting> GetSubSettings(Type type, PropertyAndParent parent, string prefix)
