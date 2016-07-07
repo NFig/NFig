@@ -479,7 +479,7 @@ namespace NFig
 
                 if (isEncrypted)
                 {
-                    if (Compare.IsDefault(tier))
+                    if (Compare.IsDefault(tier.Value))
                         throw new NFigException($"{name} has a default without a tier. Additional default values for encrypted settings must include a non-\"Any\" tier.");
 
                     if (dsvaDefault != null && !(dsvaDefault is string))
@@ -487,7 +487,7 @@ namespace NFig
                 }
 
                 // if it's not the Any tier, and not the current tier, then we don't care about this default
-                var skip = !Compare.IsDefault(tier) && !Compare.AreEqual(tier, _tier);
+                var skip = !Compare.IsDefault(tier.Value) && !Compare.AreEqual(tier.Value, _tier);
 
                 // Even if we're skipping this default, performing validation for all tiers is useful.
                 // However, if the value is encrypted, we only want to perform the validation for the current tier.
