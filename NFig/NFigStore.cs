@@ -70,10 +70,10 @@ namespace NFig
             PollingInterval = pollingInterval;
             _factory = new SettingsFactory<TSettings, TTier, TDataCenter>(encryptor, additionalDefaultConverters);
 
-            if (tier.Equals(default(TTier)))
+            if (Compare.IsDefault(tier))
                 throw new ArgumentOutOfRangeException(nameof(tier), $"Tier cannot be the default enum value ({tier}) because it represents the \"Any\" tier.");
 
-            if (dataCenter.Equals(default(TDataCenter)))
+            if (Compare.IsDefault(dataCenter))
             {
                 throw new ArgumentOutOfRangeException(
                     nameof(dataCenter),

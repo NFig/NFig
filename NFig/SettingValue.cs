@@ -8,9 +8,6 @@ namespace NFig
         where TTier : struct
         where TDataCenter : struct
     {
-        private static readonly EqualityComparer<TTier> s_tierComparer = EqualityComparer<TTier>.Default;
-        private static readonly EqualityComparer<TDataCenter> s_dataCenterComparer = EqualityComparer<TDataCenter>.Default;
-
         public string Name { get; }
         public string Value { get; }
         public TTier Tier { get; }
@@ -19,8 +16,8 @@ namespace NFig
         public bool AllowsOverrides { get; }
 
         public bool IsOverride => !IsDefault;
-        public bool HasTier => !s_tierComparer.Equals(Tier, default(TTier));
-        public bool HasDataCenter => !s_dataCenterComparer.Equals(DataCenter, default(TDataCenter));
+        public bool HasTier => !Compare.IsDefault(Tier);
+        public bool HasDataCenter => !Compare.IsDefault(DataCenter);
 
         public SettingValue(string name, string value, TDataCenter dataCenter)
             : this(name, value, default(TTier), dataCenter, false, false)
@@ -39,10 +36,10 @@ namespace NFig
 
         public bool IsValidFor(TTier tier, TDataCenter dataCenter)
         {
-            if (HasTier && !s_tierComparer.Equals(Tier, tier))
+            if (HasTier && !Compare.AreEqual(Tier, tier))
                 return false;
 
-            if (HasDataCenter && !s_dataCenterComparer.Equals(DataCenter, dataCenter))
+            if (HasDataCenter && !Compare.AreEqual(DataCenter, dataCenter))
                 return false;
 
             return true;
@@ -69,7 +66,7 @@ namespace NFig
         
         public bool HasSameTierAndDataCenter(SettingValue<TTier, TDataCenter> value)
         {
-            return s_tierComparer.Equals(Tier, value.Tier) && s_dataCenterComparer.Equals(DataCenter, value.DataCenter);
+            return Compare.AreEqual(Tier, value.Tier) && Compare.AreEqual(DataCenter, value.DataCenter);
         }
     }
 }
