@@ -54,6 +54,7 @@ namespace NFig
         /// <param name="tier">Tier the application is running on (cannot be the default "Any" value).</param>
         /// <param name="dataCenter">DataCenter the application is running in (cannot be the default "Any" value).</param>
         /// <param name="logger">The logger which events will be sent to.</param>
+        /// <param name="encryptor">Object which will provide encryption/decryption for encrypted settings. Only required if there are encrypted settings in use.</param>
         /// <param name="additionalDefaultConverters">
         /// Allows you to specify additional (or replacement) default converters for types. Each key/value pair must be in the form of (typeof(T), ISettingConverter&lt;T&gt;).
         /// </param>
@@ -68,7 +69,7 @@ namespace NFig
         {
             Logger = logger;
             PollingInterval = pollingInterval;
-            _factory = new SettingsFactory<TSettings, TTier, TDataCenter>(encryptor, additionalDefaultConverters);
+            _factory = new SettingsFactory<TSettings, TTier, TDataCenter>(tier, encryptor, additionalDefaultConverters);
 
             if (Compare.IsDefault(tier))
                 throw new ArgumentOutOfRangeException(nameof(tier), $"Tier cannot be the default enum value ({tier}) because it represents the \"Any\" tier.");
@@ -162,7 +163,8 @@ namespace NFig
         }
 
         /// <summary>
-        /// Returns a SettingInfo object for each setting. The SettingInfo contains meta data about the setting, as well as lists of the defaults values and current overrides.
+        /// Returns a SettingInfo object for each setting. The SettingInfo contains meta data about the setting, as well as lists of the default values and current overrides.
+        /// Default values which are not applicable to the current tier are not included.
         /// </summary>
         public async Task<SettingInfo<TTier, TDataCenter>[]> GetAllSettingInfosAsync(string appName)
         {
@@ -203,6 +205,40 @@ namespace NFig
         public bool SettingExists(string settingName)
         {
             return _factory.SettingExists(settingName);
+        }
+
+        /// <summary>
+        /// Returns true if the setting is an encrypted setting.
+        /// </summary>
+        public bool IsEncrypted(string settingName)
+        {
+            return _factory.IsEncrypted(settingName);
+        }
+
+        /// <summary>
+        /// Returns a string encrypted with the ISettingEncryptor provided when the NFigStore was initialized.
+        /// If no encryptor was provided, this method will throw an exception.
+        /// Null values are not encrypted, and are simply returned as null.
+        /// </summary>
+        public string Encrypt(string plainText)
+        {
+            if (!_factory.HasEncryptor)
+                throw new NFigException("No ISettingEncryptor was provided when the NFigStore was initialized");
+
+            return _factory.Encrypt(plainText);
+        }
+
+        /// <summary>
+        /// Decrypts the string using the ISettingEncryptor provided when the NFigStore was initialized.
+        /// If no encryptor was provided, this method will throw an exception.
+        /// Null are considered to be unencrypted to begin with, and will result in a null return value.
+        /// </summary>
+        public string Decrypt(string encrypted)
+        {
+            if (!_factory.HasEncryptor)
+                throw new NFigException("No ISettingEncryptor was provided when the NFigStore was initialized");
+
+            return _factory.Decrypt(encrypted);
         }
 
         /// <summary>
@@ -591,7 +627,7 @@ namespace NFig
         private InvalidSettingOverridesException GetSettingsObjectFromData(AppSnapshot<TTier, TDataCenter> snapshot, out TSettings settings)
         {
             // create new settings object
-            var ex = _factory.TryGetAppSettings(out settings, Tier, DataCenter, snapshot.Overrides);
+            var ex = _factory.TryGetAppSettings(out settings, DataCenter, snapshot.Overrides);
             settings.ApplicationName = snapshot.ApplicationName;
             settings.Commit = snapshot.Commit;
 

@@ -17,7 +17,7 @@ namespace NFig
     [AttributeUsage(AttributeTargets.Property)]
     public class EncryptedSettingAttribute : SettingAttribute
     {
-        public EncryptedSettingAttribute(object defaultValue) : base(defaultValue)
+        public EncryptedSettingAttribute() : base(null)
         {
             IsEncrypted = true;
         }

@@ -8,8 +8,8 @@ namespace NFig.Tests
         [Test]
         public void EnumTest()
         {
-            var factory = new SettingsFactory<EnumSettings, Tier, DataCenter>(null, null);
-            var s = factory.GetAppSettings(Tier.Local, DataCenter.Local);
+            var factory = new SettingsFactory<EnumSettings, Tier, DataCenter>(Tier.Local, null, null);
+            var s = factory.GetAppSettings(DataCenter.Local);
 
             Assert.True(s.First == TestEnum.Zero, "First");
             Assert.True(s.Second == TestEnum.One, "Second");

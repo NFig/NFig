@@ -10,7 +10,7 @@ namespace NFig.Tests
         [Test]
         public void ValidOverrideTest()
         {
-            var factory = new SettingsFactory<OverrideSettings, Tier, DataCenter>(null, null);
+            var factory = new SettingsFactory<OverrideSettings, Tier, DataCenter>(Tier.Local, null, null);
 
             var overrides = new List<SettingValue<Tier, DataCenter>>()
             {
@@ -18,7 +18,7 @@ namespace NFig.Tests
                 new SettingValue<Tier, DataCenter>("B", "11", DataCenter.Any),
             };
 
-            var s = factory.GetAppSettings(Tier.Local, DataCenter.Local, overrides);
+            var s = factory.GetAppSettings(DataCenter.Local, overrides);
 
             Assert.AreEqual(s.A, 10);
             Assert.AreEqual(s.B, 11);
@@ -28,7 +28,7 @@ namespace NFig.Tests
         [Test]
         public void InvalidOverrideTest()
         {
-            var factory = new SettingsFactory<OverrideSettings, Tier, DataCenter>(null, null);
+            var factory = new SettingsFactory<OverrideSettings, Tier, DataCenter>(Tier.Local, null, null);
 
             var overrides = new List<SettingValue<Tier, DataCenter>>()
             {
@@ -38,7 +38,7 @@ namespace NFig.Tests
             };
 
             OverrideSettings s;
-            var invalidOverrides = factory.TryGetAppSettings(out s, Tier.Local, DataCenter.Local, overrides);
+            var invalidOverrides = factory.TryGetAppSettings(out s, DataCenter.Local, overrides);
             Console.WriteLine(invalidOverrides.Message);
 
             Assert.True(invalidOverrides != null && invalidOverrides.Exceptions.Count == 2);

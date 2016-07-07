@@ -11,6 +11,7 @@ namespace NFig
         public string Name { get; }
         public string Description { get; }
         public bool ChangeRequiresRestart { get; }
+        public bool IsEncrypted { get; }
         public Type Type { get; }
         public PropertyInfo PropertyInfo { get; }
         public IList<SettingValue<TTier, TDataCenter>> Defaults { get; }
@@ -20,6 +21,7 @@ namespace NFig
             string name,
             string description,
             bool changeRequiresRestart,
+            bool isEncrypted,
             PropertyInfo propertyInfo,
             IList<SettingValue<TTier, TDataCenter>> defaults,
             IList<SettingValue<TTier, TDataCenter>> overrides
@@ -28,6 +30,7 @@ namespace NFig
             Name = name;
             Description = description;
             ChangeRequiresRestart = changeRequiresRestart;
+            IsEncrypted = isEncrypted;
             Type = propertyInfo.PropertyType;
             PropertyInfo = propertyInfo;
             Defaults = defaults;
