@@ -30,12 +30,15 @@ namespace NFig.Tests
         {
             public string GetString(int[] value)
             {
+                if (value == null)
+                    return null;
+
                 return string.Join(",", value);
             }
 
             public int[] GetValue(string str)
             {
-                return str.Split(',').Select(s => int.Parse(s)).ToArray();
+                return str?.Split(',').Select(s => int.Parse(s)).ToArray();
             }
         }
     }
