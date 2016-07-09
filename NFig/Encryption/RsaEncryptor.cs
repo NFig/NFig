@@ -28,9 +28,6 @@ namespace NFig.Encryption
 
         public string Encrypt(string value)
         {
-            if (value == null)
-                return null;
-
             var data = Encoding.UTF8.GetBytes(value);
             var encrypted = _rsa.Encrypt(data, true);
             return Convert.ToBase64String(encrypted);
@@ -38,9 +35,6 @@ namespace NFig.Encryption
 
         public string Decrypt(string encryptedValue)
         {
-            if (encryptedValue == null)
-                return null;
-
             var encrypted = Convert.FromBase64String(encryptedValue);
             var decrypted = _rsa.Decrypt(encrypted, true);
             return Encoding.UTF8.GetString(decrypted);
