@@ -18,6 +18,11 @@ namespace NFig
         /// </summary>
         public const string INITIAL_COMMIT = "00000000-0000-0000-0000-000000000000";
 
+        /// <summary>
+        /// The Commit value which should be used when no overrides have ever been set for the application.
+        /// </summary>
+        public string InitialCommit => INITIAL_COMMIT;
+
         public delegate void SettingsUpdateDelegate(Exception ex, TSettings settings, NFigStore<TSettings, TTier, TDataCenter> store);
 
         private class TierDataCenterCallback
