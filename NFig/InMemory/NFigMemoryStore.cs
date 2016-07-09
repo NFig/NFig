@@ -31,13 +31,25 @@ namespace NFig.InMemory
         {
         }
 
-        protected override Task<AppSnapshot<TTier, TDataCenter>> SetOverrideAsyncImpl(string appName, string settingName, string value, TDataCenter dataCenter, string user)
+        protected override Task<AppSnapshot<TTier, TDataCenter>> SetOverrideAsyncImpl(
+            string appName,
+            string settingName,
+            string value,
+            TDataCenter dataCenter,
+            string user,
+            string commit)
         {
-            var snapshot = SetOverrideImpl(appName, settingName, value, dataCenter, user);
+            var snapshot = SetOverrideImpl(appName, settingName, value, dataCenter, user, commit);
             return Task.FromResult(snapshot);
         }
 
-        protected override AppSnapshot<TTier, TDataCenter> SetOverrideImpl(string appName, string settingName, string value, TDataCenter dataCenter, string user)
+        protected override AppSnapshot<TTier, TDataCenter> SetOverrideImpl(
+            string appName,
+            string settingName,
+            string value,
+            TDataCenter dataCenter,
+            string user,
+            string commit)
         {
             AssertValidStringForSetting(settingName, value, dataCenter);
 
@@ -46,6 +58,9 @@ namespace NFig.InMemory
 
             lock (data)
             {
+                if (commit != null && commit != data.Commit)
+                    return null;
+
                 data.Overrides[key] = value;
                 data.Commit = NewCommit();
 
@@ -66,19 +81,35 @@ namespace NFig.InMemory
             }
         }
 
-        protected override Task<AppSnapshot<TTier, TDataCenter>> ClearOverrideAsyncImpl(string appName, string settingName, TDataCenter dataCenter, string user)
+        protected override Task<AppSnapshot<TTier, TDataCenter>> ClearOverrideAsyncImpl(
+            string appName,
+            string settingName,
+            TDataCenter dataCenter,
+            string user,
+            string commit)
         {
-            var snapshot = ClearOverrideImpl(appName, settingName, dataCenter, user);
+            var snapshot = ClearOverrideImpl(appName, settingName, dataCenter, user, commit);
             return Task.FromResult(snapshot);
         }
 
-        protected override AppSnapshot<TTier, TDataCenter> ClearOverrideImpl(string appName, string settingName, TDataCenter dataCenter, string user)
+        protected override AppSnapshot<TTier, TDataCenter> ClearOverrideImpl(
+            string appName,
+            string settingName,
+            TDataCenter dataCenter,
+            string user,
+            string commit)
         {
             var key = GetOverrideKey(settingName, dataCenter);
             var data = GetInMemoryAppData(appName);
             
             lock (data)
             {
+                if (commit != null && commit != data.Commit)
+                    return null;
+
+                if (!data.Overrides.ContainsKey(key))
+                    return null;
+
                 data.Overrides.Remove(key);
                 data.Commit = NewCommit();
 

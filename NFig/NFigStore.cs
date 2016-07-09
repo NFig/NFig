@@ -99,20 +99,58 @@ namespace NFig
         /// Sets an override for the specified application, setting name, tier, and data center combination. If an existing override shares that exact
         /// combination, it will be replaced.
         /// </summary>
-        public async Task<AppSnapshot<TTier, TDataCenter>> SetOverrideAsync(string appName, string settingName, string value, TDataCenter dataCenter, string user)
+        /// <param name="appName">Name of the application which the override will be applied to.</param>
+        /// <param name="settingName">Name of the setting.</param>
+        /// <param name="value">The string-value of the setting. If the setting is an encrypted setting, this value must be pre-encrypted.</param>
+        /// <param name="dataCenter">Data center which the override should be applicable to.</param>
+        /// <param name="user">The user who is setting the override (used for logging purposes). This can be null.</param>
+        /// <param name="commit">(optional) If non-null, the override will only be applied if this is the current commit ID.</param>
+        /// <returns>
+        /// A snapshot of the state immediately after the override is applied. If the override is not applied because the current commit didn't match the
+        /// commit parameter, the return value will be null.
+        /// </returns>
+        public async Task<AppSnapshot<TTier, TDataCenter>> SetOverrideAsync(
+            string appName,
+            string settingName,
+            string value,
+            TDataCenter dataCenter,
+            string user,
+            string commit = null)
         {
-            var snapshot = await SetOverrideAsyncImpl(appName, settingName, value, dataCenter, user);
-            LogAndNotifyChange(snapshot);
+            var snapshot = await SetOverrideAsyncImpl(appName, settingName, value, dataCenter, user, commit);
+
+            if (snapshot != null)
+                LogAndNotifyChange(snapshot);
+
             return snapshot;
         }
 
         /// <summary>
         /// Synchronous version of SetOverrideAsync. You should use the async version if possible because it may have a lower risk of deadlocking in some circumstances.
         /// </summary>
-        public AppSnapshot<TTier, TDataCenter> SetOverride(string appName, string settingName, string value, TDataCenter dataCenter, string user)
+        /// <param name="appName">Name of the application which the override will be applied to.</param>
+        /// <param name="settingName">Name of the setting.</param>
+        /// <param name="value">The string-value of the setting. If the setting is an encrypted setting, this value must be pre-encrypted.</param>
+        /// <param name="dataCenter">Data center which the override should be applicable to.</param>
+        /// <param name="user">The user who is setting the override (used for logging purposes). This can be null.</param>
+        /// <param name="commit">(optional) If non-null, the override will only be applied if this is the current commit ID.</param>
+        /// <returns>
+        /// A snapshot of the state immediately after the override is applied. If the override is not applied because the current commit didn't match the
+        /// commit parameter, the return value will be null.
+        /// </returns>
+        public AppSnapshot<TTier, TDataCenter> SetOverride(
+            string appName,
+            string settingName,
+            string value,
+            TDataCenter dataCenter,
+            string user,
+            string commit = null)
         {
-            var snapshot = SetOverrideImpl(appName, settingName, value, dataCenter, user);
-            LogAndNotifyChange(snapshot);
+            var snapshot = SetOverrideImpl(appName, settingName, value, dataCenter, user, commit);
+
+            if (snapshot != null)
+                LogAndNotifyChange(snapshot);
+
             return snapshot;
         }
 
@@ -120,20 +158,54 @@ namespace NFig
         /// Clears an override with the specified application, setting name, tier, and data center combination. Even if the override does not exist, this
         /// operation may result in a change of the current commit, depending on the store's implementation.
         /// </summary>
-        public async Task<AppSnapshot<TTier, TDataCenter>> ClearOverrideAsync(string appName, string settingName, TDataCenter dataCenter, string user)
+        /// <param name="appName">Name of the application which the override is applied to.</param>
+        /// <param name="settingName">Name of the setting.</param>
+        /// <param name="dataCenter">Data center which the override is applied to.</param>
+        /// <param name="user">The user who is clearing the override (used for logging purposes). This can be null.</param>
+        /// <param name="commit">(optional) If non-null, the override will only be cleared if this is the current commit ID.</param>
+        /// <returns>
+        /// A snapshot of the state immediately after the override is cleared. If the override is not applied, either because it didn't exist, or because the 
+        /// current commit didn't match the commit parameter, the return value will be null.
+        /// </returns>
+        public async Task<AppSnapshot<TTier, TDataCenter>> ClearOverrideAsync(
+            string appName,
+            string settingName,
+            TDataCenter dataCenter,
+            string user,
+            string commit = null)
         {
-            var snapshot = await ClearOverrideAsyncImpl(appName, settingName, dataCenter, user);
-            LogAndNotifyChange(snapshot);
+            var snapshot = await ClearOverrideAsyncImpl(appName, settingName, dataCenter, user, commit);
+
+            if (snapshot != null)
+                LogAndNotifyChange(snapshot);
+
             return snapshot;
         }
 
         /// <summary>
         /// Synchronous version of ClearOverrideAsync. You should use the async version if possible because it may have a lower risk of deadlocking in some circumstances.
         /// </summary>
-        public AppSnapshot<TTier, TDataCenter> ClearOverride(string appName, string settingName, TDataCenter dataCenter, string user)
+        /// <param name="appName">Name of the application which the override is applied to.</param>
+        /// <param name="settingName">Name of the setting.</param>
+        /// <param name="dataCenter">Data center which the override is applied to.</param>
+        /// <param name="user">The user who is clearing the override (used for logging purposes). This can be null.</param>
+        /// <param name="commit">(optional) If non-null, the override will only be cleared if this is the current commit ID.</param>
+        /// <returns>
+        /// A snapshot of the state immediately after the override is cleared. If the override is not applied, either because it didn't exist, or because the 
+        /// current commit didn't match the commit parameter, the return value will be null.
+        /// </returns>
+        public AppSnapshot<TTier, TDataCenter> ClearOverride(
+            string appName,
+            string settingName,
+            TDataCenter dataCenter,
+            string user,
+            string commit = null)
         {
-            var snapshot = ClearOverrideImpl(appName, settingName, dataCenter, user);
-            LogAndNotifyChange(snapshot);
+            var snapshot = ClearOverrideImpl(appName, settingName, dataCenter, user, commit);
+
+            if (snapshot != null)
+                LogAndNotifyChange(snapshot);
+
             return snapshot;
         }
 
@@ -381,18 +453,35 @@ namespace NFig
             string settingName,
             string value,
             TDataCenter dataCenter,
-            string user);
+            string user,
+            string commit);
 
-        protected virtual AppSnapshot<TTier, TDataCenter> SetOverrideImpl(string appName, string settingName, string value, TDataCenter dataCenter, string user)
+        protected virtual AppSnapshot<TTier, TDataCenter> SetOverrideImpl(
+            string appName,
+            string settingName,
+            string value,
+            TDataCenter dataCenter,
+            string user,
+            string commit)
         {
-            return Task.Run(async () => await SetOverrideAsyncImpl(appName, settingName, value, dataCenter, user)).Result;
+            return Task.Run(async () => await SetOverrideAsyncImpl(appName, settingName, value, dataCenter, user, commit)).Result;
         }
 
-        protected abstract Task<AppSnapshot<TTier, TDataCenter>> ClearOverrideAsyncImpl(string appName, string settingName, TDataCenter dataCenter, string user);
+        protected abstract Task<AppSnapshot<TTier, TDataCenter>> ClearOverrideAsyncImpl(
+            string appName,
+            string settingName,
+            TDataCenter dataCenter,
+            string user,
+            string commit);
         
-        protected virtual AppSnapshot<TTier, TDataCenter> ClearOverrideImpl(string appName, string settingName, TDataCenter dataCenter, string user)
+        protected virtual AppSnapshot<TTier, TDataCenter> ClearOverrideImpl(
+            string appName,
+            string settingName,
+            TDataCenter dataCenter,
+            string user,
+            string commit)
         {
-            return Task.Run(async () => await ClearOverrideAsyncImpl(appName, settingName, dataCenter, user)).Result;
+            return Task.Run(async () => await ClearOverrideAsyncImpl(appName, settingName, dataCenter, user, commit)).Result;
         }
 
         protected abstract Task PushUpdateNotificationAsync(string appName);

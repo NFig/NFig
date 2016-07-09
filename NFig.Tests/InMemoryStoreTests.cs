@@ -50,6 +50,42 @@ namespace NFig.Tests
         }
 
         [Test]
+        public void ClearNonExistentOverride()
+        {
+            var store = new NFigMemoryStore<InMemorySettings, Tier, DataCenter>(Tier.Local, DataCenter.Local);
+
+            var snapshot = store.ClearOverride(APP_NAME, "TopInteger", DataCenter.Any, USER_A);
+            Assert.IsNull(snapshot);
+        }
+
+        [Test]
+        public void AtomicChanges()
+        {
+            var store = new NFigMemoryStore<InMemorySettings, Tier, DataCenter>(Tier.Local, DataCenter.Local);
+
+            var snapshot1 = store.SetOverride(APP_NAME, "TopInteger", "1", DataCenter.Any, USER_A, store.InitialCommit);
+            Assert.IsNotNull(snapshot1);
+
+            var snapshot2 = store.SetOverride(APP_NAME, "TopInteger", "2", DataCenter.Any, USER_A, store.InitialCommit);
+            Assert.IsNull(snapshot2);
+
+            var settings = store.GetAppSettings(APP_NAME);
+            Assert.AreEqual(1, settings.TopInteger);
+
+            var snapshot3 = store.ClearOverride(APP_NAME, "TopInteger", DataCenter.Any, USER_A, store.InitialCommit);
+            Assert.IsNull(snapshot3);
+
+            settings = store.GetAppSettings(APP_NAME);
+            Assert.AreEqual(1, settings.TopInteger);
+
+            var snapshot4 = store.ClearOverride(APP_NAME, "TopInteger", DataCenter.Any, USER_A, snapshot1.Commit);
+            Assert.IsNotNull(snapshot4);
+
+            settings = store.GetAppSettings(APP_NAME);
+            Assert.AreEqual(23, settings.TopInteger);
+        }
+
+        [Test]
         public void SubscribeToUpdates()
         {
             var store = new NFigMemoryStore<InMemorySettings, Tier, DataCenter>(Tier.Local, DataCenter.West);
