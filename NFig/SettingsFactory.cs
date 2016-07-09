@@ -387,9 +387,6 @@ namespace NFig
                 if (_encryptor == null)
                     throw new NFigException($"Setting {name} is marked as encrypted, but no ISettingEncryptor was provided to the NFigStore.");
 
-                if (pi.PropertyType.IsValueType)
-                    throw new NFigException($"Only reference types can be used for encrypted settings. {name} is a value type ({pi.PropertyType.Name}).");
-
                 if (sa.DefaultValue != null)
                     throw new NFigException($"Encrypted setting {name} has a non-null default value for Any/Any (tier/data center)");
             }
@@ -444,7 +441,8 @@ namespace NFig
 
             // see if there are any default value attributes
             var defaults = new List<SettingValue<TTier, TDataCenter>>();
-            var defaultStringValue = GetStringFromDefaultAndValidate(name, sa.DefaultValue, default(TTier), default(TDataCenter), converter, isEncrypted);
+            var anyAnyValue = isEncrypted ? default(TValue) : sa.DefaultValue;
+            var defaultStringValue = GetStringFromDefaultAndValidate(name, anyAnyValue, default(TTier), default(TDataCenter), converter, isEncrypted);
             defaults.Add(new SettingValue<TTier, TDataCenter>(name, defaultStringValue, default(TTier), default(TDataCenter), true, true));
             
             foreach (var dsva in pi.GetCustomAttributes<DefaultSettingValueAttribute>())
@@ -535,10 +533,11 @@ namespace NFig
         {
             string stringValue;
 
-            if (value is string && typeof (TValue) != typeof (string))
+            if (value is string && (isEncrypted || typeof (TValue) != typeof (string)))
             {
                 // Don't need to convert to a string if value is already a string and TValue is not.
                 // We expect that the human essentially already did the conversion.
+                // Also, if setting is encrypted, then we always expect the string representation to be encrypted.
                 stringValue = (string) value;
             }
             else
@@ -548,6 +547,9 @@ namespace NFig
                     // try convert the real value into its string representation
                     TValue tval = value is TValue ? (TValue)value : (TValue)Convert.ChangeType(value, typeof(TValue));
                     stringValue = converter.GetString(tval);
+
+                    if (isEncrypted)
+                        stringValue = Encrypt(stringValue);
                 }
                 catch (Exception ex)
                 {

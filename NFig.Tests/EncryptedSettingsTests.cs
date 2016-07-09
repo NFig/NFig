@@ -68,6 +68,8 @@ namespace NFig.Tests
             Assert.AreEqual(1, settings.EncryptedList[0]);
             Assert.AreEqual(2, settings.EncryptedList[1]);
             Assert.AreEqual(3, settings.EncryptedList[2]);
+            Assert.AreEqual(0, settings.EncryptedInt);
+            Assert.AreEqual(17.3, settings.EncryptedDouble);
         }
 
         [Test]
@@ -87,6 +89,8 @@ namespace NFig.Tests
             Assert.AreEqual(4, settings.EncryptedList[0]);
             Assert.AreEqual(5, settings.EncryptedList[1]);
             Assert.AreEqual(6, settings.EncryptedList[2]);
+            Assert.AreEqual(0, settings.EncryptedInt);
+            Assert.AreEqual(23.37, settings.EncryptedDouble);
 
             const string unencrypted = "Override text";
             const string encrypted = "PspZKNcOqMc7SGRuH0Mmva59xjhpezVcfEfMzQmuCvG7pbUmIu+BZ0C1aw4Dur2vL95/7aCv/LZq/bX0ITmzSqwtkIHvE6/L0G9vdh/sSOlgIG+a+8TSkjPUw2KaPNmUQxH4/RP5/3wGQrOdIvcs9HtJd+VB3BFK7f6BkaU6rdrJNcOWn0U6tz+O1KvUsaWBO8wolF6bD6wk/w9Vayyq2f+Fq2g/V4IdgZ2LPOl9a9Y2QtI18eNsTxCPwKiFzqaaYhFQt6qSOHGk1cbOw7MA46yrjCliqos4l9ORX5uYHTOOpN10BoEOSiQgf3/fauT907Y7OmwTUzhJ3wxQjk1z2NP3Hqzsj89XiMHJ5mkzMzxSc3SoNnG5yH3bAehOs9xKUA+tiFdL+smfQICXe+chroSW21EnG7i84iu6l3dbLwNHssuv9mb7j2MtQ0ujUvkjLu3ZKvfpa2ksyTMdEhnT0BkT/u7uhLhLswdxqzCxb1osrOD5F6b0UGo3/Yot/lmxlbDZP2UvFcDL1lR4Po5ua3WojTUbb+uXOI+fSbzoRB1ofUJlLZ4GGlQDTljYghDBSU9Cknlgx6EvujunMW71+6D7GUjt7+TbxTsb0OLZag+Bd7iQ20ycw5N7UCJL+4uLpFqzgCjpXxL8WBa1QLgJpviy1PszHbnpLL18hze6zwI=";
@@ -127,6 +131,15 @@ namespace NFig.Tests
             [Tier(Tier.Prod, "VGhO0RM+F1tto+5z5ECgsIab0C2nh0zW7LLEPhKFgb+dgkdEL00FKHIyRmNcA6oRkLMuUR1WyrXTKD4BWO3JWZ+6pFJWcf8FN3Gpciso9sh/wUgKmeZXxtRk87Ve0GWSdyDfYvGISVHo3pwLujBng8RHLvPu3uBmfOs4fPdshsDjU5sKu4nz6ufyONsFd2wUlHcVJXgzVCFA6aY27FHz6mPWLYprvvEAXSKuA3v7/tP7O7t/wvFeOGv+SowgnngNySQlIFusByAchuh6ubR2qOGTh2yKCe9uPRdqJBzUK5g3XTv3DSHFkvF1BXMHWg6PoeRIXMQVzgy7lYq7kR4fh87QSmmH5m6HWJK+S2F20sUnxxkazjWvA7twj+8woPij5kn4MQ57k7x2KQsdbe91xgE+GvMfRXRwE1s3s9PR14nZyIOub11RnmqFaElmK4eli6D360hqalxBbMxvtC8XfOX0uhDW3CgunS4QPRSAfNZPB/vUCvgLqpfg1/MlpZ7AmTlHTIKI0KFu3fOVUfvSPY+9b3vlBBCN8BxfsAMLJyMwxwFvUfGmT/NaZZwSlehQF/TBRfb7qEBz0qg9/CToQg+2vjygNXzHP5rWUw1vOk3OcyDqHnuAdTz65zbAh0LUvQqVH+b7vUoEW2/g6TBNY5HJtLsTRXbjXR1LD5NMw+E=")]
             [SettingConverter(typeof(CustomConverterTests.IntArrayConverter))]
             public int[] EncryptedList { get; private set; }
+
+            [EncryptedSetting]
+            public int EncryptedInt { get; private set; }
+
+            [EncryptedSetting]
+            [Tier(Tier.Local, "17.3")]
+            // 23.37
+            [Tier(Tier.Prod, "m2rmrNgFPLIunt6KC5gSMDVHd0LsMpSwr8QDhg1T30p2BI3Ei1nzSGJzqu8XCTg+M2EwKyLQ78lYXooBYpesodJ72GxjuZMmnK2y7geQiSa6reYXQffYRfkbGOLKz1OJ6ERNQMojSLcyAh4rhec2zp6sQasjeiHKSej1JOaGY6p7THO6fiForx+uBgw64SW7YSAN5hNOljamttIvvKCq3cXqKWmDK06zzLjvvt9QQLY9u9zwwih+KxCmW2/B0JqH+DheLwztNeK/yHaqBkdDXCrijHKw2uInI32Er2VZYdlHC/lH8moWftCNnJK+nRTS47Zuh+hA326PziyeSWChOb9x9zFRe5zqbA9m9CG3xmsQaommvFvIZwElmY/rh7Cp+hnS7+pGYTZwhk2IS6Z8W3tokujivHfZ0vBvrikJ/T7xM09tCH59EPrnvm2uDvA/buGnNbNGOtFA1T12Z5qHKOtwFEurkcERijkxjUiOXML+ZnT2PffdCZa42ZyQWY9Fr4vV+17ktNs4Rkmv/WimMPH/w63057LffofMqQFc8Uj2BS4Tuo48L0c+mAJkSDviaRIS9GtMi+gI2Zdth/WtsXQT+mQcPwG3uuVKEIa3l7wjwDIaUSbGGAc+BjBz3A0MwGrGAGLu3DcfBSRQoQdOuDKDejMlaXobPxBC3kWaeTE=")]
+            public double EncryptedDouble { get; private set; }
         }
 
         // an encryptor which doesn't round-trip properly
