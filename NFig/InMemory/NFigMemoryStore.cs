@@ -11,15 +11,15 @@ namespace NFig.InMemory
         where TTier : struct
         where TDataCenter : struct
     {
-        private class InMemoryAppData
+        class InMemoryAppData
         {
             public string Commit { get; set; } = INITIAL_COMMIT;
             public byte[] LastEvent { get; set; }
             public Dictionary<string, string> Overrides { get; } = new Dictionary<string, string>();
         }
 
-        private readonly object _lock = new object();
-        private readonly Dictionary<string, InMemoryAppData> _dataByApp = new Dictionary<string, InMemoryAppData>();
+        readonly object _lock = new object();
+        readonly Dictionary<string, InMemoryAppData> _dataByApp = new Dictionary<string, InMemoryAppData>();
 
         public NFigMemoryStore(
             TTier tier,
@@ -202,7 +202,7 @@ namespace NFig.InMemory
             }
         }
 
-        private static AppSnapshot<TTier, TDataCenter> CreateSnapshot(string appName, InMemoryAppData data)
+        static AppSnapshot<TTier, TDataCenter> CreateSnapshot(string appName, InMemoryAppData data)
         {
             var snapshot = new AppSnapshot<TTier, TDataCenter>();
 
@@ -235,7 +235,7 @@ namespace NFig.InMemory
             // there's never going to be orphaned overrides for an in-memory store
         }
 
-        private InMemoryAppData GetInMemoryAppData(string appName)
+        InMemoryAppData GetInMemoryAppData(string appName)
         {
             lock (_lock)
             {

@@ -2,7 +2,7 @@
 
 namespace NFig
 {
-    internal static class Compare
+    static class Compare
     {
         public static bool AreEqual<T>(T a, T b) where T : struct
         {

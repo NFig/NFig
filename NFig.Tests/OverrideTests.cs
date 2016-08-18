@@ -52,7 +52,7 @@ namespace NFig.Tests
             Assert.AreEqual(s.C, 12);
         }
 
-        private class OverrideSettings : SettingsBase
+        class OverrideSettings : SettingsBase
         {
             [Setting(0)]
             public int A { get; private set; }

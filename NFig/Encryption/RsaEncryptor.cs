@@ -6,7 +6,7 @@ namespace NFig.Encryption
 {
     public class RsaEncryptor : ISettingEncryptor
     {
-        private readonly RSACryptoServiceProvider _rsa;
+        readonly RSACryptoServiceProvider _rsa;
 
         /// <summary>
         /// Uses a pre-initialized RSACryptoServiceProvider object to provide encryption and decryption.

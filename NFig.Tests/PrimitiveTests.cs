@@ -26,7 +26,7 @@ namespace NFig.Tests
             Assert.True(s.Decimal == 0.2m, "Decimal");
         }
 
-        private class PrimitiveSettings : SettingsBase
+        class PrimitiveSettings : SettingsBase
         {
             [Setting(true)]
             public bool Bool { get; private set; }

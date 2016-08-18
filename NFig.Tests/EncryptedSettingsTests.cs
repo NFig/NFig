@@ -8,12 +8,12 @@ namespace NFig.Tests
 {
     public class EncryptedSettingsTests
     {
-        private const string APP_NAME = "TestApp";
-        private const string USER_A = "Andrew";
-        private const string USER_B = "Bret";
-        private const string USER_C = "Charlie";
+        const string APP_NAME = "TestApp";
+        const string USER_A = "Andrew";
+        const string USER_B = "Bret";
+        const string USER_C = "Charlie";
 
-        private class MultipleAttributesSettings : SettingsBase
+        class MultipleAttributesSettings : SettingsBase
         {
             [EncryptedSetting]
             [Setting(null)]
@@ -29,7 +29,7 @@ namespace NFig.Tests
             });
         }
 
-        private class NoTierDefaultsSettings : SettingsBase
+        class NoTierDefaultsSettings : SettingsBase
         {
             [EncryptedSetting]
             [DataCenter(DataCenter.Local, "value")]
@@ -112,7 +112,7 @@ namespace NFig.Tests
         
         // Local for PassThrough testing
         // Prod for RSA testing
-        private class Settings : SettingsBase
+        class Settings : SettingsBase
         {
             [EncryptedSetting]
             [Tier(Tier.Local, "Plain text value")]
@@ -143,7 +143,7 @@ namespace NFig.Tests
         }
 
         // an encryptor which doesn't round-trip properly
-        private class InvalidSettingEncryptor : ISettingEncryptor
+        class InvalidSettingEncryptor : ISettingEncryptor
         {
             public string Encrypt(string value)
             {

@@ -9,28 +9,28 @@ using NFig.Encryption;
 
 namespace NFig
 {
-    internal class SettingsFactory<TSettings, TTier, TDataCenter>
+    class SettingsFactory<TSettings, TTier, TDataCenter>
         where TSettings : class, INFigSettings<TTier, TDataCenter>, new()
         where TTier : struct
         where TDataCenter : struct
     {
-        private readonly TTier _tier;
+        readonly TTier _tier;
 
-        private readonly Setting[] _settings;
-        private readonly Dictionary<string, Setting> _settingsByName;
-        private readonly InitializeSettingsDelegate _initializer;
-        private readonly Type TSettingsType;
-        private readonly Type TTierType;
-        private readonly Type TDataCenterType;
+        readonly Setting[] _settings;
+        readonly Dictionary<string, Setting> _settingsByName;
+        readonly InitializeSettingsDelegate _initializer;
+        readonly Type TSettingsType;
+        readonly Type TTierType;
+        readonly Type TDataCenterType;
 
-        private readonly ISettingEncryptor _encryptor;
+        readonly ISettingEncryptor _encryptor;
 
-        private readonly Dictionary<Type, PropertyToSettingDelegate> _propertyToSettingDelegatesCache;
-        private readonly object _delegatesCacheLock;
+        readonly Dictionary<Type, PropertyToSettingDelegate> _propertyToSettingDelegatesCache;
+        readonly object _delegatesCacheLock;
 
-        private delegate Setting PropertyToSettingDelegate(PropertyInfo pi, PropertyAndParent parent, SettingAttribute sa, string prefix);
+        delegate Setting PropertyToSettingDelegate(PropertyInfo pi, PropertyAndParent parent, SettingAttribute sa, string prefix);
 
-        private readonly Dictionary<Type, object> _defaultConverters = new Dictionary<Type, object>
+        readonly Dictionary<Type, object> _defaultConverters = new Dictionary<Type, object>
         {
             {typeof(bool), new BooleanSettingConverter()},
             {typeof(byte), new ByteSettingConverter()},
@@ -314,17 +314,17 @@ namespace NFig
             return typedSetting.Getter(obj);
         }
 
-        private Setting[] BuildSettings(Type type)
+        Setting[] BuildSettings(Type type)
         {
             return type.GetProperties().Select(pi => GetSettingsFromProperty(pi, null, "")).SelectMany(s => s).ToArray();
         }
 
-        private IEnumerable<Setting> GetSubSettings(Type type, PropertyAndParent parent, string prefix)
+        IEnumerable<Setting> GetSubSettings(Type type, PropertyAndParent parent, string prefix)
         {
             return type.GetProperties().Select(pi => GetSettingsFromProperty(pi, parent, prefix)).SelectMany(s => s);
         }
 
-        private IEnumerable<Setting> GetSettingsFromProperty(PropertyInfo pi, PropertyAndParent parent, string prefix)
+        IEnumerable<Setting> GetSettingsFromProperty(PropertyInfo pi, PropertyAndParent parent, string prefix)
         {
             var settingAttributes = pi.GetCustomAttributes<SettingAttribute>().ToList();
             if (settingAttributes.Count > 0)
@@ -358,7 +358,7 @@ namespace NFig
             return Enumerable.Empty<Setting>();
         }
 
-        private PropertyToSettingDelegate GetPropertyToSettingDelegate(Type type)
+        PropertyToSettingDelegate GetPropertyToSettingDelegate(Type type)
         {
             PropertyToSettingDelegate del;
             if (_propertyToSettingDelegatesCache.TryGetValue(type, out del))
@@ -377,7 +377,7 @@ namespace NFig
             }
         }
 
-        private Setting PropertyToSetting<TValue>(PropertyInfo pi, PropertyAndParent parent, SettingAttribute sa, string prefix)
+        Setting PropertyToSetting<TValue>(PropertyInfo pi, PropertyAndParent parent, SettingAttribute sa, string prefix)
         {
             var name = prefix + pi.Name;
 
@@ -523,7 +523,7 @@ namespace NFig
             return new Setting<TValue>(name, description, changeRequiresRestart, isEncrypted, pi, defaults.ToArray(), setter, converter, getter);
         }
 
-        private string GetStringFromDefaultAndValidate<TValue>(
+        string GetStringFromDefaultAndValidate<TValue>(
             string name,
             object value,
             TTier tier,
@@ -582,8 +582,8 @@ namespace NFig
 
             return stringValue;
         }
-        
-        private SettingSetterDelegate<TValue> CreateSetterMethod<TValue>(PropertyInfo pi, PropertyAndParent parent, string name)
+
+        SettingSetterDelegate<TValue> CreateSetterMethod<TValue>(PropertyInfo pi, PropertyAndParent parent, string name)
         {
             var list = new List<PropertyInfo>();
             while (parent != null)
@@ -626,7 +626,7 @@ namespace NFig
             return (SettingSetterDelegate<TValue>) dm.CreateDelegate(typeof(SettingSetterDelegate<TValue>));
         }
 
-        private SettingGetterDelegate<TValue> CreateGetterMethod<TValue>(PropertyInfo pi, PropertyAndParent parent, string name)
+        SettingGetterDelegate<TValue> CreateGetterMethod<TValue>(PropertyInfo pi, PropertyAndParent parent, string name)
         {
             var list = new List<PropertyInfo>();
             while (parent != null)
@@ -657,7 +657,7 @@ namespace NFig
             return (SettingGetterDelegate<TValue>) dm.CreateDelegate(typeof(SettingGetterDelegate<TValue>));
         }
 
-        private static bool IsConverterOfType(object converter, Type type)
+        static bool IsConverterOfType(object converter, Type type)
         {
             if (converter == null)
                 return false;
@@ -675,7 +675,7 @@ namespace NFig
             return false;
         }
 
-        private InitializeSettingsDelegate GetInitializer()
+        InitializeSettingsDelegate GetInitializer()
         {
             // todo: it'd be nice to combine this with the GetSettings reflection so we don't have to do it twice
             // Also don't want to make that code uglier than it already is... need to think about this more.
@@ -691,7 +691,7 @@ namespace NFig
             return (InitializeSettingsDelegate)dm.CreateDelegate(typeof(InitializeSettingsDelegate));
         }
 
-        private static LocalBuilder WriteInstantiationIL(ILGenerator il, Type type)
+        static LocalBuilder WriteInstantiationIL(ILGenerator il, Type type)
         {
             var local = il.DeclareLocal(type);
 
@@ -720,17 +720,17 @@ namespace NFig
             return local;
         }
 
-        private static IEnumerable<T> SelectSingle<T>(T item)
+        static IEnumerable<T> SelectSingle<T>(T item)
         {
             yield return item;
         }
 
-        private static bool IsSettingsGroup(PropertyInfo pi)
+        static bool IsSettingsGroup(PropertyInfo pi)
         {
             return pi.PropertyType.IsClass && pi.GetCustomAttribute<SettingsGroupAttribute>() != null;
         }
 
-        private static void AssertEncryptorIsNullOrValid(ISettingEncryptor encryptor)
+        static void AssertEncryptorIsNullOrValid(ISettingEncryptor encryptor)
         {
             // null is perfectly valid if they're not using encrypted settings (validated later)
             if (encryptor == null)
@@ -766,18 +766,19 @@ namespace NFig
          * Helper Classes and Delegates
          *************************************************************************************/
 
-        private delegate TSettings InitializeSettingsDelegate();
+        delegate TSettings InitializeSettingsDelegate();
 
-        private class PropertyAndParent
+        class PropertyAndParent
         {
             public PropertyAndParent Parent { get; set; }
             public PropertyInfo PropertyInfo { get; set; }
         }
 
-        private delegate void SettingSetterDelegate<TValue>(TSettings settings, string str, ISettingConverter<TValue> converter);
-        private delegate TValue SettingGetterDelegate<TValue>(TSettings settings);
+        delegate void SettingSetterDelegate<TValue>(TSettings settings, string str, ISettingConverter<TValue> converter);
 
-        private abstract class Setting
+        delegate TValue SettingGetterDelegate<TValue>(TSettings settings);
+
+        abstract class Setting
         {
             public string Name { get; protected set; }
             public string Description { get; protected set; }
@@ -792,10 +793,10 @@ namespace NFig
             public abstract bool TryGetStringFromValue(object value, out string str);
         }
 
-        private class Setting<TValue> : Setting
+        class Setting<TValue> : Setting
         {
-            private readonly ISettingConverter<TValue> _converter;
-            private readonly SettingSetterDelegate<TValue> _setter;
+            readonly ISettingConverter<TValue> _converter;
+            readonly SettingSetterDelegate<TValue> _setter;
 
             public readonly SettingGetterDelegate<TValue> Getter;
 

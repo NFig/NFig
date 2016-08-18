@@ -5,12 +5,12 @@ using System.Reflection.Emit;
 
 namespace NFig
 {
-    internal static class EnumConverters
+    static class EnumConverters
     {
-        private class EnumConverter<T> : ISettingConverter<T>
+        class EnumConverter<T> : ISettingConverter<T>
         {
-            private readonly Func<T, string> _getString;
-            private readonly Func<string, T> _getValue;
+            readonly Func<T, string> _getString;
+            readonly Func<string, T> _getValue;
 
             internal EnumConverter(Func<T, string> getString, Func<string, T> getValue)
             {
@@ -29,8 +29,8 @@ namespace NFig
             }
         }
 
-        private static readonly Dictionary<Type, object> s_converters = new Dictionary<Type, object>();
-        private static readonly object s_lock = new object();
+        static readonly Dictionary<Type, object> s_converters = new Dictionary<Type, object>();
+        static readonly object s_lock = new object();
 
         public static object GetConverter<TEnum>()
         {
@@ -51,7 +51,7 @@ namespace NFig
             }
         }
 
-        private static ISettingConverter<TEnum> CreateConverter<TEnum>()
+        static ISettingConverter<TEnum> CreateConverter<TEnum>()
         {
             var enumType = typeof(TEnum);
             var stringType = typeof(string);

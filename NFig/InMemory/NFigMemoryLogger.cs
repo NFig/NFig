@@ -9,7 +9,7 @@ namespace NFig.InMemory
         where TTier : struct
         where TDataCenter : struct
     {
-        private readonly List<AppSnapshot<TTier, TDataCenter>> _history = new List<AppSnapshot<TTier, TDataCenter>>();
+        readonly List<AppSnapshot<TTier, TDataCenter>> _history = new List<AppSnapshot<TTier, TDataCenter>>();
 
         public NFigMemoryLogger(Action<Exception, AppSnapshot<TTier, TDataCenter>> onLogException) : base(onLogException)
         {
@@ -102,7 +102,7 @@ namespace NFig.InMemory
             return Task.FromResult<AppSnapshot<TTier, TDataCenter>>(null);
         }
 
-        private static int CompareLogs(AppSnapshot<TTier, TDataCenter> a, AppSnapshot<TTier, TDataCenter> b)
+        static int CompareLogs(AppSnapshot<TTier, TDataCenter> a, AppSnapshot<TTier, TDataCenter> b)
         {
             if (a.LastEvent.Timestamp > b.LastEvent.Timestamp)
                 return 1;

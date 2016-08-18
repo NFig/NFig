@@ -25,7 +25,7 @@ namespace NFig.Tests
             Three,
         }
 
-        private class EnumSettings : SettingsBase
+        class EnumSettings : SettingsBase
         {
             [Setting(TestEnum.Zero)]
             public TestEnum First { get; private set; }

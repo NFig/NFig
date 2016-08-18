@@ -25,7 +25,7 @@ namespace NFig
 
         public delegate void SettingsUpdateDelegate(Exception ex, TSettings settings, NFigStore<TSettings, TTier, TDataCenter> store);
 
-        private class TierDataCenterCallback
+        class TierDataCenterCallback
         {
             public SettingsUpdateDelegate Callback { get; }
             public string LastNotifiedCommit { get; set; } = "NONE";
@@ -36,15 +36,15 @@ namespace NFig
             }
         }
 
-        private readonly SettingsFactory<TSettings, TTier, TDataCenter> _factory;
+        readonly SettingsFactory<TSettings, TTier, TDataCenter> _factory;
 
-        private readonly object _callbacksLock = new object();
-        private readonly Dictionary<string, TierDataCenterCallback[]> _callbacksByApp = new Dictionary<string, TierDataCenterCallback[]>();
+        readonly object _callbacksLock = new object();
+        readonly Dictionary<string, TierDataCenterCallback[]> _callbacksByApp = new Dictionary<string, TierDataCenterCallback[]>();
 
-        private readonly object _dataCacheLock = new object();
-        private readonly Dictionary<string, AppSnapshot<TTier, TDataCenter>> _dataCache = new Dictionary<string, AppSnapshot<TTier, TDataCenter>>();
+        readonly object _dataCacheLock = new object();
+        readonly Dictionary<string, AppSnapshot<TTier, TDataCenter>> _dataCache = new Dictionary<string, AppSnapshot<TTier, TDataCenter>>();
 
-        private Timer _pollingTimer;
+        Timer _pollingTimer;
 
         public TTier Tier { get; }
         public TDataCenter DataCenter { get; }
@@ -543,7 +543,7 @@ namespace NFig
             ReloadAndNotifyCallback(appName, callbacks);
         }
 
-        private void ReloadAndNotifyCallback(string appName, TierDataCenterCallback[] callbacks)
+        void ReloadAndNotifyCallback(string appName, TierDataCenterCallback[] callbacks)
         {
             if (callbacks == null || callbacks.Length == 0)
                 return;
@@ -630,7 +630,7 @@ namespace NFig
             ReloadAndNotifyCallback(appName, GetCallbacks(appName));
         }
 
-        private void PollForChanges(object _)
+        void PollForChanges(object _)
         {
             List<string> appNames;
             lock (_callbacksLock)
@@ -663,7 +663,7 @@ namespace NFig
             }
         }
 
-        private TierDataCenterCallback[] GetCallbacks(string appName)
+        TierDataCenterCallback[] GetCallbacks(string appName)
         {
             lock (_callbacksLock)
             {
@@ -686,8 +686,8 @@ namespace NFig
         {
             return ":0:" + Convert.ToUInt32(dataCenter) + ";" + settingName;
         }
-        
-        private static readonly Regex s_keyRegex = new Regex(@"^:\d+:(?<DataCenter>\d+);(?<Name>.+)$");
+
+        static readonly Regex s_keyRegex = new Regex(@"^:\d+:(?<DataCenter>\d+);(?<Name>.+)$");
         protected static bool TryGetValueFromOverride(string key, string stringValue, out SettingValue<TTier, TDataCenter> value)
         {
             var match = s_keyRegex.Match(key);
@@ -718,7 +718,7 @@ namespace NFig
             }
         }
 
-        private InvalidSettingOverridesException GetSettingsObjectFromData(AppSnapshot<TTier, TDataCenter> snapshot, out TSettings settings)
+        InvalidSettingOverridesException GetSettingsObjectFromData(AppSnapshot<TTier, TDataCenter> snapshot, out TSettings settings)
         {
             // create new settings object
             var ex = _factory.TryGetAppSettings(out settings, DataCenter, snapshot.Overrides);
@@ -728,7 +728,7 @@ namespace NFig
             return ex;
         }
 
-        private void LogAndNotifyChange(AppSnapshot<TTier, TDataCenter> snapshot)
+        void LogAndNotifyChange(AppSnapshot<TTier, TDataCenter> snapshot)
         {
             try
             {

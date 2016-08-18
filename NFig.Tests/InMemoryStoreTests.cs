@@ -10,10 +10,10 @@ namespace NFig.Tests
 {
     public class InMemoryStoreTests
     {
-        private const string APP_NAME = "TestApp";
-        private const string USER_A = "Andrew";
-        private const string USER_B = "Bret";
-        private const string USER_C = "Charlie";
+        const string APP_NAME = "TestApp";
+        const string USER_A = "Andrew";
+        const string USER_B = "Bret";
+        const string USER_C = "Charlie";
 
         [Test]
         public void Defaults()
@@ -285,7 +285,7 @@ namespace NFig.Tests
             Assert.AreEqual(totalEvents - 3, logs.Count);
         }
 
-        private class InMemorySettings : SettingsBase
+        class InMemorySettings : SettingsBase
         {
             [Setting(23)]
             public int TopInteger { get; private set; }

@@ -15,7 +15,7 @@ namespace NFig.Tests
             Assert.AreEqual(s.Two.B.C, 3);
         }
 
-        private class NestedSettings : SettingsBase
+        class NestedSettings : SettingsBase
         {
             [SettingsGroup]
             public OneSettings One { get; private set; }

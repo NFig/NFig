@@ -8,7 +8,7 @@ namespace NFig.Logging
         where TTier : struct
         where TDataCenter : struct
     {
-        private readonly Action<Exception, AppSnapshot<TTier, TDataCenter>> _onLogException;
+        readonly Action<Exception, AppSnapshot<TTier, TDataCenter>> _onLogException;
 
         protected SettingsLogger(Action<Exception, AppSnapshot<TTier, TDataCenter>> onLogException)
         {

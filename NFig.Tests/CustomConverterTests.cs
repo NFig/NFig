@@ -19,7 +19,7 @@ namespace NFig.Tests
             Assert.AreEqual(s.Ints[2], 4);
         }
 
-        private class CustomConverterSettings : SettingsBase
+        class CustomConverterSettings : SettingsBase
         {
             [Setting("2,3,4")]
             [SettingConverter(typeof(IntArrayConverter))]

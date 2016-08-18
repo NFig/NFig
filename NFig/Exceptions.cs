@@ -71,7 +71,7 @@ namespace NFig
             UnthrownStackTrace = stackTrace;
         }
 
-        private static string GetMessage(IList<InvalidSettingValueException> exceptions)
+        static string GetMessage(IList<InvalidSettingValueException> exceptions)
         {
             return $"{exceptions.Count} invalid setting overrides were not applied ({string.Join(", ", exceptions.Select(e => e.SettingName))}). You should edit or clear these overrides.";
         }
