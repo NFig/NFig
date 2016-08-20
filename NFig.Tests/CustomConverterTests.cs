@@ -9,8 +9,8 @@ namespace NFig.Tests
         [Test]
         public void CustomConverterTest()
         {
-            var factory = new SettingsFactory<CustomConverterSettings, Tier, DataCenter>(Tier.Local, null, null);
-            var s = factory.GetAppSettings(DataCenter.Local);
+            var factory = new SettingsFactory<CustomConverterSettings, Tier, DataCenter>("AppName", Tier.Local, DataCenter.Local, null, null);
+            var s = factory.GetAppSettings();
 
             Assert.True(s.Ints != null, "Ints should not be null");
             Assert.True(s.Ints.Length == 3, "Ints should have length of 3, but is length " + s.Ints.Length);

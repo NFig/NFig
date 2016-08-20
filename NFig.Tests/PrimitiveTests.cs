@@ -8,8 +8,8 @@ namespace NFig.Tests
         [Test]
         public void PrimitivesTest()
         {
-            var factory = new SettingsFactory<PrimitiveSettings, Tier, DataCenter>(Tier.Local, null, null);
-            var s = factory.GetAppSettings(DataCenter.Local);
+            var factory = new SettingsFactory<PrimitiveSettings, Tier, DataCenter>("AppName", Tier.Local, DataCenter.Local, null, null);
+            var s = factory.GetAppSettings();
 
             Assert.True(s.Bool == true, "Bool");
             Assert.True(s.Byte == 128, "Byte");

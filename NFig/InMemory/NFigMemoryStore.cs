@@ -22,29 +22,28 @@ namespace NFig.InMemory
         readonly Dictionary<string, InMemoryAppData> _dataByApp = new Dictionary<string, InMemoryAppData>();
 
         public NFigMemoryStore(
+            string appName,
             TTier tier,
             TDataCenter dataCenter,
             SettingsLogger<TTier, TDataCenter> logger = null,
             ISettingEncryptor encryptor = null,
             Dictionary<Type, object> additionalDefaultConverters = null)
-            : base(tier, dataCenter, logger, encryptor, additionalDefaultConverters, pollingInterval: 0)
+            : base(appName, tier, dataCenter, logger, encryptor, additionalDefaultConverters, pollingInterval: 0)
         {
         }
 
         protected override Task<AppSnapshot<TTier, TDataCenter>> SetOverrideAsyncImpl(
-            string appName,
             string settingName,
             string value,
             TDataCenter dataCenter,
             string user,
             string commit)
         {
-            var snapshot = SetOverrideImpl(appName, settingName, value, dataCenter, user, commit);
+            var snapshot = SetOverrideImpl(settingName, value, dataCenter, user, commit);
             return Task.FromResult(snapshot);
         }
 
         protected override AppSnapshot<TTier, TDataCenter> SetOverrideImpl(
-            string appName,
             string settingName,
             string value,
             TDataCenter dataCenter,
@@ -54,7 +53,7 @@ namespace NFig.InMemory
             AssertValidStringForSetting(settingName, value, dataCenter);
 
             var key = GetOverrideKey(settingName, dataCenter);
-            var data = GetInMemoryAppData(appName);
+            var data = GetInMemoryAppData();
 
             lock (data)
             {
@@ -66,7 +65,7 @@ namespace NFig.InMemory
 
                 var log = new NFigLogEvent<TDataCenter>(
                     type: NFigLogEventType.SetOverride,
-                    appName: appName,
+                    appName: ApplicationName,
                     commit: data.Commit,
                     timestamp: DateTime.UtcNow,
                     settingName: settingName,
@@ -77,30 +76,28 @@ namespace NFig.InMemory
 
                 data.LastEvent = log.BinarySerialize();
 
-                return CreateSnapshot(appName, data);
+                return CreateSnapshot(data);
             }
         }
 
         protected override Task<AppSnapshot<TTier, TDataCenter>> ClearOverrideAsyncImpl(
-            string appName,
             string settingName,
             TDataCenter dataCenter,
             string user,
             string commit)
         {
-            var snapshot = ClearOverrideImpl(appName, settingName, dataCenter, user, commit);
+            var snapshot = ClearOverrideImpl(settingName, dataCenter, user, commit);
             return Task.FromResult(snapshot);
         }
 
         protected override AppSnapshot<TTier, TDataCenter> ClearOverrideImpl(
-            string appName,
             string settingName,
             TDataCenter dataCenter,
             string user,
             string commit)
         {
             var key = GetOverrideKey(settingName, dataCenter);
-            var data = GetInMemoryAppData(appName);
+            var data = GetInMemoryAppData();
             
             lock (data)
             {
@@ -115,7 +112,7 @@ namespace NFig.InMemory
 
                 var log = new NFigLogEvent<TDataCenter>(
                     type: NFigLogEventType.ClearOverride,
-                    appName: appName,
+                    appName: ApplicationName,
                     commit: data.Commit,
                     timestamp: DateTime.UtcNow,
                     settingName: settingName,
@@ -126,30 +123,30 @@ namespace NFig.InMemory
 
                 data.LastEvent = log.BinarySerialize();
 
-                return CreateSnapshot(appName, data);
+                return CreateSnapshot(data);
             }
         }
 
-        public override Task<string> GetCurrentCommitAsync(string appName)
+        public override Task<string> GetCurrentCommitAsync()
         {
-            var data = GetInMemoryAppData(appName);
+            var data = GetInMemoryAppData();
             return Task.FromResult(data.Commit);
         }
 
-        public override string GetCurrentCommit(string appName)
+        public override string GetCurrentCommit()
         {
-            return GetInMemoryAppData(appName).Commit;
+            return GetInMemoryAppData().Commit;
         }
 
-        protected override Task PushUpdateNotificationAsync(string appName)
+        protected override Task PushUpdateNotificationAsync()
         {
-            PushUpdateNotification(appName);
+            PushUpdateNotification();
             return Task.FromResult(0);
         }
 
-        protected override void PushUpdateNotification(string appName)
+        protected override void PushUpdateNotification()
         {
-            TriggerReload(appName);
+            TriggerReload();
         }
 
         protected override Task<AppSnapshot<TTier, TDataCenter>> RestoreSnapshotAsyncImpl(AppSnapshot<TTier, TDataCenter> snapshot, string user)
@@ -159,7 +156,7 @@ namespace NFig.InMemory
 
         protected override AppSnapshot<TTier, TDataCenter> RestoreSnapshotImpl(AppSnapshot<TTier, TDataCenter> snapshot, string user)
         {
-            var data = GetInMemoryAppData(snapshot.ApplicationName);
+            var data = GetInMemoryAppData();
             lock (data)
             {
                 data.Commit = NewCommit();
@@ -184,29 +181,29 @@ namespace NFig.InMemory
                     data.Overrides.Add(key, o.Value);
                 }
 
-                return CreateSnapshot(snapshot.ApplicationName, data);
+                return CreateSnapshot(data);
             }
         }
 
-        protected override Task<AppSnapshot<TTier, TDataCenter>> GetAppSnapshotNoCacheAsync(string appName)
+        protected override Task<AppSnapshot<TTier, TDataCenter>> GetAppSnapshotNoCacheAsync()
         {
-            return Task.FromResult(GetAppSnapshotNoCache(appName));
+            return Task.FromResult(GetAppSnapshotNoCache());
         }
 
-        protected override AppSnapshot<TTier, TDataCenter> GetAppSnapshotNoCache(string appName)
+        protected override AppSnapshot<TTier, TDataCenter> GetAppSnapshotNoCache()
         {
-            var data = GetInMemoryAppData(appName);
+            var data = GetInMemoryAppData();
             lock (data)
             {
-                return CreateSnapshot(appName, data);
+                return CreateSnapshot(data);
             }
         }
 
-        static AppSnapshot<TTier, TDataCenter> CreateSnapshot(string appName, InMemoryAppData data)
+        AppSnapshot<TTier, TDataCenter> CreateSnapshot(InMemoryAppData data)
         {
             var snapshot = new AppSnapshot<TTier, TDataCenter>();
 
-            snapshot.ApplicationName = appName;
+            snapshot.ApplicationName = ApplicationName;
             snapshot.Commit = data.Commit;
 
             var overrides = new List<SettingValue<TTier, TDataCenter>>();
@@ -235,18 +232,18 @@ namespace NFig.InMemory
             // there's never going to be orphaned overrides for an in-memory store
         }
 
-        InMemoryAppData GetInMemoryAppData(string appName)
+        InMemoryAppData GetInMemoryAppData()
         {
             lock (_lock)
             {
                 InMemoryAppData data;
-                if (_dataByApp.TryGetValue(appName, out data))
+                if (_dataByApp.TryGetValue(ApplicationName, out data))
                 {
                     return data;
                 }
 
                 data = new InMemoryAppData();
-                _dataByApp[appName] = data;
+                _dataByApp[ApplicationName] = data;
 
                 return data;
             }

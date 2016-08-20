@@ -14,7 +14,9 @@ namespace NFig
         where TTier : struct
         where TDataCenter : struct
     {
-        readonly TTier _tier;
+        public string ApplicationName { get; }
+        public TTier Tier { get; }
+        public TDataCenter DataCenter { get; }
 
         readonly Setting[] _settings;
         readonly Dictionary<string, Setting> _settingsByName;
@@ -49,13 +51,20 @@ namespace NFig
 
         public bool HasEncryptor => _encryptor != null;
 
-        public SettingsFactory(TTier tier, ISettingEncryptor encryptor, Dictionary<Type, object> additionalDefaultConverters)
+        public SettingsFactory(
+            string appName,
+            TTier tier,
+            TDataCenter dataCenter,
+            ISettingEncryptor encryptor,
+            Dictionary<Type, object> additionalDefaultConverters)
         {
             TSettingsType = typeof(TSettings);
             TTierType = typeof(TTier);
             TDataCenterType = typeof(TDataCenter);
 
-            _tier = tier;
+            ApplicationName = appName;
+            Tier = tier;
+            DataCenter = dataCenter;
 
             AssertEncryptorIsNullOrValid(encryptor);
             _encryptor = encryptor;
@@ -93,10 +102,10 @@ namespace NFig
             _delegatesCacheLock = null;
         }
 
-        public TSettings GetAppSettings(TDataCenter dataCenter, IEnumerable<SettingValue<TTier, TDataCenter>> overrides = null)
+        public TSettings GetAppSettings(IEnumerable<SettingValue<TTier, TDataCenter>> overrides = null)
         {
             TSettings settings;
-            var ex = TryGetAppSettings(out settings, dataCenter, overrides);
+            var ex = TryGetAppSettings(out settings, overrides);
             if (ex != null)
                 throw ex;
 
@@ -104,9 +113,10 @@ namespace NFig
         }
 
         public InvalidSettingOverridesException TryGetAppSettings
-            (out TSettings settings, TDataCenter dataCenter, IEnumerable<SettingValue<TTier, TDataCenter>> overrides = null)
+            (out TSettings settings, IEnumerable<SettingValue<TTier, TDataCenter>> overrides = null)
         {
-            var tier = _tier;
+            var tier = Tier;
+            var dataCenter = DataCenter;
 
             // pick the right overrides
             Dictionary<string, SettingValue<TTier, TDataCenter>> overridesBySetting = null;
@@ -485,7 +495,7 @@ namespace NFig
                 }
 
                 // if it's not the Any tier, and not the current tier, then we don't care about this default
-                var skip = !Compare.IsDefault(tier.Value) && !Compare.AreEqual(tier.Value, _tier);
+                var skip = !Compare.IsDefault(tier.Value) && !Compare.AreEqual(tier.Value, Tier);
 
                 // Even if we're skipping this default, performing validation for all tiers is useful.
                 // However, if the value is encrypted, we only want to perform the validation for the current tier.
