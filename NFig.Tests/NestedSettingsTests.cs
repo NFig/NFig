@@ -9,7 +9,7 @@ namespace NFig.Tests
         public void NestedSettingsTest()
         {
             var factory = new SettingsFactory<NestedSettings, Tier, DataCenter>("AppName", Tier.Local, DataCenter.Local, null, null);
-            var s = factory.GetAppSettings();
+            var s = factory.GetAppSettings(NFigStore<NestedSettings, Tier, DataCenter>.INITIAL_COMMIT);
 
             Assert.AreEqual(s.One.A, 2);
             Assert.AreEqual(s.Two.B.C, 3);

@@ -20,7 +20,7 @@ namespace NFig.Tests
                 new SettingValue<Tier, DataCenter>("B", "11", DataCenter.Any),
             };
 
-            var s = factory.GetAppSettings(overrides);
+            var s = factory.GetAppSettings(NFigStore< OverrideSettings, Tier, DataCenter >.INITIAL_COMMIT, overrides);
 
             Assert.AreEqual(s.A, 10);
             Assert.AreEqual(s.B, 11);
@@ -40,7 +40,7 @@ namespace NFig.Tests
             };
 
             OverrideSettings s;
-            var invalidOverrides = factory.TryGetAppSettings(out s, overrides);
+            var invalidOverrides = factory.TryGetAppSettings(out s, NFigStore<OverrideSettings, Tier, DataCenter>.INITIAL_COMMIT, overrides);
             Console.WriteLine(invalidOverrides.Message);
 
             Assert.True(invalidOverrides != null && invalidOverrides.Exceptions.Count == 2);

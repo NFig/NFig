@@ -9,7 +9,7 @@ namespace NFig.Tests
         public void PrimitivesTest()
         {
             var factory = new SettingsFactory<PrimitiveSettings, Tier, DataCenter>("AppName", Tier.Local, DataCenter.Local, null, null);
-            var s = factory.GetAppSettings();
+            var s = factory.GetAppSettings(NFigStore<PrimitiveSettings, Tier, DataCenter>.INITIAL_COMMIT);
 
             Assert.True(s.Bool == true, "Bool");
             Assert.True(s.Byte == 128, "Byte");

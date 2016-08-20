@@ -102,18 +102,20 @@ namespace NFig
             _delegatesCacheLock = null;
         }
 
-        public TSettings GetAppSettings(IEnumerable<SettingValue<TTier, TDataCenter>> overrides = null)
+        public TSettings GetAppSettings(string commit, IEnumerable<SettingValue<TTier, TDataCenter>> overrides = null)
         {
             TSettings settings;
-            var ex = TryGetAppSettings(out settings, overrides);
+            var ex = TryGetAppSettings(out settings, commit, overrides);
             if (ex != null)
                 throw ex;
 
             return settings;
         }
 
-        public InvalidSettingOverridesException TryGetAppSettings
-            (out TSettings settings, IEnumerable<SettingValue<TTier, TDataCenter>> overrides = null)
+        public InvalidSettingOverridesException TryGetAppSettings(
+            out TSettings settings,
+            string commit,
+            IEnumerable<SettingValue<TTier, TDataCenter>> overrides = null)
         {
             var tier = Tier;
             var dataCenter = DataCenter;
@@ -145,8 +147,7 @@ namespace NFig
 
             var s = _initializer();
             settings = s;
-            s.Tier = tier;
-            s.DataCenter = dataCenter;
+            s.SetBasicInformation(ApplicationName, commit, tier, dataCenter);
 
             foreach (var setting in _settings)
             {

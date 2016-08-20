@@ -17,12 +17,8 @@ namespace NFig.Tests
         West = 3,
     }
 
-    public class SettingsBase : INFigSettings<Tier, DataCenter>
+    public class SettingsBase : NFigSettingsBase<Tier, DataCenter>
     {
-        public string ApplicationName { get; set; }
-        public string Commit { get; set; }
-        public Tier Tier { get; set; }
-        public DataCenter DataCenter { get; set; }
     }
 
     public class DataCenterAttribute : DefaultSettingValueAttribute

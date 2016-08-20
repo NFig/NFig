@@ -9,7 +9,7 @@ namespace NFig.Tests
         public void EnumTest()
         {
             var factory = new SettingsFactory<EnumSettings, Tier, DataCenter>("AppName", Tier.Local, DataCenter.Local, null, null);
-            var s = factory.GetAppSettings();
+            var s = factory.GetAppSettings(NFigStore<EnumSettings, Tier, DataCenter>.INITIAL_COMMIT);
 
             Assert.True(s.First == TestEnum.Zero, "First");
             Assert.True(s.Second == TestEnum.One, "Second");

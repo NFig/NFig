@@ -720,12 +720,7 @@ namespace NFig
 
         InvalidSettingOverridesException GetSettingsObjectFromData(AppSnapshot<TTier, TDataCenter> snapshot, out TSettings settings)
         {
-            // create new settings object
-            var ex = _factory.TryGetAppSettings(out settings, snapshot.Overrides);
-            settings.ApplicationName = snapshot.ApplicationName;
-            settings.Commit = snapshot.Commit;
-
-            return ex;
+            return _factory.TryGetAppSettings(out settings, snapshot.Commit, snapshot.Overrides);
         }
 
         void LogAndNotifyChange(AppSnapshot<TTier, TDataCenter> snapshot)
