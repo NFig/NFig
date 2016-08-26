@@ -9,21 +9,19 @@ using NFig.Encryption;
 
 namespace NFig
 {
-    class SettingsFactory<TSettings, TTier, TDataCenter>
+    class SettingsFactory<TSettings, TSubApp, TTier, TDataCenter>
         where TSettings : class, INFigSettings<TTier, TDataCenter>, new()
+        where TSubApp : struct
         where TTier : struct
         where TDataCenter : struct
     {
-        public string ApplicationName { get; }
-        public TTier Tier { get; }
-        public TDataCenter DataCenter { get; }
-
         readonly Setting[] _settings;
         readonly Dictionary<string, Setting> _settingsByName;
         readonly InitializeSettingsDelegate _initializer;
-        readonly Type TSettingsType;
-        readonly Type TTierType;
-        readonly Type TDataCenterType;
+        readonly Type _settingsType;
+        readonly Type _subAppType;
+        readonly Type _tierType;
+        readonly Type _dataCenterType;
 
         readonly ISettingEncryptor _encryptor;
 
@@ -49,6 +47,10 @@ namespace NFig
             {typeof(decimal), new DecimalSettingConverter()},
         };
 
+        public string ApplicationName { get; }
+        public TTier Tier { get; }
+        public TDataCenter DataCenter { get; }
+
         public bool HasEncryptor => _encryptor != null;
 
         public SettingsFactory(
@@ -58,9 +60,11 @@ namespace NFig
             ISettingEncryptor encryptor,
             Dictionary<Type, object> additionalDefaultConverters)
         {
-            TSettingsType = typeof(TSettings);
-            TTierType = typeof(TTier);
-            TDataCenterType = typeof(TDataCenter);
+            _settingsType = typeof(TSettings);
+            _subAppType = typeof(TSubApp);
+            _tierType = typeof(TTier);
+            _dataCenterType = typeof(TDataCenter);
+            AssertGenericTypesAreValid();
 
             ApplicationName = appName;
             Tier = tier;
@@ -68,9 +72,6 @@ namespace NFig
 
             AssertEncryptorIsNullOrValid(encryptor);
             _encryptor = encryptor;
-
-            if (!TTierType.IsEnum || !TDataCenterType.IsEnum)
-                throw new InvalidOperationException("TTier and TDataCenter must be enum types.");
 
             if (additionalDefaultConverters != null)
             {
@@ -93,7 +94,7 @@ namespace NFig
             _propertyToSettingDelegatesCache = new Dictionary<Type, PropertyToSettingDelegate>();
             _delegatesCacheLock = new object();
 
-            _settings = BuildSettings(TSettingsType);
+            _settings = GetSettingsFromType(_settingsType, null, "").ToArray();
             _settingsByName = _settings.ToDictionary(s => s.Name);
             _initializer = GetInitializer();
 
@@ -307,7 +308,7 @@ namespace NFig
         {
             Setting setting;
             if (!_settingsByName.TryGetValue(settingName, out setting))
-                throw new ArgumentException($"No setting named \"{settingName}\" exists on type {TSettingsType.FullName}");
+                throw new ArgumentException($"No setting named \"{settingName}\" exists on type {_settingsType.FullName}");
 
             return setting.GetValue(obj);
         }
@@ -316,7 +317,7 @@ namespace NFig
         {
             Setting setting;
             if (!_settingsByName.TryGetValue(settingName, out setting))
-                throw new ArgumentException($"No setting named \"{settingName}\" exists on type {TSettingsType.FullName}");
+                throw new ArgumentException($"No setting named \"{settingName}\" exists on type {_settingsType.FullName}");
 
             var typedSetting = setting as Setting<TValue>;
             if (typedSetting == null)
@@ -325,14 +326,15 @@ namespace NFig
             return typedSetting.Getter(obj);
         }
 
-        Setting[] BuildSettings(Type type)
+        IEnumerable<Setting> GetSettingsFromType(Type type, PropertyAndParent parent, string prefix)
         {
-            return type.GetProperties().Select(pi => GetSettingsFromProperty(pi, null, "")).SelectMany(s => s).ToArray();
-        }
-
-        IEnumerable<Setting> GetSubSettings(Type type, PropertyAndParent parent, string prefix)
-        {
-            return type.GetProperties().Select(pi => GetSettingsFromProperty(pi, parent, prefix)).SelectMany(s => s);
+            foreach (var pi in type.GetProperties())
+            {
+                foreach (var setting in GetSettingsFromProperty(pi, parent, prefix))
+                {
+                    yield return setting;
+                }
+            }
         }
 
         IEnumerable<Setting> GetSettingsFromProperty(PropertyInfo pi, PropertyAndParent parent, string prefix)
@@ -363,7 +365,7 @@ namespace NFig
             if (IsSettingsGroup(pi))
             {
                 parent = new PropertyAndParent { Parent = parent, PropertyInfo = pi };
-                return GetSubSettings(pi.PropertyType, parent, pi.Name + ".");
+                return GetSettingsFromType(pi.PropertyType, parent, prefix + pi.Name + ".");
             }
 
             return Enumerable.Empty<Setting>();
@@ -394,14 +396,109 @@ namespace NFig
 
             var isEncrypted = sa.IsEncrypted;
             if (isEncrypted)
-            {
-                if (_encryptor == null)
-                    throw new NFigException($"Setting {name} is marked as encrypted, but no ISettingEncryptor was provided to the NFigStore.");
+                AssertValidEncryptedSettingAttribute(name, sa);
 
-                if (sa.DefaultValue != null)
-                    throw new NFigException($"Encrypted setting {name} has a non-null default value for Any/Any (tier/data center)");
+            var converter = GetConverterForProperty<TValue>(name, pi);
+
+            // description
+            var da = pi.GetCustomAttribute<DescriptionAttribute>();
+            var description = da == null ? "" : da.Description;
+
+            // change requires restart
+            var changeRequiresRestart = pi.GetCustomAttribute<ChangeRequiresRestartAttribute>() != null;
+
+            // see if there are any default value attributes
+            var defaults = new List<SettingValue<TSubApp, TTier, TDataCenter>>();
+            var anyAnyValue = isEncrypted ? default(TValue) : sa.DefaultValue;
+            var defaultStringValue = GetStringFromDefaultAndValidate(name, anyAnyValue, default(TSubApp), default(TDataCenter), converter, isEncrypted);
+            defaults.Add(new SettingValue<TSubApp, TTier, TDataCenter>(name, defaultStringValue, default(TSubApp), default(TTier), default(TDataCenter), true, true));
+            
+            foreach (var dsva in pi.GetCustomAttributes<DefaultSettingValueAttribute>())
+            {
+                var subApp = default(TSubApp);
+                var tier = default(TTier);
+                var dc = default(TDataCenter);
+
+                // type check the "object" properties of the attribute
+                if (dsva.SubApp != null)
+                {
+                    if (!(dsva.SubApp is TSubApp))
+                        throw new NFigException($"The subApp argument was not of type {_subAppType.Name} on setting \"{name}\"");
+
+                    subApp = (TSubApp)dsva.SubApp;
+                }
+
+                if (dsva.Tier != null)
+                {
+                    if (!(dsva.Tier is TTier))
+                        throw new NFigException($"The tier argument was not of type {_tierType.Name} on setting \"{name}\"");
+
+                    tier = (TTier)dsva.Tier;
+                }
+
+                if (dsva.DataCenter != null)
+                {
+                    if (!(dsva.DataCenter is TDataCenter))
+                        throw new NFigException($"The dataCenter argument was not of type {_dataCenterType.Name} on setting \"{name}\"");
+
+                    dc = (TDataCenter)dsva.DataCenter;
+                }
+
+                var dsvaDefault = dsva.DefaultValue;
+
+                if (isEncrypted)
+                {
+                    if (Compare.IsDefault(tier))
+                        throw new NFigException($"{name} has a default without a tier. Additional default values for encrypted settings must include a non-\"Any\" tier.");
+
+                    if (dsvaDefault != null && !(dsvaDefault is string))
+                        throw new NFigException($"{name} has a non-string default. Encrypted defaults must be in string representation.");
+                }
+
+                // if it's not the Any tier, and not the current tier, then we don't care about this default
+                var skip = !Compare.IsDefault(tier) && !Compare.AreEqual(tier, Tier);
+
+                // Even if we're skipping this default, performing validation for all tiers is useful.
+                // However, if the value is encrypted, we only want to perform the validation for the current tier.
+                if (!skip || !isEncrypted)
+                {
+                    defaultStringValue = GetStringFromDefaultAndValidate(name, dsvaDefault, subApp, dc, converter, isEncrypted);
+
+                    // create default
+                    var d = new SettingValue<TSubApp, TTier, TDataCenter>(
+                        name,
+                        defaultStringValue,
+                        subApp,
+                        tier,
+                        dc,
+                        true,
+                        dsva.AllowOverrides
+                        );
+
+                    // make sure there isn't a conflicting default value
+                    foreach (var existing in defaults)
+                    {
+                        if (existing.HasSameSubAppTierDataCenter(d))
+                        {
+                            throw new NFigException(
+                                $"Multiple defaults were specified for the same environment ({subApp}/{tier}/{dc}) on settings property: {pi.DeclaringType.FullName}.{pi.Name}");
+                        }
+                    }
+
+                    if (!skip)
+                        defaults.Add(d);
+                }
             }
 
+            // create setter method
+            var setter = CreateSetterMethod<TValue>(pi, parent, name);
+            var getter = CreateGetterMethod<TValue>(pi, parent, name);
+
+            return new Setting<TValue>(name, description, changeRequiresRestart, isEncrypted, pi, defaults.ToArray(), setter, converter, getter);
+        }
+
+        ISettingConverter<TValue> GetConverterForProperty<TValue>(string name, PropertyInfo pi)
+        {
             // see if there is a converter specified
             var converterAttribute = pi.GetCustomAttribute<SettingConverterAttribute>();
             object convObj;
@@ -420,7 +517,7 @@ namespace NFig
                 // use the default converter
                 if (!_defaultConverters.TryGetValue(pi.PropertyType, out convObj))
                 {
-                    var tValueType = typeof (TValue);
+                    var tValueType = typeof(TValue);
                     if (tValueType.IsEnum)
                     {
                         if (!tValueType.IsPublic && !tValueType.IsNestedPublic)
@@ -443,101 +540,23 @@ namespace NFig
                     $"Cannot use {convObj.GetType().Name} as setting converter for \"{name}\". The converter must implement ISettingConverter<{pi.PropertyType.Name}>.", pi.PropertyType);
             }
 
-            // description
-            var da = pi.GetCustomAttribute<DescriptionAttribute>();
-            var description = da == null ? "" : da.Description;
+            return converter;
+        }
 
-            // change requires restart
-            var changeRequiresRestart = pi.GetCustomAttribute<ChangeRequiresRestartAttribute>() != null;
+        void AssertValidEncryptedSettingAttribute(string name, SettingAttribute sa)
+        {
+            if (_encryptor == null)
+                throw new NFigException($"Setting {name} is marked as encrypted, but no ISettingEncryptor was provided to the NFigStore.");
 
-            // see if there are any default value attributes
-            var defaults = new List<SettingValue<TTier, TDataCenter>>();
-            var anyAnyValue = isEncrypted ? default(TValue) : sa.DefaultValue;
-            var defaultStringValue = GetStringFromDefaultAndValidate(name, anyAnyValue, default(TTier), default(TDataCenter), converter, isEncrypted);
-            defaults.Add(new SettingValue<TTier, TDataCenter>(name, defaultStringValue, default(TTier), default(TDataCenter), true, true));
-            
-            foreach (var dsva in pi.GetCustomAttributes<DefaultSettingValueAttribute>())
-            {
-                TTier? tier = null;
-                TDataCenter? dc = null;
-
-                // type check the "object" properties of the attribute
-                if (dsva.Tier != null)
-                {
-                    if (!(dsva.Tier is TTier))
-                        throw new NFigException($"The tier argument was not of type {TTierType.Name} on setting \"{name}\"");
-
-                    tier = (TTier)dsva.Tier;
-                }
-
-                if (dsva.DataCenter != null)
-                {
-                    if (!(dsva.DataCenter is TDataCenter))
-                        throw new NFigException($"The dataCenter argument was not of type {TDataCenterType.Name} on setting \"{name}\"");
-
-                    dc = (TDataCenter)dsva.DataCenter;
-                }
-                
-                if (tier == null)
-                    tier = default(TTier);
-
-                if (dc == null)
-                    dc = default(TDataCenter);
-
-                var dsvaDefault = dsva.DefaultValue;
-
-                if (isEncrypted)
-                {
-                    if (Compare.IsDefault(tier.Value))
-                        throw new NFigException($"{name} has a default without a tier. Additional default values for encrypted settings must include a non-\"Any\" tier.");
-
-                    if (dsvaDefault != null && !(dsvaDefault is string))
-                        throw new NFigException($"{name} has a non-string default. Encrypted defaults must be in string representation.");
-                }
-
-                // if it's not the Any tier, and not the current tier, then we don't care about this default
-                var skip = !Compare.IsDefault(tier.Value) && !Compare.AreEqual(tier.Value, Tier);
-
-                // Even if we're skipping this default, performing validation for all tiers is useful.
-                // However, if the value is encrypted, we only want to perform the validation for the current tier.
-                if (!skip || !isEncrypted)
-                {
-                    defaultStringValue = GetStringFromDefaultAndValidate(name, dsvaDefault, tier.Value, dc.Value, converter, isEncrypted);
-
-                    // create default
-                    var d = new SettingValue<TTier, TDataCenter>(
-                        name,
-                        defaultStringValue,
-                        tier.Value,
-                        dc.Value,
-                        true,
-                        dsva.AllowOverrides
-                        );
-
-                    // make sure there isn't a conflicting default value
-                    foreach (var existing in defaults)
-                    {
-                        if (existing.HasSameTierAndDataCenter(d))
-                            throw new NFigException("Multiple defaults were specified for the same environment on settings property: " +
-                                                    pi.DeclaringType.FullName + "." + pi.Name);
-                    }
-
-                    if (!skip)
-                        defaults.Add(d);
-                }
-            }
-
-            // create setter method
-            var setter = CreateSetterMethod<TValue>(pi, parent, name);
-            var getter = CreateGetterMethod<TValue>(pi, parent, name);
-
-            return new Setting<TValue>(name, description, changeRequiresRestart, isEncrypted, pi, defaults.ToArray(), setter, converter, getter);
+            if (sa.DefaultValue != null)
+                throw new NFigException($"The SettingAttribute for {name} assigns a default value and is marked as encrypted. It cannot have both. " +
+                                        $"This error is probably due to a class inheriting from SettingAttribute without obeying this rule.");
         }
 
         string GetStringFromDefaultAndValidate<TValue>(
             string name,
             object value,
-            TTier tier,
+            TSubApp subApp,
             TDataCenter dataCenter,
             ISettingConverter<TValue> converter,
             bool isEncrypted)
@@ -556,7 +575,7 @@ namespace NFig
                 try
                 {
                     // try convert the real value into its string representation
-                    TValue tval = value is TValue ? (TValue)value : (TValue)Convert.ChangeType(value, typeof(TValue));
+                    var tval = value is TValue ? (TValue)value : (TValue)Convert.ChangeType(value, typeof(TValue));
                     stringValue = converter.GetString(tval);
 
                     if (isEncrypted)
@@ -569,6 +588,7 @@ namespace NFig
                         name,
                         value,
                         true,
+                        subApp.ToString(),
                         dataCenter.ToString(),
                         ex);
                 }
@@ -587,6 +607,7 @@ namespace NFig
                     name,
                     value,
                     true,
+                    subApp.ToString(),
                     dataCenter.ToString(),
                     ex);
             }
@@ -606,7 +627,7 @@ namespace NFig
             var converterType = typeof(ISettingConverter<TValue>);
             var getValue = converterType.GetMethod("GetValue");
 
-            var dm = new DynamicMethod("AssignSetting_" + name, null, new[] { TSettingsType, typeof(string), converterType }, GetType().Module, true);
+            var dm = new DynamicMethod("AssignSetting_" + name, null, new[] { _settingsType, typeof(string), converterType }, GetType().Module, true);
             var il = dm.GetILGenerator();
 
             // arg 0 = TSettings settings
@@ -646,7 +667,7 @@ namespace NFig
                 parent = parent.Parent;
             }
 
-            var dm = new DynamicMethod("RetrieveSetting_" + name, typeof(TValue), new[] { TSettingsType }, GetType().Module, true);
+            var dm = new DynamicMethod("RetrieveSetting_" + name, typeof(TValue), new[] { _settingsType }, GetType().Module, true);
             var il = dm.GetILGenerator();
 
             // arg 0 = TSettings settings
@@ -692,10 +713,10 @@ namespace NFig
             // Also don't want to make that code uglier than it already is... need to think about this more.
 
             // build a dynamic method which instantiates a TSettings object
-            var dm = new DynamicMethod("TSettings_Instantiate", TSettingsType, Type.EmptyTypes, TSettingsType.Module, true);
+            var dm = new DynamicMethod("TSettings_Instantiate", _settingsType, Type.EmptyTypes, _settingsType.Module, true);
             var il = dm.GetILGenerator();
 
-            var settingsLocal = WriteInstantiationIL(il, TSettingsType);
+            var settingsLocal = WriteInstantiationIL(il, _settingsType);
             il.Emit(OpCodes.Ldloc, settingsLocal); // [settings]
             il.Emit(OpCodes.Ret);
 
@@ -772,6 +793,27 @@ namespace NFig
             }
         }
 
+        void AssertGenericTypesAreValid()
+        {
+            if (!_subAppType.IsEnum && !IsIntegerType(_subAppType))
+                throw new InvalidOperationException("TSubApp must be an enum or integer type.");
+
+            if (!_tierType.IsEnum || !_dataCenterType.IsEnum)
+                throw new InvalidOperationException("TTier and TDataCenter must be enum types.");
+        }
+
+        static bool IsIntegerType(Type type)
+        {
+            return type == typeof(byte)
+                || type == typeof(sbyte)
+                || type == typeof(short)
+                || type == typeof(ushort)
+                || type == typeof(int)
+                || type == typeof(uint)
+                || type == typeof(long)
+                || type == typeof(ulong);
+        }
+
 
         /**************************************************************************************
          * Helper Classes and Delegates
@@ -796,7 +838,7 @@ namespace NFig
             public bool ChangeRequiresRestart { get; protected set; }
             public bool IsEncrypted { get; protected set; }
             public PropertyInfo PropertyInfo { get; protected set; }
-            public SettingValue<TTier, TDataCenter>[] Defaults { get; protected set; }
+            public SettingValue<TSubApp, TTier, TDataCenter>[] Defaults { get; protected set; }
 
             public abstract object GetValue(TSettings settings);
             public abstract void SetValueFromString(TSettings settings, string str);
@@ -818,7 +860,7 @@ namespace NFig
                 bool changeRequiresRestart,
                 bool isEncrypted,
                 PropertyInfo propertyInfo,
-                SettingValue<TTier, TDataCenter>[] defaults,
+                SettingValue<TSubApp, TTier, TDataCenter>[] defaults,
                 SettingSetterDelegate<TValue> setter,
                 ISettingConverter<TValue> converter,
                 SettingGetterDelegate<TValue> getter

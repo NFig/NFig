@@ -49,6 +49,7 @@ namespace NFig
             string settingName,
             object value,
             bool isDefault,
+            string subApp,
             string dataCenter,
             Exception innerException = null) 
             : base(message, innerException)
@@ -57,6 +58,7 @@ namespace NFig
             Data["Value"] = Value = value;
             Data["IsDefault"] = IsDefault = isDefault;
             Data["IsOverride"] = !isDefault;
+            Data["SubApp"] = subApp;
             Data["DataCenter"] = dataCenter;
         }
     }
