@@ -1,4 +1,6 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using JetBrains.Annotations;
 
 namespace NFig
 {
@@ -50,7 +52,7 @@ namespace NFig
             return true;
         }
 
-        public bool IsMoreSpecificThan(SettingValue<TSubApp, TTier, TDataCenter> value)
+        public bool IsMoreSpecificThan([CanBeNull] SettingValue<TSubApp, TTier, TDataCenter> value)
         {
             if (value == null)
                 return true;
@@ -73,9 +75,37 @@ namespace NFig
             return false;
         }
         
-        public bool HasSameSubAppTierDataCenter(SettingValue<TSubApp, TTier, TDataCenter> value)
+        public bool HasSameSubAppTierDataCenter([NotNull] SettingValue<TSubApp, TTier, TDataCenter> value)
         {
             return Compare.AreEqual(SubApp, value.SubApp) && Compare.AreEqual(Tier, value.Tier) && Compare.AreEqual(DataCenter, value.DataCenter);
+        }
+    }
+
+    static class SettingValueExtensions
+    {
+        internal static int GetBestValueFor<TSubApp, TTier, TDataCenter>(
+            this IList<SettingValue<TSubApp, TTier, TDataCenter>> values,
+            TSubApp subApp,
+            TTier tier,
+            TDataCenter dataCenter,
+            [CanBeNull] out SettingValue<TSubApp, TTier, TDataCenter> bestValue)
+            where TSubApp : struct
+            where TTier : struct
+            where TDataCenter : struct
+        {
+            bestValue = null;
+            var bestIndex = -1;
+            for (var i = 0; i < values.Count; i++)
+            {
+                var val = values[i];
+                if (val.IsValidFor(subApp, tier, dataCenter) && val.IsMoreSpecificThan(bestValue))
+                {
+                    bestIndex = i;
+                    bestValue = val;
+                }
+            }
+
+            return bestIndex;
         }
     }
 }

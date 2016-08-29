@@ -48,6 +48,7 @@
     <Compile Include="BinaryExtensions.cs" />
     <Compile Include="Compare.cs" />
     <Compile Include="DefaultValueAttribute.cs" />
+    <Compile Include="DoNotInlineValuesAttribute.cs" />
     <Compile Include="Encryption\PassThroughEncryptor.cs" />
     <Compile Include="Encryption\RsaEncryptor.cs" />
     <Compile Include="EnumConverters.cs" />

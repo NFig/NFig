@@ -4,13 +4,14 @@ using System.Threading.Tasks;
 
 namespace NFig.Logging
 {
-    public abstract class SettingsLogger<TTier, TDataCenter>
+    public abstract class SettingsLogger<TSubApp, TTier, TDataCenter>
+        where TSubApp : struct
         where TTier : struct
         where TDataCenter : struct
     {
-        readonly Action<Exception, AppSnapshot<TTier, TDataCenter>> _onLogException;
+        readonly Action<Exception, AppSnapshot<TSubApp, TTier, TDataCenter>> _onLogException;
 
-        protected SettingsLogger(Action<Exception, AppSnapshot<TTier, TDataCenter>> onLogException)
+        protected SettingsLogger(Action<Exception, AppSnapshot<TSubApp, TTier, TDataCenter>> onLogException)
         {
             if (onLogException == null)
                 throw new ArgumentNullException(nameof(onLogException));
@@ -18,7 +19,7 @@ namespace NFig.Logging
             _onLogException = onLogException;
         }
 
-        public void Log(AppSnapshot<TTier, TDataCenter> snapshot)
+        public void Log(AppSnapshot<TSubApp, TTier, TDataCenter> snapshot)
         {
             Task.Run(async () =>
             {
@@ -55,8 +56,8 @@ namespace NFig.Logging
             int? limit = null,
             int skip = 0);
 
-        public abstract Task<AppSnapshot<TTier, TDataCenter>> GetSnapshotAsync(string appName, string commit);
+        public abstract Task<AppSnapshot<TSubApp, TTier, TDataCenter>> GetSnapshotAsync(string appName, string commit);
 
-        protected abstract Task LogAsyncImpl(AppSnapshot<TTier, TDataCenter> snapshot);
+        protected abstract Task LogAsyncImpl(AppSnapshot<TSubApp, TTier, TDataCenter> snapshot);
     }
 }

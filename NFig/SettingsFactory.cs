@@ -5,19 +5,24 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
+using JetBrains.Annotations;
 using NFig.Encryption;
 
 namespace NFig
 {
     class SettingsFactory<TSettings, TSubApp, TTier, TDataCenter>
-        where TSettings : class, INFigSettings<TTier, TDataCenter>, new()
+        where TSettings : class, INFigSettings<TSubApp, TTier, TDataCenter>, new()
         where TSubApp : struct
         where TTier : struct
         where TDataCenter : struct
     {
-        readonly Setting[] _settings;
-        readonly Dictionary<string, Setting> _settingsByName;
+        readonly List<Setting> _settings = new List<Setting>();
+        readonly Dictionary<string, Setting> _settingsByName = new Dictionary<string, Setting>();
+
         readonly InitializeSettingsDelegate _initializer;
+        object[] _valueCache;
+        int _valueCacheCount;
+
         readonly Type _settingsType;
         readonly Type _subAppType;
         readonly Type _tierType;
@@ -25,10 +30,10 @@ namespace NFig
 
         readonly ISettingEncryptor _encryptor;
 
-        readonly Dictionary<Type, PropertyToSettingDelegate> _propertyToSettingDelegatesCache;
-        readonly object _delegatesCacheLock;
+//        readonly Dictionary<Type, PropertyToSettingDelegate> _propertyToSettingDelegatesCache;
+        ReflectionCache _reflectionCache;
 
-        delegate Setting PropertyToSettingDelegate(PropertyInfo pi, PropertyAndParent parent, SettingAttribute sa, string prefix);
+        delegate Setting PropertyToSettingDelegate(PropertyInfo pi, SettingAttribute sa, SettingGroup group);
 
         readonly Dictionary<Type, object> _defaultConverters = new Dictionary<Type, object>
         {
@@ -91,135 +96,122 @@ namespace NFig
                 }
             }
 
-            _propertyToSettingDelegatesCache = new Dictionary<Type, PropertyToSettingDelegate>();
-            _delegatesCacheLock = new object();
+            _reflectionCache = CreateReflectionCache();
 
-            _settings = GetSettingsFromType(_settingsType, null, "").ToArray();
-            _settingsByName = _settings.ToDictionary(s => s.Name);
-            _initializer = GetInitializer();
+            var tree = GetSettingsTree();
+            _initializer = BuildInitializer(tree);
 
             // don't need this cache anymore
-            _propertyToSettingDelegatesCache = null;
-            _delegatesCacheLock = null;
+            _reflectionCache = null;
         }
 
-        public TSettings GetAppSettings(string commit, IEnumerable<SettingValue<TTier, TDataCenter>> overrides = null)
-        {
-            TSettings settings;
-            var ex = TryGetAppSettings(out settings, commit, overrides);
-            if (ex != null)
-                throw ex;
-
-            return settings;
-        }
+//        public TSettings GetAppSettings(string commit, IEnumerable<SettingValue<TTier, TDataCenter>> overrides = null)
+//        {
+//            TSettings settings;
+//            var ex = TryGetAppSettings(out settings, commit, overrides);
+//            if (ex != null)
+//                throw ex;
+//
+//            return settings;
+//        }
 
         public InvalidSettingOverridesException TryGetAppSettings(
-            out TSettings settings,
-            string commit,
-            IEnumerable<SettingValue<TTier, TDataCenter>> overrides = null)
+            out Dictionary<TSubApp, TSettings> settingsBySubApp,
+            [NotNull] TSubApp[] subApps,
+            [NotNull] string commit,
+            [CanBeNull] IEnumerable<SettingValue<TSubApp, TTier, TDataCenter>> overrides)
         {
-            var tier = Tier;
-            var dataCenter = DataCenter;
-
-            // pick the right overrides
-            Dictionary<string, SettingValue<TTier, TDataCenter>> overridesBySetting = null;
+            var overridesBySubApp = overrides == null ? null : OrganizeSettingValues(overrides);
+            settingsBySubApp = new Dictionary<TSubApp, TSettings>();
             List<InvalidSettingValueException> exceptions = null;
 
-            if (overrides != null)
+            foreach (var subApp in subApps)
             {
-                overridesBySetting = new Dictionary<string, SettingValue<TTier, TDataCenter>>();
-                foreach (var over in overrides)
+                var settings = _initializer(this, subApp);
+                settings.SetBasicInformation(ApplicationName, commit, subApp, Tier, DataCenter);
+
+                if (overridesBySubApp != null)
                 {
-                    if (over.IsValidFor(tier, dataCenter))
-                    {
-                        SettingValue<TTier, TDataCenter> prev;
-                        if (overridesBySetting.TryGetValue(over.Name, out prev))
-                        {
-                            if (over.IsMoreSpecificThan(prev))
-                                overridesBySetting[over.Name] = over;
-                        }
-                        else
-                        {
-                            overridesBySetting[over.Name] = over;
-                        }
-                    }
-                }
-            }
+                    Dictionary<string, SettingValue<TSubApp, TTier, TDataCenter>> anySubApp, specificSubApp;
+                    overridesBySubApp.TryGetValue(default(TSubApp), out anySubApp);
 
-            var s = _initializer();
-            settings = s;
-            s.SetBasicInformation(ApplicationName, commit, tier, dataCenter);
+                    if (!Compare.IsDefault(subApp))
+                        overridesBySubApp.TryGetValue(subApp, out specificSubApp);
+                    else
+                        specificSubApp = null;
 
-            foreach (var setting in _settings)
-            {
-                var settingValue = SettingInfo<TTier, TDataCenter>.GetBestValueFor(setting.Defaults, tier, dataCenter);
-
-                string stringValue;
-                SettingValue<TTier, TDataCenter> over;
-                if (settingValue.AllowsOverrides && overridesBySetting != null && overridesBySetting.TryGetValue(setting.Name, out over))
-                {
-                    try
-                    {
-                        stringValue = setting.IsEncrypted ? Decrypt(over.Value) : over.Value;
-                        setting.SetValueFromString(s, stringValue);
-                        continue;
-                    }
-                    catch (Exception ex)
-                    {
-                        var invalidEx = new InvalidSettingValueException(
-                            $"Invalid override value for setting \"{setting.Name}\". Cannot convert the string override to a real value.",
-                            setting.Name,
-                            over.Value,
-                            false,
-                            over.DataCenter.ToString(),
-                            ex);
-
-                        invalidEx.UnthrownStackTrace = new StackTrace(true).ToString();
-
-                        if (exceptions == null)
-                            exceptions = new List<InvalidSettingValueException>();
-
-                        exceptions.Add(invalidEx);
-                    }
+                    SetOverrides(settings, anySubApp, specificSubApp, ref exceptions);
+                    SetOverrides(settings, specificSubApp, null, ref exceptions);
                 }
 
-                stringValue = setting.IsEncrypted ? Decrypt(settingValue.Value) : settingValue.Value;
-                setting.SetValueFromString(s, stringValue);
+                settingsBySubApp[subApp] = settings;
             }
-
+            
             if (exceptions != null)
                 return new InvalidSettingOverridesException(exceptions, new StackTrace(true).ToString());
 
             return null;
         }
 
-        public SettingInfo<TTier, TDataCenter>[] GetAllSettingInfos(IEnumerable<SettingValue<TTier, TDataCenter>> overrides = null)
+        void SetOverrides(
+            TSettings settings,
+            [CanBeNull] Dictionary<string, SettingValue<TSubApp, TTier, TDataCenter>> overrides,
+            [CanBeNull] Dictionary<string, SettingValue<TSubApp, TTier, TDataCenter>> moreSpecificOverrides,
+            ref List<InvalidSettingValueException> exceptions)
         {
-            Dictionary<string, List<SettingValue<TTier, TDataCenter>>> overrideListBySetting = null;
+            if (overrides == null)
+                return;
+
+            foreach (var over in overrides.Values)
+            {
+                // check if there's a more specific override that will be set in the next call to this method
+                if (moreSpecificOverrides != null && moreSpecificOverrides.ContainsKey(over.Name))
+                    continue;
+
+                Setting setting;
+                if (!_settingsByName.TryGetValue(over.Name, out setting))
+                    continue; // probably an orphaned override that should be deleted, but we'll just ignore it for now
+
+                var strValue = setting.IsEncrypted ? Decrypt(over.Value) : over.Value;
+                var ex = setting.TryApplyOverride(settings, over, strValue);
+
+                if (ex != null)
+                {
+                    if (exceptions == null)
+                        exceptions = new List<InvalidSettingValueException>();
+
+                    exceptions.Add(ex);
+                }
+            }
+        }
+
+        public SettingInfo<TSubApp, TTier, TDataCenter>[] GetAllSettingInfos(IEnumerable<SettingValue<TSubApp, TTier, TDataCenter>> overrides = null)
+        {
+            Dictionary<string, List<SettingValue<TSubApp, TTier, TDataCenter>>> overrideListBySetting = null;
 
             if (overrides != null)
             {
-                overrideListBySetting = new Dictionary<string, List<SettingValue<TTier, TDataCenter>>>();
+                overrideListBySetting = new Dictionary<string, List<SettingValue<TSubApp, TTier, TDataCenter>>>();
                 foreach (var over in overrides)
                 {
-                    List<SettingValue<TTier, TDataCenter>> overList;
+                    List<SettingValue<TSubApp, TTier, TDataCenter>> overList;
                     if (!overrideListBySetting.TryGetValue(over.Name, out overList))
-                        overrideListBySetting[over.Name] = overList = new List<SettingValue<TTier, TDataCenter>>();
+                        overrideListBySetting[over.Name] = overList = new List<SettingValue<TSubApp, TTier, TDataCenter>>();
 
                     overList.Add(over);
                 }
             }
 
-            var infos = new SettingInfo<TTier, TDataCenter>[_settings.Length];
-            for (var i = 0; i < _settings.Length; i++)
+            var infos = new SettingInfo<TSubApp, TTier, TDataCenter>[_settings.Count];
+            for (var i = 0; i < _settings.Count; i++)
             {
                 var s = _settings[i];
 
-                List<SettingValue<TTier, TDataCenter>> overList;
+                List<SettingValue<TSubApp, TTier, TDataCenter>> overList;
                 if (overrideListBySetting == null || !overrideListBySetting.TryGetValue(s.Name, out overList))
-                    overList = new List<SettingValue<TTier, TDataCenter>>();
+                    overList = new List<SettingValue<TSubApp, TTier, TDataCenter>>();
 
-                infos[i] = new SettingInfo<TTier, TDataCenter>(s.Name, s.Description, s.ChangeRequiresRestart, s.IsEncrypted, s.PropertyInfo, s.Defaults, overList);
+                infos[i] = new SettingInfo<TSubApp, TTier, TDataCenter>(s.Name, s.Description, s.ChangeRequiresRestart, s.IsEncrypted, s.PropertyInfo, s.Defaults, overList);
             }
 
             return infos;
@@ -301,7 +293,7 @@ namespace NFig
 
         public Type GetSettingType(string settingName)
         {
-            return _settingsByName[settingName].PropertyInfo.PropertyType;
+            return _settingsByName[settingName].TypeOfValue;
         }
 
         public object GetSettingValue(TSettings obj, string settingName)
@@ -310,7 +302,7 @@ namespace NFig
             if (!_settingsByName.TryGetValue(settingName, out setting))
                 throw new ArgumentException($"No setting named \"{settingName}\" exists on type {_settingsType.FullName}");
 
-            return setting.GetValue(obj);
+            return setting.GetValueAsObject(obj);
         }
 
         public TValue GetSettingValue<TValue>(TSettings obj, string settingName)
@@ -323,76 +315,73 @@ namespace NFig
             if (typedSetting == null)
                 throw new ArgumentException($"Setting \"{settingName}\" is not of the requested type {typeof (TValue)}");
 
-            return typedSetting.Getter(obj);
+            return typedSetting.GetValue(obj);
         }
 
-        IEnumerable<Setting> GetSettingsFromType(Type type, PropertyAndParent parent, string prefix)
+        SettingGroup GetSettingsTree()
         {
-            foreach (var pi in type.GetProperties())
+            var group = new SettingGroup(_settingsType, "", null, null);
+            PopulateSettingsGroup(group);
+            return group;
+        }
+
+        void PopulateSettingsGroup(SettingGroup group)
+        {
+            foreach (var pi in group.Type.GetProperties())
             {
-                foreach (var setting in GetSettingsFromProperty(pi, parent, prefix))
+                var name = group.Prefix + pi.Name;
+                var propType = pi.PropertyType;
+
+                var hasGroupAttribute = pi.GetCustomAttribute<SettingsGroupAttribute>() != null;
+
+                var first = true;
+                foreach (var sa in pi.GetCustomAttributes<SettingAttribute>())
                 {
-                    yield return setting;
+                    if (!first)
+                        throw new NFigException($"Property {name} has more than one Setting or EncryptedSetting attributes.");
+
+                    first = false;
+
+                    if (hasGroupAttribute)
+                        throw new NFigException($"Property {name} is marked as both a Setting and a SettingGroup.");
+
+                    try
+                    {
+                        var toSetting = GetPropertyToSettingDelegate(pi.PropertyType);
+                        var setting = toSetting(pi, sa, group);
+
+                        group.Settings.Add(setting);
+                        _settings.Add(setting);
+                        _settingsByName.Add(setting.Name, setting);
+                    }
+                    catch (TargetInvocationException ex)
+                    {
+                        // don't care about the fact that there's a target invocation exception
+                        // what we want is the inner exception
+                        if (ex.InnerException != null)
+                            throw ex.InnerException;
+
+                        throw;
+                    }
                 }
-            }
-        }
 
-        IEnumerable<Setting> GetSettingsFromProperty(PropertyInfo pi, PropertyAndParent parent, string prefix)
-        {
-            var settingAttributes = pi.GetCustomAttributes<SettingAttribute>().ToList();
-            if (settingAttributes.Count > 0)
-            {
-                if (settingAttributes.Count > 1)
-                    throw new NFigException($"Only one Setting or EncryptedSetting attributes may be applied to a property. {prefix}{pi.Name} has {settingAttributes.Count}");
-
-                try
+                if (hasGroupAttribute)
                 {
-                    var toSetting = GetPropertyToSettingDelegate(pi.PropertyType);
-                    var setting = toSetting(pi, parent, settingAttributes[0], prefix);
-                    return SelectSingle(setting);
+                    if (!propType.IsClass)
+                        throw new NFigException($"Property {name} is marked with [SettingGroup], but is not a class type.");
+
+                    var subGroup = new SettingGroup(propType, name + ".", group, pi);
+                    PopulateSettingsGroup(subGroup);
+                    group.SettingGroups.Add(subGroup);
                 }
-                catch (TargetInvocationException ex)
-                {
-                    // don't care about the fact that there's a target invocation exception
-                    // what we want is the inner exception
-                    if (ex.InnerException != null)
-                        throw ex.InnerException;
 
-                    throw;
-                }
-            }
-
-            if (IsSettingsGroup(pi))
-            {
-                parent = new PropertyAndParent { Parent = parent, PropertyInfo = pi };
-                return GetSettingsFromType(pi.PropertyType, parent, prefix + pi.Name + ".");
-            }
-
-            return Enumerable.Empty<Setting>();
-        }
-
-        PropertyToSettingDelegate GetPropertyToSettingDelegate(Type type)
-        {
-            PropertyToSettingDelegate del;
-            if (_propertyToSettingDelegatesCache.TryGetValue(type, out del))
-                return del;
-
-            lock (_delegatesCacheLock)
-            {
-                if (_propertyToSettingDelegatesCache.TryGetValue(type, out del))
-                    return del;
-
-                var methodInfo = GetType().GetMethod(nameof(PropertyToSetting), BindingFlags.NonPublic | BindingFlags.Instance).MakeGenericMethod(type);
-                del = (PropertyToSettingDelegate)Delegate.CreateDelegate(typeof(PropertyToSettingDelegate), this, methodInfo);
-                _propertyToSettingDelegatesCache[type] = del;
-
-                return del;
+                // this property isn't marked with any NFig attributes, so we just ignore it
             }
         }
 
-        Setting PropertyToSetting<TValue>(PropertyInfo pi, PropertyAndParent parent, SettingAttribute sa, string prefix)
+        Setting PropertyToSetting<TValue>(PropertyInfo pi, SettingAttribute sa, SettingGroup group)
         {
-            var name = prefix + pi.Name;
+            var name = group.Prefix + pi.Name;
 
             var isEncrypted = sa.IsEncrypted;
             if (isEncrypted)
@@ -400,49 +389,43 @@ namespace NFig
 
             var converter = GetConverterForProperty<TValue>(name, pi);
 
-            // description
+            // meta
             var da = pi.GetCustomAttribute<DescriptionAttribute>();
             var description = da == null ? "" : da.Description;
 
-            // change requires restart
             var changeRequiresRestart = pi.GetCustomAttribute<ChangeRequiresRestartAttribute>() != null;
 
-            // see if there are any default value attributes
-            var defaults = new List<SettingValue<TSubApp, TTier, TDataCenter>>();
-            var anyAnyValue = isEncrypted ? default(TValue) : sa.DefaultValue;
-            var defaultStringValue = GetStringFromDefaultAndValidate(name, anyAnyValue, default(TSubApp), default(TDataCenter), converter, isEncrypted);
-            defaults.Add(new SettingValue<TSubApp, TTier, TDataCenter>(name, defaultStringValue, default(TSubApp), default(TTier), default(TDataCenter), true, true));
-            
+            var noInline = pi.GetCustomAttribute<DoNotInlineValuesAttribute>() != null;
+
+            // default values
+            var allDefaults = new List<SettingValue<TSubApp, TTier, TDataCenter>>();
+            var applicableDefaults = new List<SettingValue<TSubApp, TTier, TDataCenter>>();
+
+            {
+                // see if there are any default value attributes
+                var rootDefault = isEncrypted ? default(TValue) : sa.DefaultValue;
+                var defaultStringValue = GetStringFromDefaultAndValidate(name, rootDefault, default(TSubApp), default(TDataCenter), converter, isEncrypted);
+
+                var d = new SettingValue<TSubApp, TTier, TDataCenter>(
+                    name,
+                    defaultStringValue,
+                    default(TSubApp),
+                    default(TTier),
+                    default(TDataCenter),
+                    true,
+                    true
+                );
+
+                allDefaults.Add(d);
+                applicableDefaults.Add(d);
+            }
+
             foreach (var dsva in pi.GetCustomAttributes<DefaultSettingValueAttribute>())
             {
-                var subApp = default(TSubApp);
-                var tier = default(TTier);
-                var dc = default(TDataCenter);
-
-                // type check the "object" properties of the attribute
-                if (dsva.SubApp != null)
-                {
-                    if (!(dsva.SubApp is TSubApp))
-                        throw new NFigException($"The subApp argument was not of type {_subAppType.Name} on setting \"{name}\"");
-
-                    subApp = (TSubApp)dsva.SubApp;
-                }
-
-                if (dsva.Tier != null)
-                {
-                    if (!(dsva.Tier is TTier))
-                        throw new NFigException($"The tier argument was not of type {_tierType.Name} on setting \"{name}\"");
-
-                    tier = (TTier)dsva.Tier;
-                }
-
-                if (dsva.DataCenter != null)
-                {
-                    if (!(dsva.DataCenter is TDataCenter))
-                        throw new NFigException($"The dataCenter argument was not of type {_dataCenterType.Name} on setting \"{name}\"");
-
-                    dc = (TDataCenter)dsva.DataCenter;
-                }
+                TSubApp subApp;
+                TTier tier;
+                TDataCenter dc;
+                GetSubAppTierDataCenterFromAttribute(name, dsva, out subApp, out tier, out dc);
 
                 var dsvaDefault = dsva.DefaultValue;
 
@@ -462,7 +445,7 @@ namespace NFig
                 // However, if the value is encrypted, we only want to perform the validation for the current tier.
                 if (!skip || !isEncrypted)
                 {
-                    defaultStringValue = GetStringFromDefaultAndValidate(name, dsvaDefault, subApp, dc, converter, isEncrypted);
+                    var defaultStringValue = GetStringFromDefaultAndValidate(name, dsvaDefault, subApp, dc, converter, isEncrypted);
 
                     // create default
                     var d = new SettingValue<TSubApp, TTier, TDataCenter>(
@@ -473,28 +456,23 @@ namespace NFig
                         dc,
                         true,
                         dsva.AllowOverrides
-                        );
+                    );
 
                     // make sure there isn't a conflicting default value
-                    foreach (var existing in defaults)
+                    foreach (var existing in allDefaults)
                     {
                         if (existing.HasSameSubAppTierDataCenter(d))
-                        {
-                            throw new NFigException(
-                                $"Multiple defaults were specified for the same environment ({subApp}/{tier}/{dc}) on settings property: {pi.DeclaringType.FullName}.{pi.Name}");
-                        }
+                            throw new NFigException($"Multiple defaults were specified for the same environment ({subApp}/{tier}/{dc}) on setting {name}");
                     }
 
+                    allDefaults.Add(d);
+
                     if (!skip)
-                        defaults.Add(d);
+                        applicableDefaults.Add(d);
                 }
             }
 
-            // create setter method
-            var setter = CreateSetterMethod<TValue>(pi, parent, name);
-            var getter = CreateGetterMethod<TValue>(pi, parent, name);
-
-            return new Setting<TValue>(name, description, changeRequiresRestart, isEncrypted, pi, defaults.ToArray(), setter, converter, getter);
+            return new Setting<TValue>(name, description, changeRequiresRestart, isEncrypted, pi, group, applicableDefaults.ToArray(), converter, noInline);
         }
 
         ISettingConverter<TValue> GetConverterForProperty<TValue>(string name, PropertyInfo pi)
@@ -551,6 +529,45 @@ namespace NFig
             if (sa.DefaultValue != null)
                 throw new NFigException($"The SettingAttribute for {name} assigns a default value and is marked as encrypted. It cannot have both. " +
                                         $"This error is probably due to a class inheriting from SettingAttribute without obeying this rule.");
+        }
+
+        void GetSubAppTierDataCenterFromAttribute(string name, DefaultSettingValueAttribute dsva, out TSubApp subApp, out TTier tier, out TDataCenter dataCenter)
+        {
+            if (dsva.SubApp != null)
+            {
+                if (!(dsva.SubApp is TSubApp))
+                    throw new NFigException($"The subApp argument was not of type {_subAppType.Name} on setting \"{name}\"");
+
+                subApp = (TSubApp)dsva.SubApp;
+            }
+            else
+            {
+                subApp = default(TSubApp);
+            }
+
+            if (dsva.Tier != null)
+            {
+                if (!(dsva.Tier is TTier))
+                    throw new NFigException($"The tier argument was not of type {_tierType.Name} on setting \"{name}\"");
+
+                tier = (TTier)dsva.Tier;
+            }
+            else
+            {
+                tier = default(TTier);
+            }
+
+            if (dsva.DataCenter != null)
+            {
+                if (!(dsva.DataCenter is TDataCenter))
+                    throw new NFigException($"The dataCenter argument was not of type {_dataCenterType.Name} on setting \"{name}\"");
+
+                dataCenter = (TDataCenter)dsva.DataCenter;
+            }
+            else
+            {
+                dataCenter = default(TDataCenter);
+            }
         }
 
         string GetStringFromDefaultAndValidate<TValue>(
@@ -615,78 +632,399 @@ namespace NFig
             return stringValue;
         }
 
-        SettingSetterDelegate<TValue> CreateSetterMethod<TValue>(PropertyInfo pi, PropertyAndParent parent, string name)
+        /// <summary>
+        /// Builds a dynamic method which, when called, will create a new TSettings object with all of its defaults values properly set.
+        /// </summary>
+        InitializeSettingsDelegate BuildInitializer(SettingGroup group)
         {
-            var list = new List<PropertyInfo>();
-            while (parent != null)
-            {
-                list.Add(parent.PropertyInfo);
-                parent = parent.Parent;
-            }
-
-            var converterType = typeof(ISettingConverter<TValue>);
-            var getValue = converterType.GetMethod("GetValue");
-
-            var dm = new DynamicMethod("AssignSetting_" + name, null, new[] { _settingsType, typeof(string), converterType }, GetType().Module, true);
+            var dm = new DynamicMethod("TSettings_Instantiate", _settingsType, new [] { GetType(), _subAppType }, _settingsType.Module, true);
             var il = dm.GetILGenerator();
 
-            // arg 0 = TSettings settings
-            // arg 1 = string str
-            // arg 2 = SettingConverter<TValue> converter
-            
-            // start with the TSettings object
-            il.Emit(OpCodes.Ldarg_0); // [settings]
-
-            // loop through any levels of nesting
-            // the list is in bottom-to-top order, so we have to iterate in reverse
-            for (var i = list.Count - 1; i >= 0; i--)
-            {
-                il.Emit(OpCodes.Callvirt, list[i].GetMethod); // [nested-property-obj]
-            }
-
-            // stack should now be [parent-obj-of-setting]
-
-            // convert string to value
-            il.Emit(OpCodes.Ldarg_2); // [parent][converter]
-            il.Emit(OpCodes.Ldarg_1); // [parent][converter][str]
-            il.Emit(OpCodes.Callvirt, getValue); // [parent][TValue value]
-
-            // call property setter
-            il.Emit(OpCodes.Callvirt, pi.SetMethod); // stack empty
+            EmitNewGroupObject(il, group); // [TSettings s]
+            EmitBestDefaults(il);          // [TSettings s]
             il.Emit(OpCodes.Ret);
 
-            return (SettingSetterDelegate<TValue>) dm.CreateDelegate(typeof(SettingSetterDelegate<TValue>));
+            return (InitializeSettingsDelegate)dm.CreateDelegate(typeof(InitializeSettingsDelegate));
         }
 
-        SettingGetterDelegate<TValue> CreateGetterMethod<TValue>(PropertyInfo pi, PropertyAndParent parent, string name)
+        /// <summary>
+        /// Emits IL for each setting group object that needs to be initialized, and properly assigns them to properties on parent groups as applicable.
+        /// </summary>
+        static void EmitNewGroupObject(ILGenerator il, SettingGroup group)
         {
-            var list = new List<PropertyInfo>();
-            while (parent != null)
+            // Initial stack: ...
+            // End stack:     ... [group]
+
+            // Create a new instance of the group's class.
+            var ctor = group.Type.GetConstructor(Type.EmptyTypes);
+            if (ctor == null)
+                throw new NFigException($"Cannot use type {group.Type.Name} for settings groups. It does not have a parameterless constructor.");
+
+            il.Emit(OpCodes.Newobj, ctor); // [group]
+
+            foreach (var subGroup in group.SettingGroups)
             {
-                list.Add(parent.PropertyInfo);
-                parent = parent.Parent;
+                il.Emit(OpCodes.Dup);                                       // [group] [group]
+                EmitNewGroupObject(il, subGroup);                           // [group] [group] [sub]
+                il.Emit(OpCodes.Callvirt, subGroup.PropertyInfo.SetMethod); // [group]
+            }
+        }
+
+        /// <summary>
+        /// Sets up the proper constructs for apply the correct defaults based on the selected sub app.
+        /// </summary>
+        void EmitBestDefaults(ILGenerator il)
+        {
+            // Initial stack: [TSettings s]
+            // End stack:     [TSettings s]
+
+            var loadSubAppArg = OpCodes.Ldarg_1;
+
+            var bestDefaults = GetBestDefaults();
+
+            // first thing we want to do is emit the list of defaults for the default sub app
+            EmitDefaultList(il, bestDefaults[default(TSubApp)]); // [s]
+
+            // check if there are any known sub apps
+            var subAppCount = bestDefaults.Count - 1;
+            if (subAppCount < 1)
+                return;
+
+            var subApps = new TSubApp[subAppCount];
+            var subAppValues = new int[subAppCount];
+
+            {
+                var i = 0;
+                foreach (var subApp in bestDefaults.Keys)
+                {
+                    if (!Compare.IsDefault(subApp))
+                    {
+                        subApps[i] = subApp;
+                        subAppValues[i] = Convert.ToInt32(subApp);
+                        i++;
+                    }
+                }
             }
 
-            var dm = new DynamicMethod("RetrieveSetting_" + name, typeof(TValue), new[] { _settingsType }, GetType().Module, true);
-            var il = dm.GetILGenerator();
+            Array.Sort(subAppValues, subApps);
 
-            // arg 0 = TSettings settings
+            // Decide if we can/should use a jump table or not. Basic heuristic is to use a jump list if all of the following criteria is met:
+            // - A count of at least five sub apps.
+            // - The number of gaps between the lowest and highest value is not greater than the count.
+            // - There are no negative values.
 
-            // start with the TSettings object
-            il.Emit(OpCodes.Ldarg_0); // [settings]
+            var endOfSubApps = il.DefineLabel();
 
-            // loop through any levels of nesting
-            // the list is in bottom-to-top order, so we have to iterate in reverse
-            for (var i = list.Count - 1; i >= 0; i--)
+            var firstValue = subAppValues[0];
+            var lastValue = subAppValues[subAppCount - 1];
+            if (subAppCount >= 5 && firstValue > 0 && subAppCount >= (lastValue - firstValue) / 2)
             {
-                il.Emit(OpCodes.Callvirt, list[i].GetMethod); // [nested-property-obj]
+                // set up jump table
+                var labelCount = lastValue - firstValue + 1;
+                var jumpLabels = new Label[labelCount];
+                var subAppLabels = new Label[subAppCount];
+
+                var expectedValue = subAppValues[0];
+                var si = 0;
+                for (var li = 0; li < labelCount; li++, expectedValue++)
+                {
+                    if (si < subAppCount && subAppValues[si] == expectedValue)
+                    {
+                        var label = new Label();
+                        subAppLabels[si] = label;
+                        jumpLabels[li] = label;
+                        si++;
+                    }
+                    else
+                    {
+                        jumpLabels[li] = endOfSubApps;
+                    }
+                }
+
+                // emit switch
+                il.Emit(loadSubAppArg);              // [s] [subApp]
+                il.Emit(OpCodes.Ldc_I4, firstValue); // [s] [subApp] [firstValue]
+                il.Emit(OpCodes.Sub);                // [s] [subApp - firstValue]
+                il.Emit(OpCodes.Switch, jumpLabels); // [s]
+                il.Emit(OpCodes.Br, endOfSubApps);   // [s] -- this is the fallthrough case
+
+                // emit the case statements
+                for (var i = 0; i < subAppCount; i++)
+                {
+                    il.MarkLabel(subAppLabels[i]);
+
+                    var list = bestDefaults[subApps[i]];
+                    EmitDefaultList(il, list);         // [s]
+                    il.Emit(OpCodes.Br, endOfSubApps); // [s]
+                }
+            }
+            else
+            {
+                // use if/else style
+                for (var i = 0; i < subAppCount; i++)
+                {
+                    var endIfLabel = il.DefineLabel();
+
+                    // if (subApp == knownSubApp)
+                    il.Emit(loadSubAppArg);                   // [s] [subApp]
+                    il.Emit(OpCodes.Ldc_I4, subAppValues[i]); // [s] [subApp] [known subApp]
+                    il.Emit(OpCodes.Ceq);                     // [s] [are equal]
+                    il.Emit(OpCodes.Brfalse, endIfLabel);     // [s]
+
+                    // body of if
+                    var list = bestDefaults[subApps[i]];
+                    EmitDefaultList(il, list);         // [s]
+                    il.Emit(OpCodes.Br, endOfSubApps); // [s]
+
+                    il.MarkLabel(endIfLabel);
+                }
             }
 
-            // stack should now be [parent-obj-of-setting]
-            il.Emit(OpCodes.Callvirt, pi.GetMethod); // [setting-value]
-            il.Emit(OpCodes.Ret);
+            il.MarkLabel(endOfSubApps);
+        }
 
-            return (SettingGetterDelegate<TValue>) dm.CreateDelegate(typeof(SettingGetterDelegate<TValue>));
+        void EmitDefaultList(ILGenerator il, List<BestDefault> list)
+        {
+            // Initial stack: [TSettings s]
+            // End stack:     [TSettings s]
+
+            SettingGroup group = null;
+            var settings = _settings;
+
+            il.Emit(OpCodes.Dup); // [s] [s]
+
+            foreach (var best in list)
+            {
+                var setting = settings[best.SettingIndex];
+                var def = setting.Defaults[best.DefaultIndex];
+
+                if (setting.Group != group)
+                {
+                    group = setting.Group;
+                    il.Emit(OpCodes.Pop);     // [s]
+                    il.Emit(OpCodes.Dup);     // [s] [s]
+                    EmitLoadGroup(il, group); // [s] [group]
+                }
+
+                EmitSetting(il, setting, best.SettingIndex, def); // [s] [group]
+            }
+
+            il.Emit(OpCodes.Pop); // [s]
+        }
+
+        static void EmitLoadGroup(ILGenerator il, SettingGroup group)
+        {
+            // Initial stack: ... [s]
+            // End stack:     ... [group]
+
+            if (group.Parent == null) // there is no parent, so the TSettings object is actually the group object we want, which is what's on the stack already
+                return;
+
+            var methodList = new List<MethodInfo>();
+            var g = group;
+            do
+            {
+                methodList.Add(g.PropertyInfo.GetMethod);
+                g = g.Parent;
+
+            } while (g != null);
+            
+            // the list was built bottom up, but we need to emit top down, so we go in reverse
+            for (var i = methodList.Count - 1; i >= 0; i--)
+            {
+                il.Emit(OpCodes.Callvirt, methodList[i]); // ... [group]
+            }
+        }
+
+        void EmitSetting(ILGenerator il, Setting setting, int settingIndex, SettingValue<TSubApp, TTier, TDataCenter> sv)
+        {
+            // Initial stack: [s] [group]
+            // End stack:     [s] [group]
+
+            var loadFactoryArg = OpCodes.Ldarg_0;
+            var typeOfValue = setting.TypeOfValue;
+            var strValue = setting.IsEncrypted ? Decrypt(sv.Value) : sv.Value;
+
+            il.Emit(OpCodes.Dup); // [s] [group] [group]
+
+            if (setting.DoNotInlineValues) // we have to call the converter each time
+            {
+                var converterType = typeof(ISettingConverter<>).MakeGenericType(typeOfValue);
+                var getValue = converterType.GetMethod(nameof(ISettingConverter<bool>.GetValue)); // the <bool> here really doesn't matter - any type would work
+
+                var settingType = typeof(Setting<>).MakeGenericType(typeOfValue);
+                var converterProp = settingType.GetProperty(nameof(Setting<bool>.Converter)); // the <bool> here really doesn't matter - any type would work
+
+                var settingsField = _reflectionCache.SettingsField;
+                var getSettingItem = _reflectionCache.GetSettingItemMethod;
+                
+                il.Emit(loadFactoryArg);                            // [s] [group] [group] [this]
+                il.Emit(OpCodes.Ldfld, settingsField);              // [s] [group] [group] [_settings]
+                il.Emit(OpCodes.Ldc_I4, settingIndex);              // [s] [group] [group] [_settings] [index]
+                il.Emit(OpCodes.Callvirt, getSettingItem);          // [s] [group] [group] [setting]
+                il.Emit(OpCodes.Callvirt, converterProp.GetMethod); // [s] [group] [group] [Converter]
+                il.Emit(OpCodes.Ldstr, strValue);                   // [s] [group] [group] [Converter] [strValue]
+                il.Emit(OpCodes.Callvirt, getValue);                // [s] [group] [group] [valueToSet]
+            }
+            else // we can use a cached value each time
+            {
+                var objValue = setting.GetValueFromString(strValue);
+
+                if (objValue == null)
+                {
+                    il.Emit(OpCodes.Ldnull); // [s] [group] [group] [null valueToSet]
+                }
+                else
+                {
+                    var strategy = GetInlineStrategyForType(typeOfValue);
+
+                    switch (strategy)
+                    {
+                        case InlineStrategy.Cache:
+                            var index = AddToValueCache(objValue);
+                            var cacheField = _reflectionCache.ValueCacheField;
+                            il.Emit(loadFactoryArg);            // [s] [group] [group] [this]
+                            il.Emit(OpCodes.Ldfld, cacheField); // [s] [group] [group] [_valueCache]
+                            il.Emit(OpCodes.Ldc_I4, index);     // [s] [group] [group] [_valueCache] [index]
+                            il.Emit(OpCodes.Ldelem_Ref);        // [s] [group] [group] [valueToSet]
+                            if (typeOfValue.IsValueType)
+                                il.Emit(OpCodes.Unbox);         // [s] [group] [group] [unboxed valueToSet]
+                            break;
+                        case InlineStrategy.String:
+                            il.Emit(OpCodes.Ldstr, (string)objValue); // [s] [group] [group] [valueToSet]
+                            break;
+                        case InlineStrategy.Int32:
+                            il.Emit(OpCodes.Ldc_I4, Convert.ToInt32(objValue)); // [s] [group] [group] [valueToSet]
+                            break;
+                        case InlineStrategy.Int64:
+                            il.Emit(OpCodes.Ldc_I8, Convert.ToInt64(objValue)); // [s] [group] [group] [valueToSet]
+                            break;
+                        case InlineStrategy.Float32:
+                            il.Emit(OpCodes.Ldc_R4, Convert.ToSingle(objValue)); // [s] [group] [group] [valueToSet]
+                            break;
+                        case InlineStrategy.Float64:
+                            il.Emit(OpCodes.Ldc_R8, Convert.ToSingle(objValue)); // [s] [group] [group] [valueToSet]
+                            break;
+                        default:
+                            throw new ArgumentOutOfRangeException();
+                    }
+                }
+            }
+
+            // stack should be: [s] [group] [group] [valueToSet]
+
+            il.Emit(OpCodes.Callvirt, setting.PropertyInfo.SetMethod); // [s] [group]
+        }
+
+        int AddToValueCache(object value)
+        {
+            var cache = _valueCache;
+            var count = _valueCacheCount;
+
+            if (cache == null)
+            {
+                _valueCache = cache = new object[16];
+            }
+            else if (count == cache.Length)
+            {
+                var oldCache = _valueCache;
+                var newCache = new object[oldCache.Length * 2];
+                Array.Copy(oldCache, newCache, count);
+                _valueCache = cache = newCache;
+            }
+
+            cache[count] = value;
+            _valueCacheCount = count + 1;
+            return count;
+        }
+
+        enum InlineStrategy
+        {
+            Cache,
+            String,
+            Int32,
+            Int64,
+            Float32,
+            Float64,
+        }
+
+        static InlineStrategy GetInlineStrategyForType(Type type)
+        {
+            if (type == typeof(string))
+                return InlineStrategy.String;
+
+            if (type.IsEnum)
+                type = type.GetEnumUnderlyingType();
+
+            if (!type.IsPrimitive)
+                return InlineStrategy.Cache;
+
+            if (type == typeof(bool)
+                || type == typeof(byte)
+                || type == typeof(sbyte)
+                || type == typeof(short)
+                || type == typeof(ushort)
+                || type == typeof(int)
+                || type == typeof(uint))
+            {
+                return InlineStrategy.Int32;
+            }
+
+            if (type == typeof(long) || type == typeof(ulong))
+                return InlineStrategy.Int64;
+
+            if (type == typeof(double))
+                return InlineStrategy.Float64;
+
+            if (type == typeof(float))
+                return InlineStrategy.Float32;
+
+            return InlineStrategy.Cache; // only other primitive types are IntPtr and UIntPtr (never actually going to happen)
+        }
+
+        Dictionary<TSubApp, List<BestDefault>> GetBestDefaults()
+        {
+            var best = new Dictionary<TSubApp, List<BestDefault>>();
+            best[default(TSubApp)] = new List<BestDefault>();
+
+            var foundSubApps = new HashSet<TSubApp>();
+
+            var settings = _settings;
+            var tier = Tier;
+            var dataCenter = DataCenter;
+
+            for (var i = 0; i < settings.Count; i++)
+            {
+                var s = settings[i];
+                var defaults = s.Defaults;
+
+                foreach (var def in defaults)
+                {
+                    if (def.IsValidFor(def.SubApp, tier, dataCenter))
+                        foundSubApps.Add(def.SubApp);
+                }
+
+                if (!foundSubApps.Contains(default(TSubApp)))
+                    throw new NFigException($"Setting {s.Name} has no default value for the default sub app. This indicates a bug in NFig.");
+
+                foreach (var subApp in foundSubApps)
+                {
+                    List<BestDefault> list;
+                    if (!best.TryGetValue(subApp, out list))
+                    {
+                        list = new List<BestDefault>();
+                        best[subApp] = list;
+                    }
+
+                    SettingValue<TSubApp, TTier, TDataCenter> _;
+                    var defIndex = defaults.GetBestValueFor(subApp, tier, dataCenter, out _);
+                    list.Add(new BestDefault(i, defIndex));
+                }
+
+                foundSubApps.Clear();
+            }
+
+            return best;
         }
 
         static bool IsConverterOfType(object converter, Type type)
@@ -707,59 +1045,39 @@ namespace NFig
             return false;
         }
 
-        InitializeSettingsDelegate GetInitializer()
+        Dictionary<TSubApp, Dictionary<string, SettingValue<TSubApp, TTier, TDataCenter>>> OrganizeSettingValues(
+            IEnumerable<SettingValue<TSubApp, TTier, TDataCenter>> values)
         {
-            // todo: it'd be nice to combine this with the GetSettings reflection so we don't have to do it twice
-            // Also don't want to make that code uglier than it already is... need to think about this more.
+            var bySubApp = new Dictionary<TSubApp, Dictionary<string, SettingValue<TSubApp, TTier, TDataCenter>>>();
 
-            // build a dynamic method which instantiates a TSettings object
-            var dm = new DynamicMethod("TSettings_Instantiate", _settingsType, Type.EmptyTypes, _settingsType.Module, true);
-            var il = dm.GetILGenerator();
+            var tier = Tier;
+            var dataCenter = DataCenter;
 
-            var settingsLocal = WriteInstantiationIL(il, _settingsType);
-            il.Emit(OpCodes.Ldloc, settingsLocal); // [settings]
-            il.Emit(OpCodes.Ret);
-
-            return (InitializeSettingsDelegate)dm.CreateDelegate(typeof(InitializeSettingsDelegate));
-        }
-
-        static LocalBuilder WriteInstantiationIL(ILGenerator il, Type type)
-        {
-            var local = il.DeclareLocal(type);
-
-            // new up object
-            var ctor = type.GetConstructor(Type.EmptyTypes);
-            if (ctor == null)
-                throw new NFigException("Cannot use type " + type.Name + " for settings groups. It does not have a parameterless constructor.");
-
-            il.Emit(OpCodes.Newobj, ctor); // [type obj]
-            il.Emit(OpCodes.Stloc, local); // empty
-
-            // check for any setting group properties which also need to be newed up
-            foreach (var pi in type.GetProperties())
+            foreach (var value in values)
             {
-                if (IsSettingsGroup(pi))
-                {
-                    var sub = WriteInstantiationIL(il, pi.PropertyType);
+                var subApp = value.SubApp;
 
-                    // assign new sub object to property
-                    il.Emit(OpCodes.Ldloc, local); // [local]
-                    il.Emit(OpCodes.Ldloc, sub); // [local][sub]
-                    il.Emit(OpCodes.Callvirt, pi.SetMethod); // empty
+                if (!value.IsValidFor(subApp, tier, dataCenter))
+                    continue;
+
+                Dictionary<string, SettingValue<TSubApp, TTier, TDataCenter>> bySettingName;
+                if (!bySubApp.TryGetValue(subApp, out bySettingName))
+                {
+                    bySettingName = new Dictionary<string, SettingValue<TSubApp, TTier, TDataCenter>>();
+                    bySubApp[subApp] = bySettingName;
                 }
+
+                SettingValue<TSubApp, TTier, TDataCenter> existingValue;
+                if (bySettingName.TryGetValue(value.Name, out existingValue))
+                {
+                    if (!value.IsMoreSpecificThan(existingValue))
+                        continue;
+                }
+
+                bySettingName[value.Name] = value;
             }
 
-            return local;
-        }
-
-        static IEnumerable<T> SelectSingle<T>(T item)
-        {
-            yield return item;
-        }
-
-        static bool IsSettingsGroup(PropertyInfo pi)
-        {
-            return pi.PropertyType.IsClass && pi.GetCustomAttribute<SettingsGroupAttribute>() != null;
+            return bySubApp;
         }
 
         static void AssertEncryptorIsNullOrValid(ISettingEncryptor encryptor)
@@ -795,23 +1113,52 @@ namespace NFig
 
         void AssertGenericTypesAreValid()
         {
-            if (!_subAppType.IsEnum && !IsIntegerType(_subAppType))
-                throw new InvalidOperationException("TSubApp must be an enum or integer type.");
+            var subType = _subAppType;
+            if (subType.IsEnum)
+                subType = subType.GetEnumUnderlyingType();
+
+            if (!IsValidSubAppType(subType))
+                throw new InvalidOperationException("TSubApp must be an enum or integer (32-bits or smaller).");
 
             if (!_tierType.IsEnum || !_dataCenterType.IsEnum)
                 throw new InvalidOperationException("TTier and TDataCenter must be enum types.");
         }
 
-        static bool IsIntegerType(Type type)
+        static bool IsValidSubAppType(Type type)
         {
             return type == typeof(byte)
                 || type == typeof(sbyte)
                 || type == typeof(short)
                 || type == typeof(ushort)
                 || type == typeof(int)
-                || type == typeof(uint)
-                || type == typeof(long)
-                || type == typeof(ulong);
+                || type == typeof(uint);
+        }
+
+        ReflectionCache CreateReflectionCache()
+        {
+            var cache = new ReflectionCache();
+            var thisType = GetType();
+
+            cache.SettingsField = thisType.GetField(nameof(_settings));
+            cache.ValueCacheField = thisType.GetField(nameof(_valueCache));
+            cache.GetSettingItemMethod = _settings.GetType().GetProperty("Item").GetMethod;
+            cache.PropertyToSettingMethod = thisType.GetMethod(nameof(PropertyToSetting), BindingFlags.NonPublic | BindingFlags.Instance);
+            cache.PropertyToSettingDelegates = new Dictionary<Type, PropertyToSettingDelegate>();
+
+            return cache;
+        }
+
+        PropertyToSettingDelegate GetPropertyToSettingDelegate(Type type)
+        {
+            PropertyToSettingDelegate del;
+            if (_reflectionCache.PropertyToSettingDelegates.TryGetValue(type, out del))
+                return del;
+
+            var methodInfo = _reflectionCache.PropertyToSettingMethod.MakeGenericMethod(type);
+            del = (PropertyToSettingDelegate)Delegate.CreateDelegate(typeof(PropertyToSettingDelegate), this, methodInfo);
+            _reflectionCache.PropertyToSettingDelegates[type] = del;
+
+            return del;
         }
 
 
@@ -819,17 +1166,54 @@ namespace NFig
          * Helper Classes and Delegates
          *************************************************************************************/
 
-        delegate TSettings InitializeSettingsDelegate();
+        delegate TSettings InitializeSettingsDelegate(SettingsFactory<TSettings, TSubApp, TTier, TDataCenter> factory, TSubApp subApp);
 
-        class PropertyAndParent
-        {
-            public PropertyAndParent Parent { get; set; }
-            public PropertyInfo PropertyInfo { get; set; }
-        }
-
-        delegate void SettingSetterDelegate<TValue>(TSettings settings, string str, ISettingConverter<TValue> converter);
+        delegate void SettingSetterDelegate<TValue>(TSettings settings, TValue value);
 
         delegate TValue SettingGetterDelegate<TValue>(TSettings settings);
+
+        class ReflectionCache
+        {
+            public FieldInfo SettingsField;
+            public FieldInfo ValueCacheField;
+            public MethodInfo GetSettingItemMethod;
+            public MethodInfo PropertyToSettingMethod;
+            public Dictionary<Type, PropertyToSettingDelegate> PropertyToSettingDelegates;
+
+        }
+
+        struct BestDefault
+        {
+            public int SettingIndex { get; }
+            public int DefaultIndex { get; }
+
+            public BestDefault(int settingIndex, int defaultIndex)
+            {
+                SettingIndex = settingIndex;
+                DefaultIndex = defaultIndex;
+            }
+        }
+
+        class SettingGroup
+        {
+            public Type Type { get; }
+            public string Prefix { get; }
+            public SettingGroup Parent { get; }
+            public PropertyInfo PropertyInfo { get; }
+            public List<SettingGroup> SettingGroups { get; }
+            public List<Setting> Settings { get; }
+
+            public SettingGroup(Type type, string prefix, SettingGroup parent, PropertyInfo pi)
+            {
+                Type = type;
+                Prefix = prefix;
+                Parent = parent;
+                PropertyInfo = pi;
+
+                SettingGroups = new List<SettingGroup>();
+                Settings = new List<Setting>();
+            }
+        }
 
         abstract class Setting
         {
@@ -839,20 +1223,23 @@ namespace NFig
             public bool IsEncrypted { get; protected set; }
             public PropertyInfo PropertyInfo { get; protected set; }
             public SettingValue<TSubApp, TTier, TDataCenter>[] Defaults { get; protected set; }
+            public Type TypeOfValue { get; protected set; }
+            public SettingGroup Group { get; protected set; }
+            public bool DoNotInlineValues { get; protected set; }
 
-            public abstract object GetValue(TSettings settings);
-            public abstract void SetValueFromString(TSettings settings, string str);
+            public abstract object GetValueAsObject(TSettings settings);
+            public abstract InvalidSettingValueException TryApplyOverride(TSettings settings, SettingValue<TSubApp, TTier, TDataCenter> over, string strValue);
+            public abstract object GetValueFromString(string str);
             public abstract bool TryGetValueFromString(string str, out object value);
             public abstract bool TryGetStringFromValue(object value, out string str);
         }
 
         class Setting<TValue> : Setting
         {
-            readonly ISettingConverter<TValue> _converter;
-            readonly SettingSetterDelegate<TValue> _setter;
+            SettingGetterDelegate<TValue> _getter;
+            SettingSetterDelegate<TValue> _setter;
 
-            public readonly SettingGetterDelegate<TValue> Getter;
-
+            public ISettingConverter<TValue> Converter { get; }
 
             public Setting(
                 string name,
@@ -860,10 +1247,10 @@ namespace NFig
                 bool changeRequiresRestart,
                 bool isEncrypted,
                 PropertyInfo propertyInfo,
+                SettingGroup group,
                 SettingValue<TSubApp, TTier, TDataCenter>[] defaults,
-                SettingSetterDelegate<TValue> setter,
                 ISettingConverter<TValue> converter,
-                SettingGetterDelegate<TValue> getter
+                bool noInline
             )
             {
                 Name = name;
@@ -871,21 +1258,61 @@ namespace NFig
                 ChangeRequiresRestart = changeRequiresRestart;
                 IsEncrypted = isEncrypted;
                 PropertyInfo = propertyInfo;
+                Group = group;
                 Defaults = defaults;
-                Getter = getter;
+                Converter = converter;
+                DoNotInlineValues = noInline;
 
-                _setter = setter;
-                _converter = converter;
+                TypeOfValue = typeof(TValue);
             }
 
-            public override object GetValue(TSettings settings)
+            public TValue GetValue(TSettings settings)
             {
-                return Getter(settings);
+                if (_getter == null)
+                    _getter = CreateGetterMethod();
+
+                return _getter(settings);
             }
 
-            public override void SetValueFromString(TSettings settings, string str)
+            public override object GetValueAsObject(TSettings settings)
             {
-                _setter(settings, str, _converter);
+                return GetValue(settings);
+            }
+
+            public override InvalidSettingValueException TryApplyOverride(TSettings settings, SettingValue<TSubApp, TTier, TDataCenter> over, string strValue)
+            {
+                TValue value;
+
+                try
+                {
+                    value = Converter.GetValue(strValue);
+                }
+                catch (Exception ex)
+                {
+                    var invalidEx = new InvalidSettingValueException(
+                        $"Invalid override value for setting \"{Name}\". Cannot convert the string override to a real value.",
+                        Name,
+                        over.Value, // intentionally using over.Value here instead of strValue since strValue could be a decrypted value that people don't want in their logs
+                        false,
+                        over.SubApp.ToString(),
+                        over.DataCenter.ToString(),
+                        ex);
+
+                    invalidEx.UnthrownStackTrace = new StackTrace(true).ToString();
+
+                    return invalidEx;
+                }
+
+                if (_setter == null)
+                    _setter = CreateSetterMethod();
+
+                _setter(settings, value);
+                return null;
+            }
+
+            public override object GetValueFromString(string str)
+            {
+                return Converter.GetValue(str);
             }
 
             public override bool TryGetValueFromString(string str, out object value)
@@ -893,7 +1320,7 @@ namespace NFig
                 value = null;
                 try
                 {
-                    value = _converter.GetValue(str);
+                    value = Converter.GetValue(str);
                 }
                 catch (Exception)
                 {
@@ -908,7 +1335,7 @@ namespace NFig
                 str = null;
                 try
                 {
-                    str = _converter.GetString((TValue)value);
+                    str = Converter.GetString((TValue)value);
                 }
                 catch (Exception)
                 {
@@ -916,6 +1343,38 @@ namespace NFig
                 }
 
                 return true;
+            }
+
+            SettingSetterDelegate<TValue> CreateSetterMethod()
+            {
+                var dm = new DynamicMethod("AssignSetting_" + Name, null, new[] { typeof(TSettings), TypeOfValue }, GetType().Module, true);
+                var il = dm.GetILGenerator();
+
+                // arg 0 = TSettings settings
+                // arg 1 = TValue value
+                
+                il.Emit(OpCodes.Ldarg_0);                          // [settings]
+                EmitLoadGroup(il, Group);                          // [group]
+                il.Emit(OpCodes.Ldarg_1);                          // [group] [value]
+                il.Emit(OpCodes.Callvirt, PropertyInfo.SetMethod); // empty
+                il.Emit(OpCodes.Ret);
+
+                return (SettingSetterDelegate<TValue>)dm.CreateDelegate(typeof(SettingSetterDelegate<TValue>));
+            }
+
+            SettingGetterDelegate<TValue> CreateGetterMethod()
+            {
+                var dm = new DynamicMethod("RetrieveSetting_" + Name, typeof(TValue), new[] { typeof(TSettings) }, GetType().Module, true);
+                var il = dm.GetILGenerator();
+
+                // arg 0 = TSettings settings
+                
+                il.Emit(OpCodes.Ldarg_0);                          // [settings]
+                EmitLoadGroup(il, Group);                          // [group]
+                il.Emit(OpCodes.Callvirt, PropertyInfo.GetMethod); // [value]
+                il.Emit(OpCodes.Ret);
+
+                return (SettingGetterDelegate<TValue>)dm.CreateDelegate(typeof(SettingGetterDelegate<TValue>));
             }
         }
     }

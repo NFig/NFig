@@ -4,7 +4,8 @@ using System.Reflection;
 
 namespace NFig
 {
-    public class SettingInfo<TTier, TDataCenter>
+    public class SettingInfo<TSubApp, TTier, TDataCenter>
+        where TSubApp : struct
         where TTier : struct
         where TDataCenter : struct
     {
@@ -14,8 +15,8 @@ namespace NFig
         public bool IsEncrypted { get; }
         public Type Type { get; }
         public PropertyInfo PropertyInfo { get; }
-        public IList<SettingValue<TTier, TDataCenter>> Defaults { get; }
-        public IList<SettingValue<TTier, TDataCenter>> Overrides { get; }
+        public IList<SettingValue<TSubApp, TTier, TDataCenter>> Defaults { get; }
+        public IList<SettingValue<TSubApp, TTier, TDataCenter>> Overrides { get; }
 
         internal SettingInfo(
             string name,
@@ -23,8 +24,8 @@ namespace NFig
             bool changeRequiresRestart,
             bool isEncrypted,
             PropertyInfo propertyInfo,
-            IList<SettingValue<TTier, TDataCenter>> defaults,
-            IList<SettingValue<TTier, TDataCenter>> overrides
+            IList<SettingValue<TSubApp, TTier, TDataCenter>> defaults,
+            IList<SettingValue<TSubApp, TTier, TDataCenter>> overrides
             )
         {
             Name = name;
@@ -37,40 +38,32 @@ namespace NFig
             Overrides = overrides;
         } 
 
-        public SettingValue<TTier, TDataCenter> GetActiveValueFor(TTier tier, TDataCenter dataCenter)
+        public SettingValue<TSubApp, TTier, TDataCenter> GetActiveValueFor(TSubApp subApp, TTier tier, TDataCenter dataCenter)
         {
-            var def = GetDefaultFor(tier, dataCenter);
+            var def = GetDefaultFor(subApp, tier, dataCenter);
             if (!def.AllowsOverrides)
                 return def;
 
-            return GetOverrideFor(tier, dataCenter) ?? def;
+            return GetOverrideFor(subApp, tier, dataCenter) ?? def;
         }
 
-        public SettingValue<TTier, TDataCenter> GetDefaultFor(TTier tier, TDataCenter dataCenter)
+        public SettingValue<TSubApp, TTier, TDataCenter> GetDefaultFor(TSubApp subApp, TTier tier, TDataCenter dataCenter)
         {
-            return GetBestValueFor(Defaults, tier, dataCenter);
+            SettingValue<TSubApp, TTier, TDataCenter> value;
+            Defaults.GetBestValueFor(subApp, tier, dataCenter, out value);
+            return value;
         }
 
-        public SettingValue<TTier, TDataCenter> GetOverrideFor(TTier tier, TDataCenter dataCenter)
+        public SettingValue<TSubApp, TTier, TDataCenter> GetOverrideFor(TSubApp subApp, TTier tier, TDataCenter dataCenter)
         {
-            return GetBestValueFor(Overrides, tier, dataCenter);
+            SettingValue<TSubApp, TTier, TDataCenter> value;
+            Overrides.GetBestValueFor(subApp, tier, dataCenter, out value);
+            return value;
         }
 
-        public bool CanSetOverrideFor(TTier tier, TDataCenter dataCenter)
+        public bool CanSetOverrideFor(TSubApp subApp, TTier tier, TDataCenter dataCenter)
         {
-            return GetDefaultFor(tier, dataCenter).AllowsOverrides;
-        }
-
-        internal static SettingValue<TTier, TDataCenter> GetBestValueFor(IList<SettingValue<TTier, TDataCenter>> values, TTier tier, TDataCenter dataCenter)
-        {
-            SettingValue<TTier, TDataCenter> best = null;
-            foreach (var val in values)
-            {
-                if (val.IsValidFor(tier, dataCenter) && val.IsMoreSpecificThan(best))
-                    best = val;
-            }
-
-            return best;
+            return GetDefaultFor(subApp, tier, dataCenter).AllowsOverrides;
         }
     }
 }
