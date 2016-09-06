@@ -5,17 +5,18 @@ using NFig.Logging;
 
 namespace NFig.InMemory
 {
-    public class NFigMemoryLogger<TTier, TDataCenter> : SettingsLogger<TTier, TDataCenter>
+    public class NFigMemoryLogger<TSubApp, TTier, TDataCenter> : SettingsLogger<TSubApp, TTier, TDataCenter>
+        where TSubApp : struct
         where TTier : struct
         where TDataCenter : struct
     {
-        readonly List<AppSnapshot<TTier, TDataCenter>> _history = new List<AppSnapshot<TTier, TDataCenter>>();
+        readonly List<AppSnapshot<TSubApp, TTier, TDataCenter>> _history = new List<AppSnapshot<TSubApp, TTier, TDataCenter>>();
 
-        public NFigMemoryLogger(Action<Exception, AppSnapshot<TTier, TDataCenter>> onLogException) : base(onLogException)
+        public NFigMemoryLogger(Action<Exception, AppSnapshot<TSubApp, TTier, TDataCenter>> onLogException) : base(onLogException)
         {
         }
 
-        protected override Task LogAsyncImpl(AppSnapshot<TTier, TDataCenter> snapshot)
+        protected override Task LogAsyncImpl(AppSnapshot<TSubApp, TTier, TDataCenter> snapshot)
         {
             lock (_history)
             {
@@ -30,7 +31,7 @@ namespace NFig.InMemory
         }
 
         public override Task<IEnumerable<NFigLogEvent<TDataCenter>>> GetLogsAsync(
-            string appName = null,
+            string globalAppName = null,
             string settingName = null,
             bool includeRestores = true,
             DateTime? minDate = null,
@@ -51,7 +52,7 @@ namespace NFig.InMemory
 
                     var log = _history[i].LastEvent;
 
-                    if (appName != null && log.ApplicationName != appName)
+                    if (globalAppName != null && log.GlobalAppName != globalAppName)
                         continue;
 
                     if (log.Type == NFigLogEventType.RestoreSnapshot && !includeRestores)
@@ -83,14 +84,14 @@ namespace NFig.InMemory
             return Task.FromResult<IEnumerable<NFigLogEvent<TDataCenter>>>(list);
         }
 
-        public override Task<AppSnapshot<TTier, TDataCenter>> GetSnapshotAsync(string appName, string commit)
+        public override Task<AppSnapshot<TSubApp, TTier, TDataCenter>> GetSnapshotAsync(string globalAppName, string commit)
         {
             lock (_history)
             {
                 for (var i = _history.Count - 1; i >= 0; i--)
                 {
                     var snap = _history[i];
-                    if (snap.Commit == commit && snap.ApplicationName == appName)
+                    if (snap.Commit == commit && snap.GlobalAppName == globalAppName)
                     {
                         // a better implementation would return a copy so that the caller can't change history, but this MemoryLogger is really just for sample
                         // applications - not real world use.
@@ -99,10 +100,10 @@ namespace NFig.InMemory
                 }
             }
 
-            return Task.FromResult<AppSnapshot<TTier, TDataCenter>>(null);
+            return Task.FromResult<AppSnapshot<TSubApp, TTier, TDataCenter>>(null);
         }
 
-        static int CompareLogs(AppSnapshot<TTier, TDataCenter> a, AppSnapshot<TTier, TDataCenter> b)
+        static int CompareLogs(AppSnapshot<TSubApp, TTier, TDataCenter> a, AppSnapshot<TSubApp, TTier, TDataCenter> b)
         {
             if (a.LastEvent.Timestamp > b.LastEvent.Timestamp)
                 return 1;

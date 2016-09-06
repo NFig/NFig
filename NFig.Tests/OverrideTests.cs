@@ -40,7 +40,7 @@ namespace NFig.Tests
             };
 
             OverrideSettings s;
-            var invalidOverrides = factory.TryGetAppSettings(out s, NFigStore<OverrideSettings, Tier, DataCenter>.INITIAL_COMMIT, overrides);
+            var invalidOverrides = factory.TryGetSettingsBySubApp(out s, NFigStore<OverrideSettings, Tier, DataCenter>.INITIAL_COMMIT, overrides);
             Console.WriteLine(invalidOverrides.Message);
 
             Assert.True(invalidOverrides != null && invalidOverrides.Exceptions.Count == 2);

@@ -29,9 +29,8 @@ namespace NFig
         readonly Type _dataCenterType;
 
         readonly ISettingEncryptor _encryptor;
-
-//        readonly Dictionary<Type, PropertyToSettingDelegate> _propertyToSettingDelegatesCache;
-        ReflectionCache _reflectionCache;
+        
+        readonly ReflectionCache _reflectionCache;
 
         delegate Setting PropertyToSettingDelegate(PropertyInfo pi, SettingAttribute sa, SettingGroup group);
 
@@ -52,14 +51,14 @@ namespace NFig
             {typeof(decimal), new DecimalSettingConverter()},
         };
 
-        public string ApplicationName { get; }
+        public string GlobalAppName { get; }
         public TTier Tier { get; }
         public TDataCenter DataCenter { get; }
 
         public bool HasEncryptor => _encryptor != null;
 
         public SettingsFactory(
-            string appName,
+            string globalAppName,
             TTier tier,
             TDataCenter dataCenter,
             ISettingEncryptor encryptor,
@@ -71,7 +70,7 @@ namespace NFig
             _dataCenterType = typeof(TDataCenter);
             AssertGenericTypesAreValid();
 
-            ApplicationName = appName;
+            GlobalAppName = globalAppName;
             Tier = tier;
             DataCenter = dataCenter;
 
@@ -105,42 +104,56 @@ namespace NFig
             _reflectionCache = null;
         }
 
-//        public TSettings GetAppSettings(string commit, IEnumerable<SettingValue<TTier, TDataCenter>> overrides = null)
-//        {
-//            TSettings settings;
-//            var ex = TryGetAppSettings(out settings, commit, overrides);
-//            if (ex != null)
-//                throw ex;
-//
-//            return settings;
-//        }
+        // todo - might want to look for ways to refactor more of the common pieces between this method and TryGetSettingsBySubApp
+        public InvalidSettingOverridesException TryGetSettingsForGlobalApp(out TSettings settings, [NotNull] AppSnapshot<TSubApp, TTier, TDataCenter> snapshot)
+        {
+            var overrides = snapshot.Overrides;
+            var overridesBySubApp = overrides == null ? null : OrganizeSettingValues(overrides, defaultOnly: true);
+            List<InvalidSettingValueException> exceptions = null;
 
-        public InvalidSettingOverridesException TryGetAppSettings(
+            settings = _initializer(this, default(TSubApp));
+            settings.SetBasicInformation(GlobalAppName, snapshot.Commit, default(TSubApp), Tier, DataCenter);
+
+            if (overridesBySubApp != null)
+            {
+                Dictionary<string, SettingValue<TSubApp, TTier, TDataCenter>> globalOverrides;
+                overridesBySubApp.TryGetValue(default(TSubApp), out globalOverrides);
+
+                SetOverrides(settings, globalOverrides, null, ref exceptions);
+            }
+
+            if (exceptions != null)
+                return new InvalidSettingOverridesException(exceptions, new StackTrace(true).ToString());
+
+            return null;
+        }
+
+        public InvalidSettingOverridesException TryGetSettingsBySubApp(
             out Dictionary<TSubApp, TSettings> settingsBySubApp,
             [NotNull] TSubApp[] subApps,
-            [NotNull] string commit,
-            [CanBeNull] IEnumerable<SettingValue<TSubApp, TTier, TDataCenter>> overrides)
+            [NotNull] AppSnapshot<TSubApp, TTier, TDataCenter> snapshot)
         {
-            var overridesBySubApp = overrides == null ? null : OrganizeSettingValues(overrides);
+            var overrides = snapshot.Overrides;
+            var overridesBySubApp = overrides == null ? null : OrganizeSettingValues(overrides, defaultOnly: false);
             settingsBySubApp = new Dictionary<TSubApp, TSettings>();
             List<InvalidSettingValueException> exceptions = null;
 
             foreach (var subApp in subApps)
             {
                 var settings = _initializer(this, subApp);
-                settings.SetBasicInformation(ApplicationName, commit, subApp, Tier, DataCenter);
+                settings.SetBasicInformation(GlobalAppName, snapshot.Commit, subApp, Tier, DataCenter);
 
                 if (overridesBySubApp != null)
                 {
-                    Dictionary<string, SettingValue<TSubApp, TTier, TDataCenter>> anySubApp, specificSubApp;
-                    overridesBySubApp.TryGetValue(default(TSubApp), out anySubApp);
+                    Dictionary<string, SettingValue<TSubApp, TTier, TDataCenter>> globalOverrides, specificSubApp;
+                    overridesBySubApp.TryGetValue(default(TSubApp), out globalOverrides);
 
                     if (!Compare.IsDefault(subApp))
                         overridesBySubApp.TryGetValue(subApp, out specificSubApp);
                     else
                         specificSubApp = null;
 
-                    SetOverrides(settings, anySubApp, specificSubApp, ref exceptions);
+                    SetOverrides(settings, globalOverrides, specificSubApp, ref exceptions);
                     SetOverrides(settings, specificSubApp, null, ref exceptions);
                 }
 
@@ -1046,7 +1059,8 @@ namespace NFig
         }
 
         Dictionary<TSubApp, Dictionary<string, SettingValue<TSubApp, TTier, TDataCenter>>> OrganizeSettingValues(
-            IEnumerable<SettingValue<TSubApp, TTier, TDataCenter>> values)
+            IEnumerable<SettingValue<TSubApp, TTier, TDataCenter>> values,
+            bool defaultOnly)
         {
             var bySubApp = new Dictionary<TSubApp, Dictionary<string, SettingValue<TSubApp, TTier, TDataCenter>>>();
 
@@ -1056,6 +1070,9 @@ namespace NFig
             foreach (var value in values)
             {
                 var subApp = value.SubApp;
+
+                if (defaultOnly && !Compare.IsDefault(subApp))
+                    continue;
 
                 if (!value.IsValidFor(subApp, tier, dataCenter))
                     continue;

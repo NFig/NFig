@@ -128,8 +128,8 @@ namespace NFig.Tests
             Assert.AreEqual("Seventeen", settings.Nested.String);
 
             var snapshot1 = store.GetAppSnapshot();
-            Assert.AreEqual(APP_NAME, snapshot1.ApplicationName);
-            Assert.AreEqual(APP_NAME, snapshot1.LastEvent.ApplicationName);
+            Assert.AreEqual(APP_NAME, snapshot1.GlobalAppName);
+            Assert.AreEqual(APP_NAME, snapshot1.LastEvent.GlobalAppName);
             Assert.AreEqual(settings.Commit, snapshot1.Commit);
             Assert.AreEqual(settings.Commit, snapshot1.LastEvent.Commit);
             Assert.AreEqual(2, snapshot1.Overrides.Count);
@@ -148,8 +148,8 @@ namespace NFig.Tests
             Assert.AreEqual(3, settings.Nested.Integer);
 
             var snapshot2 = store.GetAppSnapshot();
-            Assert.AreEqual(APP_NAME, snapshot2.ApplicationName);
-            Assert.AreEqual(APP_NAME, snapshot2.LastEvent.ApplicationName);
+            Assert.AreEqual(APP_NAME, snapshot2.GlobalAppName);
+            Assert.AreEqual(APP_NAME, snapshot2.LastEvent.GlobalAppName);
             Assert.AreEqual(settings.Commit, snapshot2.Commit);
             Assert.AreEqual(settings.Commit, snapshot2.LastEvent.Commit);
             Assert.AreEqual(1, snapshot2.Overrides.Count);
@@ -172,8 +172,8 @@ namespace NFig.Tests
             Assert.AreEqual(3, settings.Nested.Integer);
             Assert.AreEqual("Seventeen", settings.Nested.String);
 
-            Assert.AreEqual(APP_NAME, snapshot3.ApplicationName);
-            Assert.AreEqual(APP_NAME, snapshot3.LastEvent.ApplicationName);
+            Assert.AreEqual(APP_NAME, snapshot3.GlobalAppName);
+            Assert.AreEqual(APP_NAME, snapshot3.LastEvent.GlobalAppName);
             Assert.AreEqual(settings.Commit, snapshot3.Commit);
             Assert.AreEqual(settings.Commit, snapshot3.LastEvent.Commit);
             Assert.AreEqual(2, snapshot3.Overrides.Count);
@@ -228,9 +228,9 @@ namespace NFig.Tests
             // get snapshot by commit
             foreach (var l in logs)
             {
-                var snapshot = await logger.GetSnapshotAsync(l.ApplicationName, l.Commit);
+                var snapshot = await logger.GetSnapshotAsync(l.GlobalAppName, l.Commit);
 
-                Assert.AreEqual(l.ApplicationName, snapshot.ApplicationName);
+                Assert.AreEqual(l.GlobalAppName, snapshot.GlobalAppName);
                 Assert.AreEqual(l.Commit, snapshot.Commit);
                 Assert.AreEqual(l.DataCenter, snapshot.LastEvent.DataCenter);
                 Assert.AreEqual(l.SettingName, snapshot.LastEvent.SettingName);
@@ -242,13 +242,13 @@ namespace NFig.Tests
             }
 
             // by app name
-            logs = (await logger.GetLogsAsync(appName: APP_NAME)).ToList();
+            logs = (await logger.GetLogsAsync(globalAppName: APP_NAME)).ToList();
             Assert.AreEqual(iterations * 2, logs.Count); // todo - switch back to just iterations (not x2) when using sub apps
-            Assert.IsTrue(logs.All(l => l.ApplicationName == APP_NAME));
+            Assert.IsTrue(logs.All(l => l.GlobalAppName == APP_NAME));
 
-            logs = (await logger.GetLogsAsync(appName: appB)).ToList();
+            logs = (await logger.GetLogsAsync(globalAppName: appB)).ToList();
             Assert.AreEqual(iterations * 2, logs.Count); // todo - switch back to just iterations (not x2) when using sub apps
-            Assert.IsTrue(logs.All(l => l.ApplicationName == appB));
+            Assert.IsTrue(logs.All(l => l.GlobalAppName == appB));
 
             // by setting
             logs = (await logger.GetLogsAsync(settingName: "Nested.Integer")).ToList();

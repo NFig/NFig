@@ -22,11 +22,6 @@ namespace NFig
         public bool HasTier => !Compare.IsDefault(Tier);
         public bool HasDataCenter => !Compare.IsDefault(DataCenter);
 
-        public SettingValue(string name, string value, TSubApp subApp, TDataCenter dataCenter)
-            : this(name, value, subApp, default(TTier), dataCenter, false, false)
-        {
-        }
-
         internal SettingValue(string name, string value, TSubApp subApp, TTier tier, TDataCenter dataCenter, bool isDefault, bool allowsOverrides)
         {
             Name = name;
@@ -36,6 +31,11 @@ namespace NFig
             DataCenter = dataCenter;
             IsDefault = isDefault;
             AllowsOverrides = allowsOverrides;
+        }
+
+        public static SettingValue<TSubApp, TTier, TDataCenter> CreateOverrideValue(string name, string value, TSubApp subApp, TDataCenter dataCenter)
+        {
+            return new SettingValue<TSubApp, TTier, TDataCenter>(name, value, subApp, default(TTier), dataCenter, false, false);
         }
 
         public bool IsValidFor(TSubApp subApp, TTier tier, TDataCenter dataCenter)

@@ -18,9 +18,9 @@ namespace NFig.Logging
         /// </summary>
         public NFigLogEventType Type { get; set; }
         /// <summary>
-        /// The name of the application this event was applicable to.
+        /// The top-level name of the application this event was applicable to.
         /// </summary>
-        public string ApplicationName { get; set; }
+        public string GlobalAppName { get; set; }
         /// <summary>
         /// The commit immediately after this change was applied.
         /// </summary>
@@ -54,7 +54,7 @@ namespace NFig.Logging
 
         public NFigLogEvent(
             NFigLogEventType type,
-            string appName,
+            string globalAppName,
             string commit,
             DateTime timestamp,
             string settingName,
@@ -64,7 +64,7 @@ namespace NFig.Logging
             string user)
         {
             Type = type;
-            ApplicationName = appName;
+            GlobalAppName = globalAppName;
             Commit = commit;
             Timestamp = timestamp;
             SettingName = settingName;
@@ -86,7 +86,7 @@ namespace NFig.Logging
             {
                 w.Write((byte)1); // version - might be useful in the future
                 w.Write((byte)Type);
-                w.WriteNullableString(ApplicationName);
+                w.WriteNullableString(GlobalAppName);
                 w.WriteNullableString(Commit);
                 w.Write(Timestamp.ToBinary());
                 w.WriteNullableString(SettingName);
@@ -112,7 +112,7 @@ namespace NFig.Logging
                 var log = new NFigLogEvent<TDataCenter>();
 
                 log.Type = (NFigLogEventType)r.ReadByte();
-                log.ApplicationName = r.ReadNullableString();
+                log.GlobalAppName = r.ReadNullableString();
                 log.Commit = r.ReadNullableString();
                 log.Timestamp = DateTime.FromBinary(r.ReadInt64());
                 log.SettingName = r.ReadNullableString();

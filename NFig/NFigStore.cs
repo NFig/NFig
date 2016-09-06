@@ -1,13 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using JetBrains.Annotations;
 using NFig.Encryption;
 using NFig.Logging;
 
 namespace NFig
 {
+    [SuppressMessage("ReSharper", "StaticMemberInGenericType")]
     public abstract class NFigStore<TSettings, TSubApp, TTier, TDataCenter>
         where TSettings : class, INFigSettings<TSubApp, TTier, TDataCenter>, new()
         where TSubApp : struct
@@ -23,42 +27,62 @@ namespace NFig
         /// The Commit value which should be used when no overrides have ever been set for the application.
         /// </summary>
         public string InitialCommit => INITIAL_COMMIT;
+        
+        public delegate void GlobalAppUpdateDelegate(Exception ex, TSettings settings, NFigStore<TSettings, TSubApp, TTier, TDataCenter> store);
+        
+        public delegate void SubAppsUpdateDelegate(
+            Exception ex,
+            Dictionary<TSubApp, TSettings> settingsBySubApp,
+            NFigStore<TSettings, TSubApp, TTier, TDataCenter> store);
 
-        public delegate void SettingsUpdateDelegate(Exception ex, TSettings settings, NFigStore<TSettings, TSubApp, TTier, TDataCenter> store);
-
-        class TierDataCenterCallback
+        class CallbackInfo<T>
         {
-            public SettingsUpdateDelegate Callback { get; }
-            public string LastNotifiedCommit { get; set; } = "NONE";
+            public T Callback { get; }
+            public string LastNotifiedCommit { get; set; }
 
-            public TierDataCenterCallback(SettingsUpdateDelegate callback)
+            public CallbackInfo(T callback)
             {
                 Callback = callback;
             }
         }
+        
+        readonly List<CallbackInfo<GlobalAppUpdateDelegate>> _globalAppCallbacks = new List<CallbackInfo<GlobalAppUpdateDelegate>>();
+        readonly List<CallbackInfo<SubAppsUpdateDelegate>> _subAppsCallbacks = new List<CallbackInfo<SubAppsUpdateDelegate>>();
 
         readonly SettingsFactory<TSettings, TSubApp, TTier, TDataCenter> _factory;
-
-        readonly object _callbacksLock = new object();
-        readonly Dictionary<string, TierDataCenterCallback[]> _callbacksByApp = new Dictionary<string, TierDataCenterCallback[]>();
 
         readonly object _dataCacheLock = new object();
         readonly Dictionary<string, AppSnapshot<TSubApp, TTier, TDataCenter>> _dataCache = new Dictionary<string, AppSnapshot<TSubApp, TTier, TDataCenter>>();
 
         Timer _pollingTimer;
 
-        public string ApplicationName => _factory.ApplicationName;
+        /// <summary>
+        /// Gets or sets the list of sub apps which this store should care about. These are the only sub apps for which settings objects will be populated in
+        /// *BySubApp methods. If null or empty, those methods will result in empty dictionaries.
+        /// </summary>
+        public TSubApp[] SubApps { get; set; }
+
+        /// <summary>
+        /// The name of the global application. If you are using sub apps, this may represent the name of the umbrella "parent" application.
+        /// </summary>
+        public string GlobalAppName => _factory.GlobalAppName;
+        /// <summary>
+        /// The deployment tier which this store is running on.
+        /// </summary>
         public TTier Tier => _factory.Tier;
+        /// <summary>
+        /// The data center which this store is running in.
+        /// </summary>
         public TDataCenter DataCenter => _factory.DataCenter;
 
-        public SettingsLogger<TTier, TDataCenter> Logger { get; }
+        public SettingsLogger<TSubApp, TTier, TDataCenter> Logger { get; }
 
         public int PollingInterval { get; }
 
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="appName">The name of the current application.</param>
+        /// <param name="globalAppName">The name of the global application. If you are using sub apps, this may represent the name of the umbrella "parent" application.</param>
         /// <param name="tier">Tier the application is running on (cannot be the default "Any" value).</param>
         /// <param name="dataCenter">DataCenter the application is running in (cannot be the default "Any" value).</param>
         /// <param name="logger">The logger which events will be sent to.</param>
@@ -71,17 +95,17 @@ namespace NFig
         /// </param>
         /// <param name="pollingInterval">The interval, in seconds, to poll for override changes. Use 0 to disable polling.</param>
         protected NFigStore(
-            string appName,
+            string globalAppName,
             TTier tier,
             TDataCenter dataCenter,
-            SettingsLogger<TTier, TDataCenter> logger,
+            SettingsLogger<TSubApp, TTier, TDataCenter> logger,
             ISettingEncryptor encryptor,
             Dictionary<Type, object> additionalDefaultConverters,
             int pollingInterval = 60)
         {
             Logger = logger;
             PollingInterval = pollingInterval;
-            _factory = new SettingsFactory<TSettings, TSubApp, TTier, TDataCenter>(appName, tier, dataCenter, encryptor, additionalDefaultConverters);
+            _factory = new SettingsFactory<TSettings, TSubApp, TTier, TDataCenter>(globalAppName, tier, dataCenter, encryptor, additionalDefaultConverters);
 
             if (Compare.IsDefault(tier))
                 throw new ArgumentOutOfRangeException(nameof(tier), $"Tier cannot be the default enum value ({tier}) because it represents the \"Any\" tier.");
@@ -113,7 +137,7 @@ namespace NFig
         /// A snapshot of the state immediately after the override is applied. If the override is not applied because the current commit didn't match the
         /// commit parameter, the return value will be null.
         /// </returns>
-        public async Task<AppSnapshot<TTier, TDataCenter>> SetOverrideAsync(
+        public async Task<AppSnapshot<TSubApp, TTier, TDataCenter>> SetOverrideAsync(
             string settingName,
             string value,
             TDataCenter dataCenter,
@@ -121,6 +145,8 @@ namespace NFig
             TSubApp subApp = default(TSubApp),
             string commit = null)
         {
+            AssertValidStringForSetting(settingName, value);
+
             var snapshot = await SetOverrideAsyncImpl(settingName, value, dataCenter, user, subApp, commit);
 
             if (snapshot != null)
@@ -143,7 +169,7 @@ namespace NFig
         /// A snapshot of the state immediately after the override is applied. If the override is not applied because the current commit didn't match the
         /// commit parameter, the return value will be null.
         /// </returns>
-        public AppSnapshot<TTier, TDataCenter> SetOverride(
+        public AppSnapshot<TSubApp, TTier, TDataCenter> SetOverride(
             string settingName,
             string value,
             TDataCenter dataCenter,
@@ -151,6 +177,8 @@ namespace NFig
             TSubApp subApp = default(TSubApp),
             string commit = null)
         {
+            AssertValidStringForSetting(settingName, value);
+
             var snapshot = SetOverrideImpl(settingName, value, dataCenter, user, subApp, commit);
 
             if (snapshot != null)
@@ -172,7 +200,7 @@ namespace NFig
         /// A snapshot of the state immediately after the override is cleared. If the override is not applied, either because it didn't exist, or because the 
         /// current commit didn't match the commit parameter, the return value will be null.
         /// </returns>
-        public async Task<AppSnapshot<TTier, TDataCenter>> ClearOverrideAsync(
+        public async Task<AppSnapshot<TSubApp, TTier, TDataCenter>> ClearOverrideAsync(
             string settingName,
             TDataCenter dataCenter,
             string user,
@@ -199,7 +227,7 @@ namespace NFig
         /// A snapshot of the state immediately after the override is cleared. If the override is not applied, either because it didn't exist, or because the 
         /// current commit didn't match the commit parameter, the return value will be null.
         /// </returns>
-        public AppSnapshot<TTier, TDataCenter> ClearOverride(
+        public AppSnapshot<TSubApp, TTier, TDataCenter> ClearOverride(
             string settingName,
             TDataCenter dataCenter,
             string user,
@@ -215,14 +243,14 @@ namespace NFig
         }
 
         /// <summary>
-        /// Gets a dictionary of hydrated TSettings objects keyed by sub app.
+        /// Gets a hydrated TSettings object for the global application.
         /// </summary>
-        public async Task<Dictionary<TSubApp, TSettings>> GetAppSettingsAsync()
+        public async Task<TSettings> GetSettingsForGlobalAppAsync()
         {
-            var data = await GetAppSnapshotAsync().ConfigureAwait(false);
+            var snapshot = await GetAppSnapshotAsync().ConfigureAwait(false);
 
             TSettings settings;
-            var ex = GetSettingsObjectFromData(data, out settings);
+            var ex = _factory.TryGetSettingsForGlobalApp(out settings, snapshot);
             if (ex != null)
                 throw ex;
 
@@ -230,18 +258,57 @@ namespace NFig
         }
 
         /// <summary>
-        /// Synchronous version of GetAppSettingsAsync.
+        /// Synchronous version of <see cref="GetSettingsForGlobalAppAsync"/>.
         /// </summary>
-        public Dictionary<TSubApp, TSettings> GetAppSettings()
+        public TSettings GetSettingsForGlobalApp()
         {
-            var data = GetAppSnapshot();
+            var snapshot = GetAppSnapshot();
 
             TSettings settings;
-            var ex = GetSettingsObjectFromData(data, out settings);
+            var ex = _factory.TryGetSettingsForGlobalApp(out settings, snapshot);
             if (ex != null)
                 throw ex;
 
             return settings;
+        }
+
+        /// <summary>
+        /// Gets a dictionary of hydrated TSettings objects for each of the sub apps in <see cref="SubApps"/>. If SubApps is null or empty, the returned
+        /// dictionary will be empty.
+        /// </summary>
+        public async Task<Dictionary<TSubApp, TSettings>> GetSettingsBySubAppAsync()
+        {
+            var subApps = SubApps;
+            if (subApps == null || subApps.Length == 0)
+                return new Dictionary<TSubApp, TSettings>();
+
+            var snapshot = await GetAppSnapshotAsync().ConfigureAwait(false);
+            
+            Dictionary<TSubApp, TSettings> bySubApp;
+            var ex = _factory.TryGetSettingsBySubApp(out bySubApp, subApps, snapshot);
+            if (ex != null)
+                throw ex;
+
+            return bySubApp;
+        }
+
+        /// <summary>
+        /// Synchronous version of <see cref="GetSettingsBySubAppAsync"/>.
+        /// </summary>
+        public Dictionary<TSubApp, TSettings> GetSettingsBySubApp()
+        {
+            var subApps = SubApps;
+            if (subApps == null || subApps.Length == 0)
+                return new Dictionary<TSubApp, TSettings>();
+
+            var snapshot = GetAppSnapshot();
+
+            Dictionary<TSubApp, TSettings> bySubApp;
+            var ex = _factory.TryGetSettingsBySubApp(out bySubApp, subApps, snapshot);
+            if (ex != null)
+                throw ex;
+
+            return bySubApp;
         }
 
         /// <summary>
@@ -255,7 +322,7 @@ namespace NFig
         }
 
         /// <summary>
-        /// Synchronous version of GetAllSettingInfosAsync.
+        /// Synchronous version of <see cref="GetAllSettingInfosAsync"/>.
         /// </summary>
         public SettingInfo<TSubApp, TTier, TDataCenter>[] GetAllSettingInfos()
         {
@@ -268,20 +335,28 @@ namespace NFig
         /// </summary>
         public async Task<bool> IsCurrentAsync(TSettings settings)
         {
+            if (settings.GlobalAppName != GlobalAppName)
+            {
+                var ex = new NFigException("Cannot evaluate IsCurrentAsync() for settings object. GlobalAppName does not match the store.");
+                ex.Data["NFigStore.GlobalAppName"] = GlobalAppName;
+                ex.Data["settings.GlobalAppName"] = settings.GlobalAppName;
+                throw ex;
+            }
+
             var commit = await GetCurrentCommitAsync().ConfigureAwait(false);
             return commit == settings.Commit;
         }
 
         /// <summary>
-        /// Synchronous version of IsCurrentAsync.
+        /// Synchronous version of <see cref="IsCurrentAsync"/>.
         /// </summary>
         public bool IsCurrent(TSettings settings)
         {
-            if (settings.ApplicationName != ApplicationName)
+            if (settings.GlobalAppName != GlobalAppName)
             {
-                var ex = new NFigException("Cannot evaluate IsCurrent() for settings object. ApplicationName does not match the store.");
-                ex.Data["NFigStore.ApplicationName"] = ApplicationName;
-                ex.Data["settings.ApplicationName"] = settings.ApplicationName;
+                var ex = new NFigException("Cannot evaluate IsCurrent() for settings object. GlobalAppName does not match the store.");
+                ex.Data["NFigStore.GlobalAppName"] = GlobalAppName;
+                ex.Data["settings.GlobalAppName"] = settings.GlobalAppName;
                 throw ex;
             }
 
@@ -371,7 +446,7 @@ namespace NFig
             bool cacheExisted;
             lock (_dataCacheLock)
             {
-                cacheExisted = _dataCache.TryGetValue(ApplicationName, out snapshot);
+                cacheExisted = _dataCache.TryGetValue(GlobalAppName, out snapshot);
             }
 
             if (cacheExisted)
@@ -385,7 +460,7 @@ namespace NFig
 
             lock (_dataCacheLock)
             {
-                _dataCache[ApplicationName] = snapshot;
+                _dataCache[GlobalAppName] = snapshot;
             }
 
             if (!cacheExisted)
@@ -402,7 +477,7 @@ namespace NFig
             bool cacheExisted;
             lock (_dataCacheLock)
             {
-                cacheExisted = _dataCache.TryGetValue(ApplicationName, out snapshot);
+                cacheExisted = _dataCache.TryGetValue(GlobalAppName, out snapshot);
             }
 
             if (cacheExisted)
@@ -416,7 +491,7 @@ namespace NFig
 
             lock (_dataCacheLock)
             {
-                _dataCache[ApplicationName] = snapshot;
+                _dataCache[GlobalAppName] = snapshot;
             }
 
             if (!cacheExisted)
@@ -427,11 +502,11 @@ namespace NFig
 
         public async Task<AppSnapshot<TSubApp, TTier, TDataCenter>> RestoreSnapshotAsync(AppSnapshot<TSubApp, TTier, TDataCenter> snapshot, string user)
         {
-            if (snapshot.ApplicationName != ApplicationName)
+            if (snapshot.GlobalAppName != GlobalAppName)
             {
-                var ex = new NFigException("Cannot restore snapshot. ApplicationName does not match that of the store.");
-                ex.Data["NFigStore.ApplicationName"] = ApplicationName;
-                ex.Data["snapshot.ApplicationName"] = snapshot.ApplicationName;
+                var ex = new NFigException("Cannot restore snapshot. GlobalAppName does not match that of the store.");
+                ex.Data["NFigStore.GlobalAppName"] = GlobalAppName;
+                ex.Data["snapshot.GlobalAppName"] = snapshot.GlobalAppName;
             }
 
             var newSnapshot = await RestoreSnapshotAsyncImpl(snapshot, user);
@@ -441,11 +516,11 @@ namespace NFig
 
         public AppSnapshot<TSubApp, TTier, TDataCenter> RestoreSnapshot(AppSnapshot<TSubApp, TTier, TDataCenter> snapshot, string user)
         {
-            if (snapshot.ApplicationName != ApplicationName)
+            if (snapshot.GlobalAppName != GlobalAppName)
             {
-                var ex = new NFigException("Cannot restore snapshot. ApplicationName does not match that of the store.");
-                ex.Data["NFigStore.ApplicationName"] = ApplicationName;
-                ex.Data["snapshot.ApplicationName"] = snapshot.ApplicationName;
+                var ex = new NFigException("Cannot restore snapshot. GlobalAppName does not match that of the store.");
+                ex.Data["NFigStore.GlobalAppName"] = GlobalAppName;
+                ex.Data["snapshot.GlobalAppName"] = snapshot.GlobalAppName;
             }
 
             var newSnapshot = RestoreSnapshotImpl(snapshot, user);
@@ -534,50 +609,42 @@ namespace NFig
             Task.Run(async () => await DeleteOrphanedOverridesAsync(snapshot)).Wait();
         }
 
-        protected virtual void OnSubscribe(SettingsUpdateDelegate callback)
-        {
-        }
-
 // === Subscriptions ===
 
-        public void SubscribeToAppSettings(SettingsUpdateDelegate callback)
+        public void SubscribeToSettingsForGlobalApp([NotNull] GlobalAppUpdateDelegate callback)
         {
-            TierDataCenterCallback[] callbacks;
-            lock (_callbacksLock)
+            if (callback == null)
+                throw new ArgumentNullException(nameof(callback));
+
+            lock (_globalAppCallbacks)
             {
-                var info = new TierDataCenterCallback(callback);
-                if (_callbacksByApp.TryGetValue(ApplicationName, out callbacks))
-                {
-                    foreach (var c in callbacks)
-                    {
-                        if (c.Callback == callback)
-                            return; // callback already exists, no need to add it again
-                    }
-
-                    var oldCallbacks = callbacks;
-                    callbacks = new TierDataCenterCallback[oldCallbacks.Length + 1];
-                    Array.Copy(oldCallbacks, callbacks, oldCallbacks.Length);
-                    callbacks[oldCallbacks.Length] = info;
-
-                    _callbacksByApp[ApplicationName] = callbacks;
-                }
-                else
-                {
-                    callbacks = new[] { info };
-                    _callbacksByApp[ApplicationName] = callbacks;
-                }
+                var info = new CallbackInfo<GlobalAppUpdateDelegate>(callback);
+                _globalAppCallbacks.Add(info);
             }
 
-            OnSubscribe(callback);
-            ReloadAndNotifyCallback(callbacks);
+            CheckForUpdatesAndNotifyCallbacks();
         }
 
-        void ReloadAndNotifyCallback(TierDataCenterCallback[] callbacks)
+        public void SubscribeToSettingsBySubApp([NotNull] SubAppsUpdateDelegate callback)
         {
-            if (callbacks == null || callbacks.Length == 0)
+            if (callback == null)
+                throw new ArgumentNullException(nameof(callback));
+
+            lock (_subAppsCallbacks)
+            {
+                var info = new CallbackInfo<SubAppsUpdateDelegate>(callback);
+                _subAppsCallbacks.Add(info);
+            }
+
+            CheckForUpdatesAndNotifyCallbacks();
+        }
+
+        public void CheckForUpdatesAndNotifyCallbacks()
+        {
+            if (_globalAppCallbacks.Count == 0 && _subAppsCallbacks.Count == 0)
                 return;
 
-            Exception ex = null;
+            Exception snapshotException = null;
             AppSnapshot<TSubApp, TTier, TDataCenter> snapshot = null;
             try
             {
@@ -585,77 +652,105 @@ namespace NFig
             }
             catch (Exception e)
             {
-                ex = e;
+                snapshotException = e;
             }
 
-            foreach (var c in callbacks)
+            lock (_globalAppCallbacks)
             {
-                if (c.Callback == null)
-                    continue;
-
-                if (snapshot != null && snapshot.Commit == c.LastNotifiedCommit)
-                    continue;
-
-                TSettings settings = null;
-                Exception inner = null;
-                if (ex == null)
+                if (_globalAppCallbacks.Count > 0)
                 {
-                    try
+                    TSettings settings = null;
+                    Exception factoryException = null;
+
+                    foreach (var info in _globalAppCallbacks)
                     {
-                        ex = GetSettingsObjectFromData(snapshot, out settings);
-                        c.LastNotifiedCommit = snapshot.Commit;
-                    }
-                    catch (Exception e)
-                    {
-                        inner = e;
+                        if (snapshot != null && snapshot.Commit == info.LastNotifiedCommit)
+                            continue;
+
+                        if (snapshot != null)
+                        {
+                            if (settings == null && snapshotException == null && factoryException == null)
+                                factoryException = _factory.TryGetSettingsForGlobalApp(out settings, snapshot);
+
+                            info.LastNotifiedCommit = snapshot.Commit;
+                        }
+
+                        info.Callback(snapshotException ?? factoryException, settings, this);
                     }
                 }
+            }
 
-                c.Callback(ex ?? inner, settings, this);
+            lock (_subAppsCallbacks)
+            {
+                if (_subAppsCallbacks.Count > 0)
+                {
+                    Dictionary<TSubApp, TSettings> settingsBySubApp = null;
+                    Exception factoryException = null;
+
+                    foreach (var info in _subAppsCallbacks)
+                    {
+                        if (snapshot != null && snapshot.Commit == info.LastNotifiedCommit)
+                            continue;
+
+                        if (snapshot != null)
+                        {
+                            if (settingsBySubApp == null && snapshotException == null && factoryException == null)
+                                factoryException = _factory.TryGetSettingsBySubApp(out settingsBySubApp, SubApps, snapshot);
+
+                            info.LastNotifiedCommit = snapshot.Commit;
+                        }
+
+                        info.Callback(snapshotException ?? factoryException, settingsBySubApp, this);
+                    }
+                }
             }
         }
 
         /// <summary>
-        /// Unsubscribes from app settings updates.
-        /// Note that there is a potential race condition if you unsibscribe while an update is in progress, the prior callback may still get called.
+        /// Removes <paramref name="callback"/> from the list of delegates to be called when there are settings updates.
         /// </summary>
-        /// <param name="callback">(optional) If null, any callback will be removed. If specified, a current callback will only be removed if it is equal to this param.</param>
-        /// <returns>The number of callbacks removed.</returns>
-        public int UnsubscribeFromAppSettings(SettingsUpdateDelegate callback = null)
+        /// <param name="callback">The delegate to remove. If null, all delegates in the global app update list are removed.</param>
+        /// <returns>The count of delegates which were removed.</returns>
+        public int UnsubscribeFromSettingsForGlobalApp(GlobalAppUpdateDelegate callback)
         {
-            lock (_callbacksLock)
-            {
-                var removedCount = 0;
-                TierDataCenterCallback[] callbacks;
-                if (_callbacksByApp.TryGetValue(ApplicationName, out callbacks))
-                {
-                    var callbackList = new List<TierDataCenterCallback>(callbacks);
-                    for (var i = callbackList.Count - 1; i >= 0; i--)
-                    {
-                        var c = callbackList[i];
+            return Unsubscribe(_globalAppCallbacks, callback);
+        }
 
-                        if (callback == null || c.Callback == callback)
+        /// <summary>
+        /// Removes <paramref name="callback"/> from the list of delegates to be called when there are settings updates.
+        /// </summary>
+        /// <param name="callback">The delegate to remove. If null, all delegates in the sub apps update list are removed.</param>
+        /// <returns>The count of delegates which were removed.</returns>
+        public int UnsubscribeFromSettingsBySubApp(SubAppsUpdateDelegate callback)
+        {
+            return Unsubscribe(_subAppsCallbacks, callback);
+        }
+
+        int Unsubscribe<T>(List<CallbackInfo<T>> infos, T callback)
+        {
+            lock (infos)
+            {
+                var count = 0;
+
+                if (callback == null)
+                {
+                    count = infos.Count;
+                    infos.Clear();
+                }
+                else
+                {
+                    for (var i = infos.Count - 1; i >= 0; i--)
+                    {
+                        if (infos[i].Callback.Equals(callback))
                         {
-                            callbackList.RemoveAt(i);
-                            removedCount++;
+                            _globalAppCallbacks.RemoveAt(i);
+                            count++;
                         }
                     }
-
-                    if (removedCount > 0)
-                        _callbacksByApp[ApplicationName] = callbackList.ToArray();
                 }
 
-                return removedCount;
+                return count;
             }
-        }
-
-        /// <summary>
-        /// Causes NFig to reload settings for the app, and notifies all registered callbacks. However,
-        /// if the settings haven't changed since the last time a callback was called, it will be skipped.
-        /// </summary>
-        protected void TriggerReload()
-        {
-            ReloadAndNotifyCallback(GetCallbacks());
         }
 
         void PollForChanges(object _)
@@ -666,7 +761,7 @@ namespace NFig
             lock (_dataCacheLock)
             {
                 AppSnapshot<TSubApp, TTier, TDataCenter> snapshot;
-                if (_dataCache.TryGetValue(ApplicationName, out snapshot))
+                if (_dataCache.TryGetValue(GlobalAppName, out snapshot))
                 {
                     notify = snapshot.Commit != commit;
                 }
@@ -674,19 +769,7 @@ namespace NFig
 
             if (notify)
             {
-                TriggerReload();
-            }
-        }
-
-        TierDataCenterCallback[] GetCallbacks()
-        {
-            lock (_callbacksLock)
-            {
-                TierDataCenterCallback[] callbacks;
-                if (_callbacksByApp.TryGetValue(ApplicationName, out callbacks))
-                    return callbacks;
-
-                return new TierDataCenterCallback[0];
+                CheckForUpdatesAndNotifyCallbacks();
             }
         }
 
@@ -697,20 +780,21 @@ namespace NFig
             return Guid.NewGuid().ToString();
         }
 
-        protected static string GetOverrideKey(string settingName, TDataCenter dataCenter)
+        protected static string GetOverrideKey(string settingName, TSubApp subApp, TDataCenter dataCenter)
         {
-            return ":0:" + Convert.ToUInt32(dataCenter) + ";" + settingName;
+            return "v3.0:" + Convert.ToInt32(subApp) + ":" + Convert.ToInt32(dataCenter) + ";" + settingName;
         }
 
-        static readonly Regex s_keyRegex = new Regex(@"^:\d+:(?<DataCenter>\d+);(?<Name>.+)$");
+        static readonly Regex s_keyRegex = new Regex(@"^v3\.0:(?<SubApp>\d+):(?<DataCenter>\d+);(?<Name>.+)$");
         protected static bool TryGetValueFromOverride(string key, string stringValue, out SettingValue<TSubApp, TTier, TDataCenter> value)
         {
             var match = s_keyRegex.Match(key);
             if (match.Success)
             {
-                value = new SettingValue<TSubApp, TTier, TDataCenter>(
+                value = SettingValue<TSubApp, TTier, TDataCenter>.CreateOverrideValue(
                     match.Groups["Name"].Value,
                     stringValue,
+                    (TSubApp)Enum.ToObject(typeof(TSubApp), int.Parse(match.Groups["SubApp"].Value)),
                     (TDataCenter)Enum.ToObject(typeof(TDataCenter), int.Parse(match.Groups["DataCenter"].Value)));
 
                 return true;
@@ -720,7 +804,7 @@ namespace NFig
             return false;
         }
 
-        protected void AssertValidStringForSetting(string settingName, string value, TDataCenter dataCenter)
+        protected void AssertValidStringForSetting(string settingName, string value)
         {
             if (!IsValidStringForSetting(settingName, value))
             {
@@ -729,13 +813,9 @@ namespace NFig
                     settingName,
                     value,
                     false,
-                    dataCenter.ToString());
+                    null,
+                    null);
             }
-        }
-
-        InvalidSettingOverridesException GetSettingsObjectFromData(AppSnapshot<TSubApp, TTier, TDataCenter> snapshot, out TSettings settings)
-        {
-            return _factory.TryGetAppSettings(out settings, snapshot.Commit, snapshot.Overrides);
         }
 
         void LogAndNotifyChange(AppSnapshot<TSubApp, TTier, TDataCenter> snapshot)
