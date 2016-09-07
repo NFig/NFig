@@ -918,6 +918,9 @@ namespace NFig
                         case InlineStrategy.Float64:
                             il.Emit(OpCodes.Ldc_R8, Convert.ToDouble(objValue)); // [s] [group] [group] [valueToSet]
                             break;
+                        case InlineStrategy.Char:
+                            il.Emit(OpCodes.Ldc_I4, Convert.ToInt32(objValue)); // [s] [group] [group] [valueToSet]
+                            break;
                         default:
                             throw new ArgumentOutOfRangeException();
                     }
@@ -959,6 +962,7 @@ namespace NFig
             Int64,
             Float32,
             Float64,
+            Char,
         }
 
         static InlineStrategy GetInlineStrategyForType(Type type)
@@ -991,6 +995,9 @@ namespace NFig
 
             if (type == typeof(float))
                 return InlineStrategy.Float32;
+
+            if (type == typeof(char))
+                return InlineStrategy.Char;
 
             return InlineStrategy.Cache; // only other primitive types are IntPtr and UIntPtr (never actually going to happen)
         }
