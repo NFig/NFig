@@ -48,15 +48,16 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CustomConverterTests.cs" />
+    <Compile Include="FactoryTests\CustomConverterTests.cs" />
     <Compile Include="EncryptedSettingsTests.cs" />
-    <Compile Include="EnumTests.cs" />
+    <Compile Include="FactoryTests\EnumTests.cs" />
     <Compile Include="InMemoryStoreTests.cs" />
-    <Compile Include="NestedSettingsTests.cs" />
-    <Compile Include="OverrideTests.cs" />
-    <Compile Include="PrimitiveTests.cs" />
+    <Compile Include="FactoryTests\NestedSettingsTests.cs" />
+    <Compile Include="FactoryTests\OverrideTests.cs" />
+    <Compile Include="FactoryTests\PrimitiveTests.cs" />
     <Compile Include="Common.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Utils.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -67,6 +68,7 @@
       <Name>NFig</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

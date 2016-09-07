@@ -11,6 +11,14 @@ using NFig.Logging;
 
 namespace NFig
 {
+    public static class NFigStore
+    {
+        /// <summary>
+        /// The Commit value which should be used when no overrides have ever been set for the application.
+        /// </summary>
+        public const string INITIAL_COMMIT = "00000000-0000-0000-0000-000000000000";
+    }
+
     [SuppressMessage("ReSharper", "StaticMemberInGenericType")]
     public abstract class NFigStore<TSettings, TSubApp, TTier, TDataCenter>
         where TSettings : class, INFigSettings<TSubApp, TTier, TDataCenter>, new()
@@ -21,12 +29,12 @@ namespace NFig
         /// <summary>
         /// The Commit value which should be used when no overrides have ever been set for the application.
         /// </summary>
-        public const string INITIAL_COMMIT = "00000000-0000-0000-0000-000000000000";
+        public const string INITIAL_COMMIT = NFigStore.INITIAL_COMMIT;
 
         /// <summary>
         /// The Commit value which should be used when no overrides have ever been set for the application.
         /// </summary>
-        public string InitialCommit => INITIAL_COMMIT;
+        public string InitialCommit => NFigStore.INITIAL_COMMIT;
         
         public delegate void GlobalAppUpdateDelegate(Exception ex, TSettings settings, NFigStore<TSettings, TSubApp, TTier, TDataCenter> store);
         

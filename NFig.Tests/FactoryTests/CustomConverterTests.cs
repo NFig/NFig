@@ -1,7 +1,7 @@
 ﻿using System.Linq;
 using NUnit.Framework;
 
-namespace NFig.Tests
+namespace NFig.Tests.FactoryTests
 {
     [TestFixture]
     public class CustomConverterTests
@@ -9,8 +9,8 @@ namespace NFig.Tests
         [Test]
         public void CustomConverterTest()
         {
-            var factory = new SettingsFactory<CustomConverterSettings, Tier, DataCenter>("AppName", Tier.Local, DataCenter.Local, null, null);
-            var s = factory.GetAppSettings(NFigStore<CustomConverterSettings, Tier, DataCenter>.INITIAL_COMMIT);
+            var factory = Utils.CreateFactory<CustomConverterSettings>();
+            var s = factory.GetSettings();
 
             Assert.True(s.Ints != null, "Ints should not be null");
             Assert.True(s.Ints.Length == 3, "Ints should have length of 3, but is length " + s.Ints.Length);

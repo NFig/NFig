@@ -1,6 +1,6 @@
 ﻿using NUnit.Framework;
 
-namespace NFig.Tests
+namespace NFig.Tests.FactoryTests
 {
     [TestFixture]
     public class NestedSettingsTests
@@ -8,8 +8,8 @@ namespace NFig.Tests
         [Test]
         public void NestedSettingsTest()
         {
-            var factory = new SettingsFactory<NestedSettings, Tier, DataCenter>("AppName", Tier.Local, DataCenter.Local, null, null);
-            var s = factory.GetAppSettings(NFigStore<NestedSettings, Tier, DataCenter>.INITIAL_COMMIT);
+            var factory = Utils.CreateFactory<NestedSettings>();
+            var s = factory.GetSettings();
 
             Assert.AreEqual(s.One.A, 2);
             Assert.AreEqual(s.Two.B.C, 3);

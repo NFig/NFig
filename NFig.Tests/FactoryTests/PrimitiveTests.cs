@@ -1,6 +1,6 @@
 ﻿using NUnit.Framework;
 
-namespace NFig.Tests
+namespace NFig.Tests.FactoryTests
 {
     [TestFixture]
     public class PrimitiveTests
@@ -8,8 +8,8 @@ namespace NFig.Tests
         [Test]
         public void PrimitivesTest()
         {
-            var factory = new SettingsFactory<PrimitiveSettings, Tier, DataCenter>("AppName", Tier.Local, DataCenter.Local, null, null);
-            var s = factory.GetAppSettings(NFigStore<PrimitiveSettings, Tier, DataCenter>.INITIAL_COMMIT);
+            var factory = Utils.CreateFactory<PrimitiveSettings>();
+            var s = factory.GetSettings();
 
             Assert.True(s.Bool == true, "Bool");
             Assert.True(s.Byte == 128, "Byte");

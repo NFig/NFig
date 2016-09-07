@@ -1,6 +1,14 @@
 ﻿
 namespace NFig.Tests
 {
+    public enum SubApp
+    {
+        Global = 0,
+        One = 1,
+        Two = 2,
+        Three = 3,
+    }
+
     public enum Tier
     {
         Any = 0,
@@ -17,8 +25,35 @@ namespace NFig.Tests
         West = 3,
     }
 
-    public class SettingsBase : NFigSettingsBase<Tier, DataCenter>
+    public class SettingsBase : NFigSettingsBase<SubApp, Tier, DataCenter>
     {
+    }
+
+    public class DefaultAttribute : DefaultSettingValueAttribute
+    {
+        public DefaultAttribute(
+            object value,
+            SubApp subApp = default(SubApp),
+            Tier tier = default(Tier),
+            DataCenter dataCenter = default(DataCenter),
+            bool allowsOverrides = true)
+        {
+            DefaultValue = value;
+            SubApp = subApp;
+            Tier = tier;
+            DataCenter = dataCenter;
+            AllowOverrides = allowsOverrides;
+        }
+    }
+
+    public class SubAppAttribute : DefaultSettingValueAttribute
+    {
+        public SubAppAttribute(SubApp subApp, object defaultValue, bool allowsOverrides = true)
+        {
+            SubApp = subApp;
+            DefaultValue = defaultValue;
+            AllowOverrides = allowsOverrides;
+        }
     }
 
     public class DataCenterAttribute : DefaultSettingValueAttribute

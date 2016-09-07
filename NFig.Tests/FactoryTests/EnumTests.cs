@@ -1,6 +1,6 @@
 ﻿using NUnit.Framework;
 
-namespace NFig.Tests
+namespace NFig.Tests.FactoryTests
 {
     [TestFixture]
     public class EnumTests
@@ -8,8 +8,8 @@ namespace NFig.Tests
         [Test]
         public void EnumTest()
         {
-            var factory = new SettingsFactory<EnumSettings, Tier, DataCenter>("AppName", Tier.Local, DataCenter.Local, null, null);
-            var s = factory.GetAppSettings(NFigStore<EnumSettings, Tier, DataCenter>.INITIAL_COMMIT);
+            var factory = Utils.CreateFactory<EnumSettings>();
+            var s = factory.GetSettings();
 
             Assert.True(s.First == TestEnum.Zero, "First");
             Assert.True(s.Second == TestEnum.One, "Second");

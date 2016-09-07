@@ -2,25 +2,26 @@
 using System.Collections.Generic;
 using NUnit.Framework;
 
-namespace NFig.Tests
+using SettingValue = NFig.SettingValue<NFig.Tests.SubApp, NFig.Tests.Tier, NFig.Tests.DataCenter>;
+
+namespace NFig.Tests.FactoryTests
 {
     [TestFixture]
     public class OverrideTests
     {
-        const string APP_NAME = "AppName";
-
         [Test]
         public void ValidOverrideTest()
         {
-            var factory = new SettingsFactory<OverrideSettings, Tier, DataCenter>(APP_NAME, Tier.Local, DataCenter.Local, null, null);
+            var factory = Utils.CreateFactory<OverrideSettings>();
 
-            var overrides = new List<SettingValue<Tier, DataCenter>>()
+            var overrides = new List<SettingValue>()
             {
-                new SettingValue<Tier, DataCenter>("A", "10", DataCenter.Any),
-                new SettingValue<Tier, DataCenter>("B", "11", DataCenter.Any),
+                SettingValue.CreateOverrideValue("A", "10", SubApp.Global, DataCenter.Any),
+                SettingValue.CreateOverrideValue("B", "11", SubApp.Global, DataCenter.Any),
             };
 
-            var s = factory.GetAppSettings(NFigStore< OverrideSettings, Tier, DataCenter >.INITIAL_COMMIT, overrides);
+            var snapshot = Utils.CreateSnapshot(overrides: overrides);
+            var s = factory.GetSettings(snapshot);
 
             Assert.AreEqual(s.A, 10);
             Assert.AreEqual(s.B, 11);
@@ -30,17 +31,19 @@ namespace NFig.Tests
         [Test]
         public void InvalidOverrideTest()
         {
-            var factory = new SettingsFactory<OverrideSettings, Tier, DataCenter>(APP_NAME, Tier.Local, DataCenter.Local, null, null);
+            var factory = Utils.CreateFactory<OverrideSettings>();
 
-            var overrides = new List<SettingValue<Tier, DataCenter>>()
+            var overrides = new List<SettingValue>()
             {
-                new SettingValue<Tier, DataCenter>("A", "a", DataCenter.Any),
-                new SettingValue<Tier, DataCenter>("B", "b", DataCenter.Any),
-                new SettingValue<Tier, DataCenter>("C", "12", DataCenter.Any),
+                SettingValue.CreateOverrideValue("A", "a", SubApp.Global, DataCenter.Any),
+                SettingValue.CreateOverrideValue("B", "b", SubApp.Global, DataCenter.Any),
+                SettingValue.CreateOverrideValue("C", "12", SubApp.Global, DataCenter.Any),
             };
 
+            var snapshot = Utils.CreateSnapshot(overrides: overrides);
+
             OverrideSettings s;
-            var invalidOverrides = factory.TryGetSettingsBySubApp(out s, NFigStore<OverrideSettings, Tier, DataCenter>.INITIAL_COMMIT, overrides);
+            var invalidOverrides = factory.TryGetSettingsForGlobalApp(out s, snapshot);
             Console.WriteLine(invalidOverrides.Message);
 
             Assert.True(invalidOverrides != null && invalidOverrides.Exceptions.Count == 2);

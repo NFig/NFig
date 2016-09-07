@@ -10,7 +10,6 @@ namespace NFig.Tests
 {
     public class InMemoryStoreTests
     {
-        const string APP_NAME = "TestApp";
         const string USER_A = "Andrew";
         const string USER_B = "Bret";
         const string USER_C = "Charlie";
@@ -18,15 +17,15 @@ namespace NFig.Tests
         [Test]
         public void Defaults()
         {
-            var store = new NFigMemoryStore<InMemorySettings, Tier, DataCenter>(APP_NAME, Tier.Local, DataCenter.East);
-            var settings = store.GetAppSettings();
+            var store = Utils.CreateStore<InMemorySettings>(dataCenter: DataCenter.East);
+            var settings = store.GetSettingsForGlobalApp();
             Assert.AreEqual(23, settings.TopInteger);
             Assert.AreEqual("Twenty-Three", settings.TopString);
             Assert.AreEqual(17, settings.Nested.Integer);
             Assert.AreEqual("Seventeen", settings.Nested.String);
 
-            store = new NFigMemoryStore<InMemorySettings, Tier, DataCenter>(APP_NAME, Tier.Prod, DataCenter.East);
-            settings = store.GetAppSettings();
+            store = Utils.CreateStore<InMemorySettings>(tier: Tier.Prod, dataCenter: DataCenter.East);
+            settings = store.GetSettingsForGlobalApp();
             Assert.AreEqual(23, settings.TopInteger);
             Assert.AreEqual("Twenty-Three", settings.TopString);
             Assert.AreEqual(7, settings.Nested.Integer);
@@ -36,13 +35,13 @@ namespace NFig.Tests
         [Test]
         public void Overrides()
         {
-            var store = new NFigMemoryStore<InMemorySettings, Tier, DataCenter>(APP_NAME, Tier.Local, DataCenter.East);
+            var store = Utils.CreateStore<InMemorySettings>(dataCenter: DataCenter.East);
 
             store.SetOverride("TopInteger", "3", DataCenter.Any, USER_A);
             store.SetOverride("Nested.Integer", "7", DataCenter.East, USER_A);
             store.SetOverride("Nested.String", "Something", DataCenter.West, USER_A);
 
-            var settings = store.GetAppSettings();
+            var settings = store.GetSettingsForGlobalApp();
             Assert.AreEqual(3, settings.TopInteger);
             Assert.AreEqual("Twenty-Three", settings.TopString);
             Assert.AreEqual(7, settings.Nested.Integer);
@@ -52,7 +51,7 @@ namespace NFig.Tests
         [Test]
         public void ClearNonExistentOverride()
         {
-            var store = new NFigMemoryStore<InMemorySettings, Tier, DataCenter>(APP_NAME, Tier.Local, DataCenter.Local);
+            var store = Utils.CreateStore<InMemorySettings>();
 
             var snapshot = store.ClearOverride("TopInteger", DataCenter.Any, USER_A);
             Assert.IsNull(snapshot);
@@ -61,39 +60,39 @@ namespace NFig.Tests
         [Test]
         public void AtomicChanges()
         {
-            var store = new NFigMemoryStore<InMemorySettings, Tier, DataCenter>(APP_NAME, Tier.Local, DataCenter.Local);
+            var store = Utils.CreateStore<InMemorySettings>();
 
-            var snapshot1 = store.SetOverride("TopInteger", "1", DataCenter.Any, USER_A, store.InitialCommit);
+            var snapshot1 = store.SetOverride("TopInteger", "1", DataCenter.Any, USER_A, commit: store.InitialCommit);
             Assert.IsNotNull(snapshot1);
 
-            var snapshot2 = store.SetOverride("TopInteger", "2", DataCenter.Any, USER_A, store.InitialCommit);
+            var snapshot2 = store.SetOverride("TopInteger", "2", DataCenter.Any, USER_A, commit: store.InitialCommit);
             Assert.IsNull(snapshot2);
 
-            var settings = store.GetAppSettings();
+            var settings = store.GetSettingsForGlobalApp();
             Assert.AreEqual(1, settings.TopInteger);
 
-            var snapshot3 = store.ClearOverride("TopInteger", DataCenter.Any, USER_A, store.InitialCommit);
+            var snapshot3 = store.ClearOverride("TopInteger", DataCenter.Any, USER_A, commit: store.InitialCommit);
             Assert.IsNull(snapshot3);
 
-            settings = store.GetAppSettings();
+            settings = store.GetSettingsForGlobalApp();
             Assert.AreEqual(1, settings.TopInteger);
 
-            var snapshot4 = store.ClearOverride("TopInteger", DataCenter.Any, USER_A, snapshot1.Commit);
+            var snapshot4 = store.ClearOverride("TopInteger", DataCenter.Any, USER_A, commit: snapshot1.Commit);
             Assert.IsNotNull(snapshot4);
 
-            settings = store.GetAppSettings();
+            settings = store.GetSettingsForGlobalApp();
             Assert.AreEqual(23, settings.TopInteger);
         }
 
         [Test]
         public void SubscribeToUpdates()
         {
-            var store = new NFigMemoryStore<InMemorySettings, Tier, DataCenter>(APP_NAME, Tier.Local, DataCenter.West);
+            var store = Utils.CreateStore<InMemorySettings>(dataCenter: DataCenter.West);
 
             InMemorySettings settings = null;
             var callbackCount = 0;
 
-            store.SubscribeToAppSettings((ex, settingsObj, storeObj) =>
+            store.SubscribeToSettingsForGlobalApp((ex, settingsObj, storeObj) =>
             {
                 if (ex != null)
                     throw ex;
@@ -105,7 +104,7 @@ namespace NFig.Tests
             
             Assert.AreEqual(1, callbackCount);
             Assert.IsNotNull(settings);
-            Assert.AreEqual(NFigMemoryStore < InMemorySettings, Tier, DataCenter >.INITIAL_COMMIT, settings.Commit);
+            Assert.AreEqual(NFigStore.INITIAL_COMMIT, settings.Commit);
 
             store.SetOverride("Nested.Integer", "32", DataCenter.Any, USER_A);
 
@@ -116,20 +115,20 @@ namespace NFig.Tests
         [Test]
         public void BackupAndRestore()
         {
-            var store = new NFigMemoryStore<InMemorySettings, Tier, DataCenter>(APP_NAME, Tier.Local, DataCenter.West);
+            var store = Utils.CreateStore<InMemorySettings>(dataCenter: DataCenter.West);
 
             // test SET snapshot
             store.SetOverride("TopInteger", "7", DataCenter.Any, USER_A);
             store.SetOverride("Nested.Integer", "3", DataCenter.West, USER_A);
 
-            var settings = store.GetAppSettings();
+            var settings = store.GetSettingsForGlobalApp();
             Assert.AreEqual(7, settings.TopInteger);
             Assert.AreEqual(3, settings.Nested.Integer);
             Assert.AreEqual("Seventeen", settings.Nested.String);
 
             var snapshot1 = store.GetAppSnapshot();
-            Assert.AreEqual(APP_NAME, snapshot1.GlobalAppName);
-            Assert.AreEqual(APP_NAME, snapshot1.LastEvent.GlobalAppName);
+            Assert.AreEqual(Utils.GLOBAL_APP_1, snapshot1.GlobalAppName);
+            Assert.AreEqual(Utils.GLOBAL_APP_1, snapshot1.LastEvent.GlobalAppName);
             Assert.AreEqual(settings.Commit, snapshot1.Commit);
             Assert.AreEqual(settings.Commit, snapshot1.LastEvent.Commit);
             Assert.AreEqual(2, snapshot1.Overrides.Count);
@@ -143,13 +142,13 @@ namespace NFig.Tests
             // test CLEAR snapshot
             store.ClearOverride("TopInteger", DataCenter.Any, USER_B);
 
-            settings = store.GetAppSettings();
+            settings = store.GetSettingsForGlobalApp();
             Assert.AreEqual(23, settings.TopInteger);
             Assert.AreEqual(3, settings.Nested.Integer);
 
             var snapshot2 = store.GetAppSnapshot();
-            Assert.AreEqual(APP_NAME, snapshot2.GlobalAppName);
-            Assert.AreEqual(APP_NAME, snapshot2.LastEvent.GlobalAppName);
+            Assert.AreEqual(Utils.GLOBAL_APP_1, snapshot2.GlobalAppName);
+            Assert.AreEqual(Utils.GLOBAL_APP_1, snapshot2.LastEvent.GlobalAppName);
             Assert.AreEqual(settings.Commit, snapshot2.Commit);
             Assert.AreEqual(settings.Commit, snapshot2.LastEvent.Commit);
             Assert.AreEqual(1, snapshot2.Overrides.Count);
@@ -162,18 +161,18 @@ namespace NFig.Tests
 
             // test RESTORE
             store.SetOverride("Nested.String", "Seventy", DataCenter.Any, USER_A);
-            settings = store.GetAppSettings();
+            settings = store.GetSettingsForGlobalApp();
             Assert.AreEqual("Seventy", settings.Nested.String);
 
             var snapshot3 = store.RestoreSnapshot(snapshot1, USER_C);
-            settings = store.GetAppSettings();
+            settings = store.GetSettingsForGlobalApp();
 
             Assert.AreEqual(7, settings.TopInteger);
             Assert.AreEqual(3, settings.Nested.Integer);
             Assert.AreEqual("Seventeen", settings.Nested.String);
 
-            Assert.AreEqual(APP_NAME, snapshot3.GlobalAppName);
-            Assert.AreEqual(APP_NAME, snapshot3.LastEvent.GlobalAppName);
+            Assert.AreEqual(Utils.GLOBAL_APP_1, snapshot3.GlobalAppName);
+            Assert.AreEqual(Utils.GLOBAL_APP_1, snapshot3.LastEvent.GlobalAppName);
             Assert.AreEqual(settings.Commit, snapshot3.Commit);
             Assert.AreEqual(settings.Commit, snapshot3.LastEvent.Commit);
             Assert.AreEqual(2, snapshot3.Overrides.Count);
@@ -188,28 +187,28 @@ namespace NFig.Tests
         [Test]
         public void AnyTierOrDataCenterStoreThrows()
         {
-            TestDelegate anyTier = () => { new NFigMemoryStore<InMemorySettings, Tier, DataCenter>(APP_NAME, Tier.Any, DataCenter.East); };
+            TestDelegate anyTier = () => { Utils.CreateStore<InMemorySettings>(tier: Tier.Any); };
             Assert.Throws<ArgumentOutOfRangeException>(anyTier, "NFigStore with Tier.Any should have thrown an exception.");
 
-            TestDelegate anyDc = () => { new NFigMemoryStore<InMemorySettings, Tier, DataCenter>(APP_NAME, Tier.Local, DataCenter.Any); };
+            TestDelegate anyDc = () => { Utils.CreateStore<InMemorySettings>(dataCenter: DataCenter.Any); };
             Assert.Throws<ArgumentOutOfRangeException>(anyDc, "NFigStore with DataCenter.Any should have thrown an exception.");
         }
 
         [Test]
         public async Task Logging()
         {
-            var logger = new NFigMemoryLogger<Tier, DataCenter>((ex, snapshot) =>
+            var logger = new NFigMemoryLogger<SubApp, Tier, DataCenter>((ex, snapshot) =>
             {
                 throw ex;
             });
 
-            var store = new NFigMemoryStore<InMemorySettings, Tier, DataCenter>(APP_NAME, Tier.Local, DataCenter.Local, logger);
+            var store = Utils.CreateStore<InMemorySettings>(logger: logger);
 
             // todo - make this use subapps
 
             const int iterations = 6;
             var totalEvents = 0;
-            const string appB = APP_NAME;
+            const string appB = Utils.GLOBAL_APP_1;
             for (var i = 0; i < iterations; i++)
             {
                 store.SetOverride("Nested.Integer", i.ToString(), DataCenter.Any, USER_A); // APP_NAME
@@ -242,9 +241,9 @@ namespace NFig.Tests
             }
 
             // by app name
-            logs = (await logger.GetLogsAsync(globalAppName: APP_NAME)).ToList();
+            logs = (await logger.GetLogsAsync(globalAppName: Utils.GLOBAL_APP_1)).ToList();
             Assert.AreEqual(iterations * 2, logs.Count); // todo - switch back to just iterations (not x2) when using sub apps
-            Assert.IsTrue(logs.All(l => l.GlobalAppName == APP_NAME));
+            Assert.IsTrue(logs.All(l => l.GlobalAppName == Utils.GLOBAL_APP_1));
 
             logs = (await logger.GetLogsAsync(globalAppName: appB)).ToList();
             Assert.AreEqual(iterations * 2, logs.Count); // todo - switch back to just iterations (not x2) when using sub apps
