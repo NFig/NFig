@@ -1156,8 +1156,8 @@ namespace NFig
             var cache = new ReflectionCache();
             var thisType = GetType();
 
-            cache.SettingsField = thisType.GetField(nameof(_settings));
-            cache.ValueCacheField = thisType.GetField(nameof(_valueCache));
+            cache.SettingsField = thisType.GetField(nameof(_settings), BindingFlags.NonPublic | BindingFlags.Instance);
+            cache.ValueCacheField = thisType.GetField(nameof(_valueCache), BindingFlags.NonPublic | BindingFlags.Instance);
             cache.GetSettingItemMethod = _settings.GetType().GetProperty("Item").GetMethod;
             cache.PropertyToSettingMethod = thisType.GetMethod(nameof(PropertyToSetting), BindingFlags.NonPublic | BindingFlags.Instance);
             cache.PropertyToSettingDelegates = new Dictionary<Type, PropertyToSettingDelegate>();
