@@ -896,12 +896,12 @@ namespace NFig
                         case InlineStrategy.Cache:
                             var index = AddToValueCache(objValue);
                             var cacheField = _reflectionCache.ValueCacheField;
-                            il.Emit(loadFactoryArg);            // [s] [group] [group] [this]
-                            il.Emit(OpCodes.Ldfld, cacheField); // [s] [group] [group] [_valueCache]
-                            il.Emit(OpCodes.Ldc_I4, index);     // [s] [group] [group] [_valueCache] [index]
-                            il.Emit(OpCodes.Ldelem_Ref);        // [s] [group] [group] [valueToSet]
+                            il.Emit(loadFactoryArg);                     // [s] [group] [group] [this]
+                            il.Emit(OpCodes.Ldfld, cacheField);          // [s] [group] [group] [_valueCache]
+                            il.Emit(OpCodes.Ldc_I4, index);              // [s] [group] [group] [_valueCache] [index]
+                            il.Emit(OpCodes.Ldelem_Ref);                 // [s] [group] [group] [valueToSet]
                             if (typeOfValue.IsValueType)
-                                il.Emit(OpCodes.Unbox);         // [s] [group] [group] [unboxed valueToSet]
+                                il.Emit(OpCodes.Unbox_Any, typeOfValue); // [s] [group] [group] [unboxed valueToSet]
                             break;
                         case InlineStrategy.String:
                             il.Emit(OpCodes.Ldstr, (string)objValue); // [s] [group] [group] [valueToSet]
