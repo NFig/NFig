@@ -840,7 +840,7 @@ namespace NFig
                 methodList.Add(g.PropertyInfo.GetMethod);
                 g = g.Parent;
 
-            } while (g != null);
+            } while (g != null && g.PropertyInfo != null);
             
             // the list was built bottom up, but we need to emit top down, so we go in reverse
             for (var i = methodList.Count - 1; i >= 0; i--)
