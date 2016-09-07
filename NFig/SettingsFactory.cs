@@ -916,7 +916,7 @@ namespace NFig
                             il.Emit(OpCodes.Ldc_R4, Convert.ToSingle(objValue)); // [s] [group] [group] [valueToSet]
                             break;
                         case InlineStrategy.Float64:
-                            il.Emit(OpCodes.Ldc_R8, Convert.ToSingle(objValue)); // [s] [group] [group] [valueToSet]
+                            il.Emit(OpCodes.Ldc_R8, Convert.ToDouble(objValue)); // [s] [group] [group] [valueToSet]
                             break;
                         default:
                             throw new ArgumentOutOfRangeException();
