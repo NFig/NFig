@@ -54,7 +54,7 @@
     <Compile Include="EnumConverters.cs" />
     <Compile Include="Exceptions.cs" />
     <Compile Include="INFigSettings.cs" />
-    <Compile Include="AppSnapshot.cs" />
+    <Compile Include="OverridesSnapshot.cs" />
     <Compile Include="Encryption\ISettingEncryptor.cs" />
     <Compile Include="InMemory\NFigMemoryLogger.cs" />
     <Compile Include="InMemory\NFigMemoryStore.cs" />

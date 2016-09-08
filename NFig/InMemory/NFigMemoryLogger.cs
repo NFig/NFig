@@ -10,13 +10,13 @@ namespace NFig.InMemory
         where TTier : struct
         where TDataCenter : struct
     {
-        readonly List<AppSnapshot<TSubApp, TTier, TDataCenter>> _history = new List<AppSnapshot<TSubApp, TTier, TDataCenter>>();
+        readonly List<OverridesSnapshot<TSubApp, TTier, TDataCenter>> _history = new List<OverridesSnapshot<TSubApp, TTier, TDataCenter>>();
 
-        public NFigMemoryLogger(Action<Exception, AppSnapshot<TSubApp, TTier, TDataCenter>> onLogException) : base(onLogException)
+        public NFigMemoryLogger(Action<Exception, OverridesSnapshot<TSubApp, TTier, TDataCenter>> onLogException) : base(onLogException)
         {
         }
 
-        protected override Task LogAsyncImpl(AppSnapshot<TSubApp, TTier, TDataCenter> snapshot)
+        protected override Task LogAsyncImpl(OverridesSnapshot<TSubApp, TTier, TDataCenter> snapshot)
         {
             lock (_history)
             {
@@ -84,7 +84,7 @@ namespace NFig.InMemory
             return Task.FromResult<IEnumerable<NFigLogEvent<TDataCenter>>>(list);
         }
 
-        public override Task<AppSnapshot<TSubApp, TTier, TDataCenter>> GetSnapshotAsync(string globalAppName, string commit)
+        public override Task<OverridesSnapshot<TSubApp, TTier, TDataCenter>> GetSnapshotAsync(string globalAppName, string commit)
         {
             lock (_history)
             {
@@ -100,10 +100,10 @@ namespace NFig.InMemory
                 }
             }
 
-            return Task.FromResult<AppSnapshot<TSubApp, TTier, TDataCenter>>(null);
+            return Task.FromResult<OverridesSnapshot<TSubApp, TTier, TDataCenter>>(null);
         }
 
-        static int CompareLogs(AppSnapshot<TSubApp, TTier, TDataCenter> a, AppSnapshot<TSubApp, TTier, TDataCenter> b)
+        static int CompareLogs(OverridesSnapshot<TSubApp, TTier, TDataCenter> a, OverridesSnapshot<TSubApp, TTier, TDataCenter> b)
         {
             if (a.LastEvent.Timestamp > b.LastEvent.Timestamp)
                 return 1;

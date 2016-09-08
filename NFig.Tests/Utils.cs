@@ -34,18 +34,18 @@ namespace NFig.Tests
             return new NFigMemoryStore<TSettings, SubApp, Tier, DataCenter>(globalAppName, tier, dataCenter, logger, encryptor, additionalConverters);
         }
 
-        public static AppSnapshot<SubApp, Tier, DataCenter> CreateSnapshot(
+        public static OverridesSnapshot<SubApp, Tier, DataCenter> CreateSnapshot(
             string globalAppName = GLOBAL_APP_1,
             string commit = NFigStore.INITIAL_COMMIT,
             List<SettingValue<SubApp, Tier, DataCenter>> overrides = null,
             NFigLogEvent<DataCenter> lastEvent = null)
         {
-            return new AppSnapshot<SubApp, Tier, DataCenter>(globalAppName, commit, overrides, lastEvent);
+            return new OverridesSnapshot<SubApp, Tier, DataCenter>(globalAppName, commit, overrides, lastEvent);
         }
 
         public static TSettings GetSettings<TSettings>(
             this SettingsFactory<TSettings, SubApp, Tier, DataCenter> factory,
-            AppSnapshot<SubApp, Tier, DataCenter> snapshot = null)
+            OverridesSnapshot<SubApp, Tier, DataCenter> snapshot = null)
             where TSettings : class, INFigSettings<SubApp, Tier, DataCenter>, new()
         {
             if (snapshot == null)

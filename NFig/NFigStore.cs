@@ -60,7 +60,7 @@ namespace NFig
         readonly SettingsFactory<TSettings, TSubApp, TTier, TDataCenter> _factory;
 
         readonly object _dataCacheLock = new object();
-        readonly Dictionary<string, AppSnapshot<TSubApp, TTier, TDataCenter>> _dataCache = new Dictionary<string, AppSnapshot<TSubApp, TTier, TDataCenter>>();
+        readonly Dictionary<string, OverridesSnapshot<TSubApp, TTier, TDataCenter>> _dataCache = new Dictionary<string, OverridesSnapshot<TSubApp, TTier, TDataCenter>>();
 
         Timer _pollingTimer;
 
@@ -145,7 +145,7 @@ namespace NFig
         /// A snapshot of the state immediately after the override is applied. If the override is not applied because the current commit didn't match the
         /// commit parameter, the return value will be null.
         /// </returns>
-        public async Task<AppSnapshot<TSubApp, TTier, TDataCenter>> SetOverrideAsync(
+        public async Task<OverridesSnapshot<TSubApp, TTier, TDataCenter>> SetOverrideAsync(
             string settingName,
             string value,
             TDataCenter dataCenter,
@@ -177,7 +177,7 @@ namespace NFig
         /// A snapshot of the state immediately after the override is applied. If the override is not applied because the current commit didn't match the
         /// commit parameter, the return value will be null.
         /// </returns>
-        public AppSnapshot<TSubApp, TTier, TDataCenter> SetOverride(
+        public OverridesSnapshot<TSubApp, TTier, TDataCenter> SetOverride(
             string settingName,
             string value,
             TDataCenter dataCenter,
@@ -208,7 +208,7 @@ namespace NFig
         /// A snapshot of the state immediately after the override is cleared. If the override is not applied, either because it didn't exist, or because the 
         /// current commit didn't match the commit parameter, the return value will be null.
         /// </returns>
-        public async Task<AppSnapshot<TSubApp, TTier, TDataCenter>> ClearOverrideAsync(
+        public async Task<OverridesSnapshot<TSubApp, TTier, TDataCenter>> ClearOverrideAsync(
             string settingName,
             TDataCenter dataCenter,
             string user,
@@ -235,7 +235,7 @@ namespace NFig
         /// A snapshot of the state immediately after the override is cleared. If the override is not applied, either because it didn't exist, or because the 
         /// current commit didn't match the commit parameter, the return value will be null.
         /// </returns>
-        public AppSnapshot<TSubApp, TTier, TDataCenter> ClearOverride(
+        public OverridesSnapshot<TSubApp, TTier, TDataCenter> ClearOverride(
             string settingName,
             TDataCenter dataCenter,
             string user,
@@ -255,7 +255,7 @@ namespace NFig
         /// </summary>
         public async Task<TSettings> GetSettingsForGlobalAppAsync()
         {
-            var snapshot = await GetAppSnapshotAsync().ConfigureAwait(false);
+            var snapshot = await GetSnapshotAsync().ConfigureAwait(false);
 
             TSettings settings;
             var ex = _factory.TryGetSettingsForGlobalApp(out settings, snapshot);
@@ -270,7 +270,7 @@ namespace NFig
         /// </summary>
         public TSettings GetSettingsForGlobalApp()
         {
-            var snapshot = GetAppSnapshot();
+            var snapshot = GetSnapshot();
 
             TSettings settings;
             var ex = _factory.TryGetSettingsForGlobalApp(out settings, snapshot);
@@ -290,7 +290,7 @@ namespace NFig
             if (subApps == null || subApps.Length == 0)
                 return new Dictionary<TSubApp, TSettings>();
 
-            var snapshot = await GetAppSnapshotAsync().ConfigureAwait(false);
+            var snapshot = await GetSnapshotAsync().ConfigureAwait(false);
             
             Dictionary<TSubApp, TSettings> bySubApp;
             var ex = _factory.TryGetSettingsBySubApp(out bySubApp, subApps, snapshot);
@@ -309,7 +309,7 @@ namespace NFig
             if (subApps == null || subApps.Length == 0)
                 return new Dictionary<TSubApp, TSettings>();
 
-            var snapshot = GetAppSnapshot();
+            var snapshot = GetSnapshot();
 
             Dictionary<TSubApp, TSettings> bySubApp;
             var ex = _factory.TryGetSettingsBySubApp(out bySubApp, subApps, snapshot);
@@ -325,7 +325,7 @@ namespace NFig
         /// </summary>
         public async Task<SettingInfo<TSubApp, TTier, TDataCenter>[]> GetAllSettingInfosAsync()
         {
-            var data = await GetAppSnapshotAsync().ConfigureAwait(false);
+            var data = await GetSnapshotAsync().ConfigureAwait(false);
             return _factory.GetAllSettingInfos(data.Overrides);
         }
 
@@ -334,7 +334,7 @@ namespace NFig
         /// </summary>
         public SettingInfo<TSubApp, TTier, TDataCenter>[] GetAllSettingInfos()
         {
-            var data = GetAppSnapshot();
+            var data = GetSnapshot();
             return _factory.GetAllSettingInfos(data.Overrides);
         }
 
@@ -446,9 +446,9 @@ namespace NFig
             return _factory.IsValidStringForSetting(settingName, value);
         }
 
-        public async Task<AppSnapshot<TSubApp, TTier, TDataCenter>> GetAppSnapshotAsync()
+        public async Task<OverridesSnapshot<TSubApp, TTier, TDataCenter>> GetSnapshotAsync()
         {
-            AppSnapshot<TSubApp, TTier, TDataCenter> snapshot;
+            OverridesSnapshot<TSubApp, TTier, TDataCenter> snapshot;
 
             // check cache first
             bool cacheExisted;
@@ -477,9 +477,9 @@ namespace NFig
             return snapshot;
         }
 
-        public AppSnapshot<TSubApp, TTier, TDataCenter> GetAppSnapshot()
+        public OverridesSnapshot<TSubApp, TTier, TDataCenter> GetSnapshot()
         {
-            AppSnapshot<TSubApp, TTier, TDataCenter> snapshot;
+            OverridesSnapshot<TSubApp, TTier, TDataCenter> snapshot;
 
             // check cache first
             bool cacheExisted;
@@ -508,7 +508,7 @@ namespace NFig
             return snapshot;
         }
 
-        public async Task<AppSnapshot<TSubApp, TTier, TDataCenter>> RestoreSnapshotAsync(AppSnapshot<TSubApp, TTier, TDataCenter> snapshot, string user)
+        public async Task<OverridesSnapshot<TSubApp, TTier, TDataCenter>> RestoreSnapshotAsync(OverridesSnapshot<TSubApp, TTier, TDataCenter> snapshot, string user)
         {
             if (snapshot.GlobalAppName != GlobalAppName)
             {
@@ -522,7 +522,7 @@ namespace NFig
             return newSnapshot;
         }
 
-        public AppSnapshot<TSubApp, TTier, TDataCenter> RestoreSnapshot(AppSnapshot<TSubApp, TTier, TDataCenter> snapshot, string user)
+        public OverridesSnapshot<TSubApp, TTier, TDataCenter> RestoreSnapshot(OverridesSnapshot<TSubApp, TTier, TDataCenter> snapshot, string user)
         {
             if (snapshot.GlobalAppName != GlobalAppName)
             {
@@ -551,16 +551,16 @@ namespace NFig
             return Task.Run(async () => await GetCurrentCommitAsync()).Result;
         }
 
-        protected abstract Task<AppSnapshot<TSubApp, TTier, TDataCenter>> RestoreSnapshotAsyncImpl(
-            AppSnapshot<TSubApp, TTier, TDataCenter> snapshot,
+        protected abstract Task<OverridesSnapshot<TSubApp, TTier, TDataCenter>> RestoreSnapshotAsyncImpl(
+            OverridesSnapshot<TSubApp, TTier, TDataCenter> snapshot,
             string user);
 
-        protected virtual AppSnapshot<TSubApp, TTier, TDataCenter> RestoreSnapshotImpl(AppSnapshot<TSubApp, TTier, TDataCenter> snapshot, string user)
+        protected virtual OverridesSnapshot<TSubApp, TTier, TDataCenter> RestoreSnapshotImpl(OverridesSnapshot<TSubApp, TTier, TDataCenter> snapshot, string user)
         {
             return Task.Run(async () => await RestoreSnapshotAsyncImpl(snapshot, user)).Result;
         }
 
-        protected abstract Task<AppSnapshot<TSubApp, TTier, TDataCenter>> SetOverrideAsyncImpl(
+        protected abstract Task<OverridesSnapshot<TSubApp, TTier, TDataCenter>> SetOverrideAsyncImpl(
             string settingName,
             string value,
             TDataCenter dataCenter,
@@ -568,7 +568,7 @@ namespace NFig
             TSubApp subApp,
             string commit);
 
-        protected virtual AppSnapshot<TSubApp, TTier, TDataCenter> SetOverrideImpl(
+        protected virtual OverridesSnapshot<TSubApp, TTier, TDataCenter> SetOverrideImpl(
             string settingName,
             string value,
             TDataCenter dataCenter,
@@ -579,14 +579,14 @@ namespace NFig
             return Task.Run(async () => await SetOverrideAsyncImpl(settingName, value, dataCenter, user, subApp, commit)).Result;
         }
 
-        protected abstract Task<AppSnapshot<TSubApp, TTier, TDataCenter>> ClearOverrideAsyncImpl(
+        protected abstract Task<OverridesSnapshot<TSubApp, TTier, TDataCenter>> ClearOverrideAsyncImpl(
             string settingName,
             TDataCenter dataCenter,
             string user,
             TSubApp subApp,
             string commit);
         
-        protected virtual AppSnapshot<TSubApp, TTier, TDataCenter> ClearOverrideImpl(
+        protected virtual OverridesSnapshot<TSubApp, TTier, TDataCenter> ClearOverrideImpl(
             string settingName,
             TDataCenter dataCenter,
             string user,
@@ -603,16 +603,16 @@ namespace NFig
             Task.Run(async () => { await PushUpdateNotificationAsync(); }).Wait();
         }
 
-        protected abstract Task<AppSnapshot<TSubApp, TTier, TDataCenter>> GetAppSnapshotNoCacheAsync();
+        protected abstract Task<OverridesSnapshot<TSubApp, TTier, TDataCenter>> GetAppSnapshotNoCacheAsync();
 
-        protected virtual AppSnapshot<TSubApp, TTier, TDataCenter> GetAppSnapshotNoCache()
+        protected virtual OverridesSnapshot<TSubApp, TTier, TDataCenter> GetAppSnapshotNoCache()
         {
             return Task.Run(async () => await GetAppSnapshotNoCacheAsync()).Result;
         }
 
-        protected abstract Task DeleteOrphanedOverridesAsync(AppSnapshot<TSubApp, TTier, TDataCenter> snapshot);
+        protected abstract Task DeleteOrphanedOverridesAsync(OverridesSnapshot<TSubApp, TTier, TDataCenter> snapshot);
 
-        protected virtual void DeleteOrphanedOverrides(AppSnapshot<TSubApp, TTier, TDataCenter> snapshot)
+        protected virtual void DeleteOrphanedOverrides(OverridesSnapshot<TSubApp, TTier, TDataCenter> snapshot)
         {
             Task.Run(async () => await DeleteOrphanedOverridesAsync(snapshot)).Wait();
         }
@@ -653,10 +653,10 @@ namespace NFig
                 return;
 
             Exception snapshotException = null;
-            AppSnapshot<TSubApp, TTier, TDataCenter> snapshot = null;
+            OverridesSnapshot<TSubApp, TTier, TDataCenter> snapshot = null;
             try
             {
-                snapshot = GetAppSnapshot();
+                snapshot = GetSnapshot();
             }
             catch (Exception e)
             {
@@ -768,7 +768,7 @@ namespace NFig
             var notify = true;
             lock (_dataCacheLock)
             {
-                AppSnapshot<TSubApp, TTier, TDataCenter> snapshot;
+                OverridesSnapshot<TSubApp, TTier, TDataCenter> snapshot;
                 if (_dataCache.TryGetValue(GlobalAppName, out snapshot))
                 {
                     notify = snapshot.Commit != commit;
@@ -826,7 +826,7 @@ namespace NFig
             }
         }
 
-        void LogAndNotifyChange(AppSnapshot<TSubApp, TTier, TDataCenter> snapshot)
+        void LogAndNotifyChange(OverridesSnapshot<TSubApp, TTier, TDataCenter> snapshot)
         {
             try
             {

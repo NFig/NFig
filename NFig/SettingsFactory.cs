@@ -105,7 +105,7 @@ namespace NFig
         }
 
         // todo - might want to look for ways to refactor more of the common pieces between this method and TryGetSettingsBySubApp
-        public InvalidSettingOverridesException TryGetSettingsForGlobalApp(out TSettings settings, [NotNull] AppSnapshot<TSubApp, TTier, TDataCenter> snapshot)
+        public InvalidSettingOverridesException TryGetSettingsForGlobalApp(out TSettings settings, [NotNull] OverridesSnapshot<TSubApp, TTier, TDataCenter> snapshot)
         {
             var overrides = snapshot.Overrides;
             var overridesBySubApp = overrides == null ? null : OrganizeSettingValues(overrides, defaultOnly: true);
@@ -131,7 +131,7 @@ namespace NFig
         public InvalidSettingOverridesException TryGetSettingsBySubApp(
             out Dictionary<TSubApp, TSettings> settingsBySubApp,
             [NotNull] TSubApp[] subApps,
-            [NotNull] AppSnapshot<TSubApp, TTier, TDataCenter> snapshot)
+            [NotNull] OverridesSnapshot<TSubApp, TTier, TDataCenter> snapshot)
         {
             var overrides = snapshot.Overrides;
             var overridesBySubApp = overrides == null ? null : OrganizeSettingValues(overrides, defaultOnly: false);

@@ -33,7 +33,7 @@ namespace NFig.InMemory
         {
         }
 
-        protected override Task<AppSnapshot<TSubApp, TTier, TDataCenter>> SetOverrideAsyncImpl(
+        protected override Task<OverridesSnapshot<TSubApp, TTier, TDataCenter>> SetOverrideAsyncImpl(
             string settingName,
             string value,
             TDataCenter dataCenter,
@@ -45,7 +45,7 @@ namespace NFig.InMemory
             return Task.FromResult(snapshot);
         }
 
-        protected override AppSnapshot<TSubApp, TTier, TDataCenter> SetOverrideImpl(
+        protected override OverridesSnapshot<TSubApp, TTier, TDataCenter> SetOverrideImpl(
             string settingName,
             string value,
             TDataCenter dataCenter,
@@ -81,7 +81,7 @@ namespace NFig.InMemory
             }
         }
 
-        protected override Task<AppSnapshot<TSubApp, TTier, TDataCenter>> ClearOverrideAsyncImpl(
+        protected override Task<OverridesSnapshot<TSubApp, TTier, TDataCenter>> ClearOverrideAsyncImpl(
             string settingName,
             TDataCenter dataCenter,
             string user,
@@ -92,7 +92,7 @@ namespace NFig.InMemory
             return Task.FromResult(snapshot);
         }
 
-        protected override AppSnapshot<TSubApp, TTier, TDataCenter> ClearOverrideImpl(
+        protected override OverridesSnapshot<TSubApp, TTier, TDataCenter> ClearOverrideImpl(
             string settingName,
             TDataCenter dataCenter,
             string user,
@@ -152,12 +152,12 @@ namespace NFig.InMemory
             CheckForUpdatesAndNotifyCallbacks();
         }
 
-        protected override Task<AppSnapshot<TSubApp, TTier, TDataCenter>> RestoreSnapshotAsyncImpl(AppSnapshot<TSubApp, TTier, TDataCenter> snapshot, string user)
+        protected override Task<OverridesSnapshot<TSubApp, TTier, TDataCenter>> RestoreSnapshotAsyncImpl(OverridesSnapshot<TSubApp, TTier, TDataCenter> snapshot, string user)
         {
             return Task.FromResult(RestoreSnapshot(snapshot, user));
         }
 
-        protected override AppSnapshot<TSubApp, TTier, TDataCenter> RestoreSnapshotImpl(AppSnapshot<TSubApp, TTier, TDataCenter> snapshot, string user)
+        protected override OverridesSnapshot<TSubApp, TTier, TDataCenter> RestoreSnapshotImpl(OverridesSnapshot<TSubApp, TTier, TDataCenter> snapshot, string user)
         {
             var data = GetInMemoryAppData();
             lock (data)
@@ -188,12 +188,12 @@ namespace NFig.InMemory
             }
         }
 
-        protected override Task<AppSnapshot<TSubApp, TTier, TDataCenter>> GetAppSnapshotNoCacheAsync()
+        protected override Task<OverridesSnapshot<TSubApp, TTier, TDataCenter>> GetAppSnapshotNoCacheAsync()
         {
             return Task.FromResult(GetAppSnapshotNoCache());
         }
 
-        protected override AppSnapshot<TSubApp, TTier, TDataCenter> GetAppSnapshotNoCache()
+        protected override OverridesSnapshot<TSubApp, TTier, TDataCenter> GetAppSnapshotNoCache()
         {
             var data = GetInMemoryAppData();
             lock (data)
@@ -202,7 +202,7 @@ namespace NFig.InMemory
             }
         }
 
-        AppSnapshot<TSubApp, TTier, TDataCenter> CreateSnapshot(InMemoryAppData data)
+        OverridesSnapshot<TSubApp, TTier, TDataCenter> CreateSnapshot(InMemoryAppData data)
         {
             var overrides = new List<SettingValue<TSubApp, TTier, TDataCenter>>();
             foreach (var kvp in data.Overrides)
@@ -214,16 +214,16 @@ namespace NFig.InMemory
 
             var lastEvent = NFigLogEvent<TDataCenter>.BinaryDeserialize(data.LastEvent);
 
-            return new AppSnapshot<TSubApp, TTier, TDataCenter>(GlobalAppName, data.Commit, overrides, lastEvent);
+            return new OverridesSnapshot<TSubApp, TTier, TDataCenter>(GlobalAppName, data.Commit, overrides, lastEvent);
         }
 
-        protected override Task DeleteOrphanedOverridesAsync(AppSnapshot<TSubApp, TTier, TDataCenter> snapshot)
+        protected override Task DeleteOrphanedOverridesAsync(OverridesSnapshot<TSubApp, TTier, TDataCenter> snapshot)
         {
             // there's never going to be orphaned overrides for an in-memory store
             return Task.FromResult(0);
         }
 
-        protected override void DeleteOrphanedOverrides(AppSnapshot<TSubApp, TTier, TDataCenter> snapshot)
+        protected override void DeleteOrphanedOverrides(OverridesSnapshot<TSubApp, TTier, TDataCenter> snapshot)
         {
             // there's never going to be orphaned overrides for an in-memory store
         }

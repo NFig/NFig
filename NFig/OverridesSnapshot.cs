@@ -5,7 +5,7 @@ using NFig.Logging;
 
 namespace NFig
 {
-    public class AppSnapshot<TSubApp, TTier, TDataCenter>
+    public class OverridesSnapshot<TSubApp, TTier, TDataCenter>
         where TSubApp : struct
         where TTier : struct
         where TDataCenter : struct
@@ -19,7 +19,7 @@ namespace NFig
         [CanBeNull]
         public NFigLogEvent<TDataCenter> LastEvent { get; }
 
-        public AppSnapshot(
+        public OverridesSnapshot(
             [NotNull] string globalAppName,
             [NotNull] string commit,
             IList<SettingValue<TSubApp, TTier, TDataCenter>> overrides,

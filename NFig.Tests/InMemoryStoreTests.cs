@@ -126,7 +126,7 @@ namespace NFig.Tests
             Assert.AreEqual(3, settings.Nested.Integer);
             Assert.AreEqual("Seventeen", settings.Nested.String);
 
-            var snapshot1 = store.GetAppSnapshot();
+            var snapshot1 = store.GetSnapshot();
             Assert.AreEqual(Utils.GLOBAL_APP_1, snapshot1.GlobalAppName);
             Assert.AreEqual(Utils.GLOBAL_APP_1, snapshot1.LastEvent.GlobalAppName);
             Assert.AreEqual(settings.Commit, snapshot1.Commit);
@@ -146,7 +146,7 @@ namespace NFig.Tests
             Assert.AreEqual(23, settings.TopInteger);
             Assert.AreEqual(3, settings.Nested.Integer);
 
-            var snapshot2 = store.GetAppSnapshot();
+            var snapshot2 = store.GetSnapshot();
             Assert.AreEqual(Utils.GLOBAL_APP_1, snapshot2.GlobalAppName);
             Assert.AreEqual(Utils.GLOBAL_APP_1, snapshot2.LastEvent.GlobalAppName);
             Assert.AreEqual(settings.Commit, snapshot2.Commit);

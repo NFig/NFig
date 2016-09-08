@@ -9,9 +9,9 @@ namespace NFig.Logging
         where TTier : struct
         where TDataCenter : struct
     {
-        readonly Action<Exception, AppSnapshot<TSubApp, TTier, TDataCenter>> _onLogException;
+        readonly Action<Exception, OverridesSnapshot<TSubApp, TTier, TDataCenter>> _onLogException;
 
-        protected SettingsLogger(Action<Exception, AppSnapshot<TSubApp, TTier, TDataCenter>> onLogException)
+        protected SettingsLogger(Action<Exception, OverridesSnapshot<TSubApp, TTier, TDataCenter>> onLogException)
         {
             if (onLogException == null)
                 throw new ArgumentNullException(nameof(onLogException));
@@ -19,7 +19,7 @@ namespace NFig.Logging
             _onLogException = onLogException;
         }
 
-        public void Log(AppSnapshot<TSubApp, TTier, TDataCenter> snapshot)
+        public void Log(OverridesSnapshot<TSubApp, TTier, TDataCenter> snapshot)
         {
             Task.Run(async () =>
             {
@@ -56,8 +56,8 @@ namespace NFig.Logging
             int? limit = null,
             int skip = 0);
 
-        public abstract Task<AppSnapshot<TSubApp, TTier, TDataCenter>> GetSnapshotAsync(string globalAppName, string commit);
+        public abstract Task<OverridesSnapshot<TSubApp, TTier, TDataCenter>> GetSnapshotAsync(string globalAppName, string commit);
 
-        protected abstract Task LogAsyncImpl(AppSnapshot<TSubApp, TTier, TDataCenter> snapshot);
+        protected abstract Task LogAsyncImpl(OverridesSnapshot<TSubApp, TTier, TDataCenter> snapshot);
     }
 }
