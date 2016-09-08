@@ -630,7 +630,7 @@ namespace NFig
                 _globalAppCallbacks.Add(info);
             }
 
-            CheckForUpdatesAndNotifyCallbacks();
+            CheckForUpdatesAndNotifySubscribers();
         }
 
         public void SubscribeToSettingsBySubApp([NotNull] SubAppsUpdateDelegate callback)
@@ -644,10 +644,10 @@ namespace NFig
                 _subAppsCallbacks.Add(info);
             }
 
-            CheckForUpdatesAndNotifyCallbacks();
+            CheckForUpdatesAndNotifySubscribers();
         }
 
-        public void CheckForUpdatesAndNotifyCallbacks()
+        public void CheckForUpdatesAndNotifySubscribers()
         {
             if (_globalAppCallbacks.Count == 0 && _subAppsCallbacks.Count == 0)
                 return;
@@ -777,7 +777,7 @@ namespace NFig
 
             if (notify)
             {
-                CheckForUpdatesAndNotifyCallbacks();
+                CheckForUpdatesAndNotifySubscribers();
             }
         }
 

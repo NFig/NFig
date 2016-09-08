@@ -149,7 +149,7 @@ namespace NFig.InMemory
 
         protected override void PushUpdateNotification()
         {
-            CheckForUpdatesAndNotifyCallbacks();
+            CheckForUpdatesAndNotifySubscribers();
         }
 
         protected override Task<OverridesSnapshot<TSubApp, TTier, TDataCenter>> RestoreSnapshotAsyncImpl(OverridesSnapshot<TSubApp, TTier, TDataCenter> snapshot, string user)
