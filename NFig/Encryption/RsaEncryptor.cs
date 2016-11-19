@@ -1,58 +1,55 @@
 ﻿using System;
 using System.Security.Cryptography;
 using System.Text;
+using JetBrains.Annotations;
 
 namespace NFig.Encryption
 {
+    /// <summary>
+    /// A Setting encryptor which allows the use of an RSA (asymmetric) encryption algorithm.
+    /// </summary>
     public class RsaEncryptor : ISettingEncryptor
     {
-        readonly RSACryptoServiceProvider _rsa;
+        readonly RSA _rsa;
+        readonly RSAEncryptionPadding _padding;
 
         /// <summary>
-        /// Uses a pre-initialized RSACryptoServiceProvider object to provide encryption and decryption.
+        /// Uses a pre-initialized RSA object to provide encryption and decryption.
         /// </summary>
-        public RsaEncryptor(RSACryptoServiceProvider rsa)
+        /// <param name="rsa">A pre-initialized RSA provider. Note that this object will be retained for the lifetime of the RsaEncryptor.</param>
+        /// <param name="padding">The encryption/decryption padding to use.</param>
+        public RsaEncryptor([NotNull] RSA rsa, [NotNull] RSAEncryptionPadding padding)
         {
+            if (rsa == null)
+                throw new ArgumentNullException(nameof(rsa));
+
+            if (padding == null)
+                throw new ArgumentNullException(nameof(padding));
+
             _rsa = rsa;
+            _padding = padding;
         }
 
         /// <summary>
-        /// Initializes a RSACryptoServiceProvider with the provided XML key.
+        /// For internal NFig use only. You should use NFigStore.Encrypt().
         /// </summary>
-        /// <param name="key">XML-encoded key. If using a public key, calls to Decrypt will fail. You must provide the private key for use in an NFigStore.</param>
-        public RsaEncryptor(string key)
-        {
-            _rsa = new RSACryptoServiceProvider();
-            _rsa.FromXmlString(key);
-        }
-
-        public string Encrypt(string value)
+        public string Encrypt([NotNull] string value)
         {
             var data = Encoding.UTF8.GetBytes(value);
-            var encrypted = _rsa.Encrypt(data, true);
+            var encrypted = _rsa.Encrypt(data, _padding);
             return Convert.ToBase64String(encrypted);
         }
 
-        public string Decrypt(string encryptedValue)
+        /// <summary>
+        /// For internal NFig use only. You should use NFigStore.Decrypt().
+        /// </summary>
+        /// <param name="encryptedValue"></param>
+        /// <returns></returns>
+        public string Decrypt([NotNull] string encryptedValue)
         {
             var encrypted = Convert.FromBase64String(encryptedValue);
-            var decrypted = _rsa.Decrypt(encrypted, true);
+            var decrypted = _rsa.Decrypt(encrypted, _padding);
             return Encoding.UTF8.GetString(decrypted);
-        }
-
-        /// <summary>
-        /// Helper method to generate an RSA public/private key pair.
-        /// </summary>
-        /// <param name="keySize">Size of the key in bits.</param>
-        /// <param name="privateKey">XML-encoded private key which can be used for both encryption and decryption.</param>
-        /// <param name="publicKey">XML-encoded public key which can only be used for encryption.</param>
-        public static void CreateKeyPair(int keySize, out string privateKey, out string publicKey)
-        {
-            using (var rsa = new RSACryptoServiceProvider(keySize))
-            {
-                privateKey = rsa.ToXmlString(true);
-                publicKey = rsa.ToXmlString(false);
-            }
         }
     }
 }
