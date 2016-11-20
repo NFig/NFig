@@ -571,7 +571,7 @@ namespace NFig
 // === Virtual Methods ===
 
         /// <summary>
-        /// Returns the most current Commit ID for a given application. The commit may be null if there are no overrides set.
+        /// Returns the most current Commit ID for the application.
         /// </summary>
         public abstract Task<string> GetCurrentCommitAsync();
 

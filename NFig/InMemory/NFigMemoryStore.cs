@@ -35,6 +35,21 @@ namespace NFig.InMemory
         }
         
         readonly InMemoryAppData _appData = new InMemoryAppData();
+
+        /// <summary>
+        /// Initializes a new in-memory NFig store.
+        /// </summary>
+        /// <param name="globalAppName">The name of the global application. If you are using sub apps, this may represent the name of the umbrella "parent" application.</param>
+        /// <param name="tier">Tier the application is running on (cannot be the default "Any" value).</param>
+        /// <param name="dataCenter">DataCenter the application is running in (cannot be the default "Any" value).</param>
+        /// <param name="logger">The logger which events will be sent to.</param>
+        /// <param name="encryptor">
+        /// Object which will provide encryption/decryption for encrypted settings. Only required if there are encrypted settings in use.
+        /// </param>
+        /// <param name="additionalDefaultConverters">
+        /// Allows you to specify additional (or replacement) default converters for types. Each key/value pair must be in the form of
+        /// (typeof(T), <see cref="ISettingConverter{T}"/>).
+        /// </param>
         public NFigMemoryStore(
             string globalAppName,
             TTier tier,
@@ -46,6 +61,7 @@ namespace NFig.InMemory
         {
         }
 
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
         protected override Task<OverridesSnapshot<TSubApp, TTier, TDataCenter>> SetOverrideAsyncImpl(
             string settingName,
             string value,
@@ -142,17 +158,25 @@ namespace NFig.InMemory
                 return CreateSnapshot(data);
             }
         }
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
 
+        /// <summary>
+        /// Returns the most current Commit ID for the application.
+        /// </summary>
         public override Task<string> GetCurrentCommitAsync()
         {
             return Task.FromResult(_appData.Commit);
         }
 
+        /// <summary>
+        /// Returns the most current Commit ID for the application.
+        /// </summary>
         public override string GetCurrentCommit()
         {
             return _appData.Commit;
         }
 
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
         protected override Task PushUpdateNotificationAsync()
         {
             PushUpdateNotification();
@@ -239,5 +263,6 @@ namespace NFig.InMemory
         {
             // there's never going to be orphaned overrides for an in-memory store
         }
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
     }
 }
