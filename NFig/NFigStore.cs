@@ -87,9 +87,8 @@ namespace NFig
         readonly List<CallbackInfo<SubAppsUpdateDelegate>> _subAppsCallbacks = new List<CallbackInfo<SubAppsUpdateDelegate>>();
 
         readonly SettingsFactory<TSettings, TSubApp, TTier, TDataCenter> _factory;
-
-        readonly object _dataCacheLock = new object();
-        readonly Dictionary<string, OverridesSnapshot<TSubApp, TTier, TDataCenter>> _dataCache = new Dictionary<string, OverridesSnapshot<TSubApp, TTier, TDataCenter>>();
+        
+        OverridesSnapshot<TSubApp, TTier, TDataCenter> _snapshotCache;
 
         Timer _pollingTimer;
 
@@ -487,14 +486,9 @@ namespace NFig
         /// </summary>
         public async Task<OverridesSnapshot<TSubApp, TTier, TDataCenter>> GetSnapshotAsync()
         {
-            OverridesSnapshot<TSubApp, TTier, TDataCenter> snapshot;
-
             // check cache first
-            bool cacheExisted;
-            lock (_dataCacheLock)
-            {
-                cacheExisted = _dataCache.TryGetValue(GlobalAppName, out snapshot);
-            }
+            var snapshot = _snapshotCache;
+            var cacheExisted = snapshot != null;
 
             if (cacheExisted)
             {
@@ -504,11 +498,7 @@ namespace NFig
             }
 
             snapshot = await GetAppSnapshotNoCacheAsync();
-
-            lock (_dataCacheLock)
-            {
-                _dataCache[GlobalAppName] = snapshot;
-            }
+            _snapshotCache = snapshot;
 
             if (!cacheExisted)
                 await DeleteOrphanedOverridesAsync(snapshot);
@@ -521,14 +511,9 @@ namespace NFig
         /// </summary>
         public OverridesSnapshot<TSubApp, TTier, TDataCenter> GetSnapshot()
         {
-            OverridesSnapshot<TSubApp, TTier, TDataCenter> snapshot;
-
             // check cache first
-            bool cacheExisted;
-            lock (_dataCacheLock)
-            {
-                cacheExisted = _dataCache.TryGetValue(GlobalAppName, out snapshot);
-            }
+            var snapshot = _snapshotCache;
+            var cacheExisted = snapshot != null;
 
             if (cacheExisted)
             {
@@ -538,11 +523,7 @@ namespace NFig
             }
 
             snapshot = GetAppSnapshotNoCache();
-
-            lock (_dataCacheLock)
-            {
-                _dataCache[GlobalAppName] = snapshot;
-            }
+            _snapshotCache = snapshot;
 
             if (!cacheExisted)
                 DeleteOrphanedOverrides(snapshot);
@@ -870,18 +851,9 @@ namespace NFig
         void PollForChanges(object _)
         {
             var commit = GetCurrentCommit();
-
-            var notify = true;
-            lock (_dataCacheLock)
-            {
-                OverridesSnapshot<TSubApp, TTier, TDataCenter> snapshot;
-                if (_dataCache.TryGetValue(GlobalAppName, out snapshot))
-                {
-                    notify = snapshot.Commit != commit;
-                }
-            }
-
-            if (notify)
+            
+            var snapshot = _snapshotCache;
+            if (snapshot == null || snapshot.Commit != commit)
             {
                 CheckForUpdatesAndNotifySubscribers();
             }
