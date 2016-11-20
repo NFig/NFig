@@ -118,7 +118,6 @@ namespace NFig.Tests
             // since that defeats the purpose of encrypted settings in the first place.
             var aes = new AesCryptoServiceProvider();
             aes.Key = new byte[] { 112, 202, 76, 140, 54, 135, 101, 171, 232, 82, 203, 123, 131, 161, 229, 37, 67, 79, 138, 88, 58, 121, 155, 133, 139, 97, 163, 169, 130, 247, 92, 242 };
-            aes.IV = new byte[] { 217, 199, 68, 17, 59, 252, 140, 14, 29, 249, 170, 85, 1, 195, 122, 161 };
             var encryptor = new SymmetricSettingEncryptor(aes);
 
             var store = Utils.CreateStore<Settings>(tier: Tier.Dev, dataCenter: DataCenter.East, encryptor: encryptor);
