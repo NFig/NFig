@@ -17,7 +17,7 @@ Unlike the `[Setting]` attribute, which _requires_ a default value, the `[Encryp
 An [ISettingEncryptor](https://github.com/NFig/NFig/blob/master/NFig/Encryption/ISettingEncryptor.cs) must be provided to the NFigStore at initialization time if encrypted settings are used:
 
 ``` csharp
-var encryptor = new RsaSettingEncryptor(rsaObject);
+var encryptor = new RsaSettingEncryptor(rsaObject, padding);
 var store = new NFigMemoryStore<Settings, Tier, DataCenter>(tier, dc, encryptor: encryptor);
 ```
 
@@ -106,6 +106,8 @@ On the local tier, you would use `PassThroughEncryptor`, but in production you w
 If you want to provide developers with a public key that they can use to encrypt the settings, while still keeping the private decryption key a secret, [RSA encrypton](https://en.wikipedia.org/wiki/RSA_%28cryptosystem%29) may be a good choice.
 
 `RsaSettingEncryptor` accepts an [RSA](https://msdn.microsoft.com/en-us/library/system.security.cryptography.rsa(v=vs.110).aspx) object which it uses to encrypt or decrypt settings. RSA is an abstract class, so you'll want to use [RSACryptoServiceProvider](https://msdn.microsoft.com/en-us/library/system.security.cryptography.rsacryptoserviceprovider%28v=vs.110%29.aspx), [RSACng](https://msdn.microsoft.com/en-us/library/system.security.cryptography.rsacng(v=vs.110).aspx), or any other correct and secure RSA implementation.
+
+You must also provide the [RSAEncryptionPadding](https://msdn.microsoft.com/en-us/library/system.security.cryptography.rsaencryptionpadding(v=vs.110).aspx) to use.
 
 Here is an example using `RSACryptoServiceProvider`:
 
