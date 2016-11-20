@@ -6,6 +6,21 @@ using NFig.Logging;
 
 namespace NFig.InMemory
 {
+    /// <summary>
+    /// An in-memory implementation of NFigStore. Overrides set using this store are not persistent. They will be lost every time the application restarts.
+    /// This store is primarily intended for testing purposes, or for getting familiar with NFig in a lightweight way. However, if you don't have any need for
+    /// persistent overrides, it could be used in a production environment.
+    /// </summary>
+    /// <typeparam name="TSettings">
+    /// The type where your settings are defined. Must implement <see cref="INFigSettings{TSubApp,TTier,TDataCenter}"/> or inherit from 
+    /// <see cref="NFigSettingsBase{TSubApp,TTier,TDataCenter}"/>
+    /// </typeparam>
+    /// <typeparam name="TSubApp">
+    /// The type used to select sub-apps. Must be one of: byte, sbyte, short, ushort, int, uint, or an enum which is backed by one of those types. An enum is
+    /// generally preferred, but may be impractical in some cases.
+    /// </typeparam>
+    /// <typeparam name="TTier">The type used to select the deployment tier. Must be an enum backed by a 32-bit, or smaller, integer.</typeparam>
+    /// <typeparam name="TDataCenter">The type used to select the data center. Must be an enum backed by a 32-bit, or smaller, integer.</typeparam>
     public class NFigMemoryStore<TSettings, TSubApp, TTier, TDataCenter> : NFigStore<TSettings, TSubApp, TTier, TDataCenter>
         where TSettings : class, INFigSettings<TSubApp, TTier, TDataCenter>, new()
         where TSubApp : struct
