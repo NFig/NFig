@@ -71,6 +71,7 @@ In order to make the encrypted settings implementation practical and maintainabl
 - All defaults must be in encrypted string form. Even if the setting type is an integer, you can't use `5` as a default value; it must be encrypted first and included as a string.
 - Null is always considered an unencrypted and unencryptable value. It can be used as a default value, but it will never be passed through the Encryptor. ISettingEncryptor methods do not need to handle null.
 - Upon initialization, NFig will assert that the provided `ISettingEncryptor` round-trips correctly. In other words, `ORIGINAL` must _exactly_ equal `Decrypt(Encrypt(ORIGINAL))`.
+
 ## ISettingEncryptor Implementations
 
 [ISettingEncryptor](https://github.com/NFig/NFig/blob/master/NFig/Encryption/ISettingEncryptor.cs) is a very simple interface:
