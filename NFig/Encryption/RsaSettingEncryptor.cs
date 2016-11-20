@@ -8,7 +8,7 @@ namespace NFig.Encryption
     /// <summary>
     /// A Setting encryptor which allows the use of an RSA (asymmetric) encryption algorithm.
     /// </summary>
-    public class RsaEncryptor : ISettingEncryptor
+    public class RsaSettingEncryptor : ISettingEncryptor
     {
         readonly RSA _rsa;
         readonly RSAEncryptionPadding _padding;
@@ -16,9 +16,9 @@ namespace NFig.Encryption
         /// <summary>
         /// Uses a pre-initialized RSA object to provide encryption and decryption.
         /// </summary>
-        /// <param name="rsa">A pre-initialized RSA provider. Note that this object will be retained for the lifetime of the RsaEncryptor.</param>
+        /// <param name="rsa">A pre-initialized RSA provider. Note that this object will be retained for the lifetime of the RsaSettingEncryptor.</param>
         /// <param name="padding">The encryption/decryption padding to use.</param>
-        public RsaEncryptor([NotNull] RSA rsa, [NotNull] RSAEncryptionPadding padding)
+        public RsaSettingEncryptor([NotNull] RSA rsa, [NotNull] RSAEncryptionPadding padding)
         {
             if (rsa == null)
                 throw new ArgumentNullException(nameof(rsa));

@@ -51,8 +51,8 @@
     <Compile Include="DefaultValueAttribute.cs" />
     <Compile Include="DoNotInlineValuesAttribute.cs" />
     <Compile Include="Encryption\SymmetricSettingEncryptor.cs" />
-    <Compile Include="Encryption\PassThroughEncryptor.cs" />
-    <Compile Include="Encryption\RsaEncryptor.cs" />
+    <Compile Include="Encryption\PassThroughSettingEncryptor.cs" />
+    <Compile Include="Encryption\RsaSettingEncryptor.cs" />
     <Compile Include="EnumConverters.cs" />
     <Compile Include="Exceptions.cs" />
     <Compile Include="INFigSettings.cs" />
