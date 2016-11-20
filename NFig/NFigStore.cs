@@ -497,7 +497,7 @@ namespace NFig
                     return snapshot;
             }
 
-            snapshot = await GetAppSnapshotNoCacheAsync();
+            snapshot = await GetSnapshotNoCacheAsync();
             _snapshotCache = snapshot;
 
             if (!cacheExisted)
@@ -522,7 +522,7 @@ namespace NFig
                     return snapshot;
             }
 
-            snapshot = GetAppSnapshotNoCache();
+            snapshot = GetSnapshotNoCache();
             _snapshotCache = snapshot;
 
             if (!cacheExisted)
@@ -668,15 +668,15 @@ namespace NFig
         /// The actual implementation of getting an overrides snapshot. Must be implemented by inheriting classes. DO NOT implement any caching for this
         /// method. Caching is already handled by the base class.
         /// </summary>
-        protected abstract Task<OverridesSnapshot<TSubApp, TTier, TDataCenter>> GetAppSnapshotNoCacheAsync();
+        protected abstract Task<OverridesSnapshot<TSubApp, TTier, TDataCenter>> GetSnapshotNoCacheAsync();
 
         /// <summary>
-        /// Synchronous version of <see cref="GetAppSnapshotNoCacheAsync"/>. Can be overridden by inheriting classes. The default implementation simply uses a
+        /// Synchronous version of <see cref="GetSnapshotNoCacheAsync"/>. Can be overridden by inheriting classes. The default implementation simply uses a
         /// Task to call and await the asynchronous version.
         /// </summary>
-        protected virtual OverridesSnapshot<TSubApp, TTier, TDataCenter> GetAppSnapshotNoCache()
+        protected virtual OverridesSnapshot<TSubApp, TTier, TDataCenter> GetSnapshotNoCache()
         {
-            return Task.Run(async () => await GetAppSnapshotNoCacheAsync()).Result;
+            return Task.Run(async () => await GetSnapshotNoCacheAsync()).Result;
         }
 
         /// <summary>

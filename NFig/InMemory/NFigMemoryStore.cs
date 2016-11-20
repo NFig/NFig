@@ -203,12 +203,12 @@ namespace NFig.InMemory
             }
         }
 
-        protected override Task<OverridesSnapshot<TSubApp, TTier, TDataCenter>> GetAppSnapshotNoCacheAsync()
+        protected override Task<OverridesSnapshot<TSubApp, TTier, TDataCenter>> GetSnapshotNoCacheAsync()
         {
-            return Task.FromResult(GetAppSnapshotNoCache());
+            return Task.FromResult(GetSnapshotNoCache());
         }
 
-        protected override OverridesSnapshot<TSubApp, TTier, TDataCenter> GetAppSnapshotNoCache()
+        protected override OverridesSnapshot<TSubApp, TTier, TDataCenter> GetSnapshotNoCache()
         {
             var data = GetInMemoryAppData();
             lock (data)
