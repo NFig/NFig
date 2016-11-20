@@ -1,9 +1,10 @@
 # Encrypted Settings
 
-### Usage
-##### Creating encrypted settings
+## Usage
 
-There is a new `[EncryptedSetting]` attribute which replaces the `[Setting]` attribute for any setting that is encrypted.
+#### Creating encrypted settings
+
+Use the `[EncryptedSetting]` attribute, instead of `[Setting]`, for any setting that is encrypted.
 
 ``` csharp
 [EncryptedSetting]
@@ -12,7 +13,8 @@ public string MyEncryptedSetting { get; private set; }
 ```
 
 Unlike the `[Setting]` attribute, which _requires_ a default value, the `[EncryptedSetting]` attribute does not accept any default value. The "any tier, any data center" default is always `default(T)` where `T` is the setting type (in the above example, `T = typeof(string)`). All other defaults must be specific to a tier; creating an encrypted default where `tier == 0` (aka the "Any" tier) is not allowed.
-##### Setting up the encryptor
+
+#### Setting up the encryptor
 
 An [ISettingEncryptor](https://github.com/NFig/NFig/blob/master/NFig/Encryption/ISettingEncryptor.cs) must be provided to the NFigStore at initialization time if encrypted settings are used:
 
@@ -22,7 +24,7 @@ var store = new NFigMemoryStore<Settings, Tier, DataCenter>(tier, dc, encryptor:
 ```
 
 See [ISettingEncryptor Implementations](#isettingencryptor-implementations) below for more information.
-##### Setting overrides
+#### Setting overrides
 
 If a setting is encrypted, all of its defaults and overrides must be encrypted (there's no mixing and matching for a given setting). The NFigStore provides `Encrypt()` and `Decrypt()` methods to help facilitate this.
 
@@ -30,7 +32,7 @@ If a setting is encrypted, all of its defaults and overrides must be encrypted (
 var encryptedValue = store.Encrypt("plain text value");
 store.SetOverride(appName, settingName, encryptedValue, dc, user);
 ```
-##### How do I know if a setting is encrypted?
+#### How do I know if a setting is encrypted?
 
 [SettingInfo](https://github.com/NFig/NFig/blob/master/NFig/SettingInfo.cs) objects (obtained via `store.GetAllSettingInfos(appName)`) have an `IsEncrypted` property. 
 
@@ -39,7 +41,7 @@ If you just need to know about one setting, the store provides a helper method:
 ``` csharp
 var isEncrypted = store.IsEncrypted(settingName);
 ```
-##### When is the value encrypted or unencrypted?
+#### When is the value encrypted or unencrypted?
 
 On the actual settings object (as returned by methods like `store.GetSettingsForGlobalApp()`), the values are always *un*encrypted.
 
@@ -60,7 +62,7 @@ var unencrypted = store.Decrypt(encrypted);
 ```
 >  Think of it this way: the settings object is used by the application, which needs the unencrypted value. The `SettingValue` is metadata used by things like an admin panel. In the admin panel, you might not want to show the unencrypted value by default, or perhaps only allow certain users to view it.
 
-### Limitations and Assumptions
+## Limitations and Assumptions
 
 In order to make the encrypted settings implementation practical and maintainable, NFig makes certain assumptions on how they will be used, and imposes limitations to prevent ambiguities.
 - It is assumed that all data centers within a given tier will use the same encryptor and encryption keys. Not doing so will typically result in validation exceptions upon initialization.
@@ -69,7 +71,7 @@ In order to make the encrypted settings implementation practical and maintainabl
 - All defaults must be in encrypted string form. Even if the setting type is an integer, you can't use `5` as a default value; it must be encrypted first and included as a string.
 - Null is always considered an unencrypted and unencryptable value. It can be used as a default value, but it will never be passed through the Encryptor. ISettingEncryptor methods do not need to handle null.
 - Upon initialization, NFig will assert that the provided `ISettingEncryptor` round-trips correctly. In other words, `ORIGINAL` must _exactly_ equal `Decrypt(Encrypt(ORIGINAL))`.
-### ISettingEncryptor Implementations
+## ISettingEncryptor Implementations
 
 [ISettingEncryptor](https://github.com/NFig/NFig/blob/master/NFig/Encryption/ISettingEncryptor.cs) is a very simple interface:
 
@@ -84,7 +86,7 @@ public interface ISettingEncryptor
 > It is expected that the output of `Encrypt()` is a base-64 string, but this is not a strict requirement. For usability, you should avoid encodings which produce characters that require escaping in a C# string.
 
 Any organization with specific security needs can easily provide their own implementation. However, NFig provides three built-in implementations.
-#### PassThroughSettingEncryptor
+### PassThroughSettingEncryptor
 
 This doesn't actually perform any encryption or decryption. Both methods return the original unmodified string.
 
@@ -101,7 +103,7 @@ On the local tier, you would use `PassThroughEncryptor`, but in production you w
 
 > More usage can be found in [EncryptedSettingsTests.cs](https://github.com/NFig/NFig/blob/master/NFig.Tests/EncryptedSettingsTests.cs)
 
-#### RsaSettingEncryptor
+### RsaSettingEncryptor
 
 If you want to provide developers with a public key that they can use to encrypt the settings, while still keeping the private decryption key a secret, [RSA encrypton](https://en.wikipedia.org/wiki/RSA_%28cryptosystem%29) may be a good choice.
 
@@ -128,7 +130,7 @@ var store = new NFigMemoryStore<Settings, Tier, DataCenter>(tier, dc, encryptor:
 ```
 
 The _private_ key must always be used for the encryptor passed to an NFigStore, but you can use the _public_ key to create an `RsaSettingEncryptor` that only supports encryption.
-#### SymmetricSettingEncryptor
+### SymmetricSettingEncryptor
 
 If you don't need a public key, you can use symmetrical encryption (such as [AES](https://en.wikipedia.org/wiki/Advanced_Encryption_Standard)).
 
