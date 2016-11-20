@@ -33,10 +33,8 @@ namespace NFig.InMemory
             public byte[] LastEvent { get; set; }
             public Dictionary<string, string> Overrides { get; } = new Dictionary<string, string>();
         }
-
-        readonly object _lock = new object();
-        readonly Dictionary<string, InMemoryAppData> _dataByApp = new Dictionary<string, InMemoryAppData>();
-
+        
+        readonly InMemoryAppData _appData = new InMemoryAppData();
         public NFigMemoryStore(
             string globalAppName,
             TTier tier,
@@ -69,7 +67,7 @@ namespace NFig.InMemory
             string commit)
         {
             var key = GetOverrideKey(settingName, subApp, dataCenter);
-            var data = GetInMemoryAppData();
+            var data = _appData;
 
             lock (data)
             {
@@ -115,7 +113,7 @@ namespace NFig.InMemory
             string commit)
         {
             var key = GetOverrideKey(settingName, subApp, dataCenter);
-            var data = GetInMemoryAppData();
+            var data = _appData;
             
             lock (data)
             {
@@ -147,13 +145,12 @@ namespace NFig.InMemory
 
         public override Task<string> GetCurrentCommitAsync()
         {
-            var data = GetInMemoryAppData();
-            return Task.FromResult(data.Commit);
+            return Task.FromResult(_appData.Commit);
         }
 
         public override string GetCurrentCommit()
         {
-            return GetInMemoryAppData().Commit;
+            return _appData.Commit;
         }
 
         protected override Task PushUpdateNotificationAsync()
@@ -174,7 +171,7 @@ namespace NFig.InMemory
 
         protected override OverridesSnapshot<TSubApp, TTier, TDataCenter> RestoreSnapshotImpl(OverridesSnapshot<TSubApp, TTier, TDataCenter> snapshot, string user)
         {
-            var data = GetInMemoryAppData();
+            var data = _appData;
             lock (data)
             {
                 data.Commit = NewCommit();
@@ -210,7 +207,7 @@ namespace NFig.InMemory
 
         protected override OverridesSnapshot<TSubApp, TTier, TDataCenter> GetSnapshotNoCache()
         {
-            var data = GetInMemoryAppData();
+            var data = _appData;
             lock (data)
             {
                 return CreateSnapshot(data);
@@ -241,23 +238,6 @@ namespace NFig.InMemory
         protected override void DeleteOrphanedOverrides(OverridesSnapshot<TSubApp, TTier, TDataCenter> snapshot)
         {
             // there's never going to be orphaned overrides for an in-memory store
-        }
-
-        InMemoryAppData GetInMemoryAppData()
-        {
-            lock (_lock)
-            {
-                InMemoryAppData data;
-                if (_dataByApp.TryGetValue(GlobalAppName, out data))
-                {
-                    return data;
-                }
-
-                data = new InMemoryAppData();
-                _dataByApp[GlobalAppName] = data;
-
-                return data;
-            }
         }
     }
 }
