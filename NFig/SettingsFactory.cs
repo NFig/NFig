@@ -55,6 +55,9 @@ namespace NFig
         public TTier Tier { get; }
         public TDataCenter DataCenter { get; }
 
+        public Func<int, TSubApp> IntToSubApp { get; }
+        public Func<int, TDataCenter> IntToDataCenter { get; }
+
         public bool HasEncryptor => _encryptor != null;
 
         public SettingsFactory(
@@ -69,6 +72,9 @@ namespace NFig
             _tierType = typeof(TTier);
             _dataCenterType = typeof(TDataCenter);
             AssertGenericTypesAreValid();
+
+            IntToSubApp = GenerateIntToTypeConverter<TSubApp>();
+            IntToDataCenter = GenerateIntToTypeConverter<TDataCenter>();
 
             GlobalAppName = globalAppName;
             Tier = tier;
@@ -1156,6 +1162,18 @@ namespace NFig
                 || type == typeof(ushort)
                 || type == typeof(int)
                 || type == typeof(uint);
+        }
+
+        Func<int, T> GenerateIntToTypeConverter<T>()
+        {
+            var tType = typeof(T);
+            var dm = new DynamicMethod($"Dynamic:IntToTypeConverter<{tType.Name}>", tType, new[] { typeof(int) });
+            var il = dm.GetILGenerator();
+
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Ret);
+
+            return (Func<int, T>)dm.CreateDelegate(typeof(Func<int, T>));
         }
 
         ReflectionCache CreateReflectionCache()

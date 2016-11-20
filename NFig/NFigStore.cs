@@ -794,17 +794,45 @@ namespace NFig
         }
 
         static readonly Regex s_keyRegex = new Regex(@"^v3\.0:(?<SubApp>\d+):(?<DataCenter>\d+);(?<Name>.+)$");
-        protected static bool TryGetValueFromOverride(string key, string stringValue, out SettingValue<TSubApp, TTier, TDataCenter> value)
+
+        /// <summary>
+        /// Attempts to parse a key generated from <see cref="GetOverrideKey"/>.
+        /// </summary>
+        /// <returns>True if successfully parsed. Otherwise, false.</returns>
+        protected bool TryParseOverrideKey(string key, out string settingName, out TSubApp subApp, out TDataCenter dataCenter)
         {
             var match = s_keyRegex.Match(key);
-            if (match.Success)
+            int subInt, dcInt;
+            if (match.Success && int.TryParse(match.Groups["SubApp"].Value, out subInt) && int.TryParse(match.Groups["DataCenter"].Value, out dcInt))
             {
-                value = SettingValue<TSubApp, TTier, TDataCenter>.CreateOverrideValue(
-                    match.Groups["Name"].Value,
-                    stringValue,
-                    (TSubApp)Enum.ToObject(typeof(TSubApp), int.Parse(match.Groups["SubApp"].Value)),
-                    (TDataCenter)Enum.ToObject(typeof(TDataCenter), int.Parse(match.Groups["DataCenter"].Value)));
+                settingName = match.Groups["Name"].Value;
+                subApp = _factory.IntToSubApp(subInt);
+                dataCenter = _factory.IntToDataCenter(dcInt);
 
+                return true;
+            }
+
+            settingName = null;
+            subApp = default(TSubApp);
+            dataCenter = default(TDataCenter);
+
+            return false;
+        }
+
+        /// <summary>
+        /// Takes a key generated from <see cref="GetOverrideKey"/>, and an override value, and attempts to create a
+        /// <see cref="SettingValue{TSubApp,TTier,TDataCenter}"/> object.
+        /// </summary>
+        /// <returns>True if the key was successfully parsed and the SettingValue object was created. Otherwise, false.</returns>
+        protected bool TryGetValueFromOverride(string key, string stringValue, out SettingValue<TSubApp, TTier, TDataCenter> value)
+        {
+            string settingName;
+            TSubApp subApp;
+            TDataCenter dataCenter;
+
+            if (TryParseOverrideKey(key, out settingName, out subApp, out dataCenter))
+            {
+                value = SettingValue<TSubApp, TTier, TDataCenter>.CreateOverrideValue(settingName, stringValue, subApp, dataCenter);
                 return true;
             }
 
