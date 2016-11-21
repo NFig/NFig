@@ -2,7 +2,7 @@
 
 namespace NFig
 {
-    public static class BinaryExtensions
+    static class BinaryExtensions
     {
         public static void WriteNullableString(this BinaryWriter w, string str)
         {
