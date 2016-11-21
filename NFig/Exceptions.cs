@@ -6,7 +6,10 @@ namespace NFig
 {
     public class NFigException : Exception
     {
-        public NFigException (string message, Exception innerException = null) : base(message, innerException)
+        /// <summary>
+        /// Initializes a new NFigException. This should only be called by NFig libraries.
+        /// </summary>
+        protected internal NFigException (string message, Exception innerException = null) : base(message, innerException)
         {
         }
 
@@ -30,7 +33,7 @@ namespace NFig
     {
         public Type SettingType { get; }
 
-        public InvalidSettingConverterException(string message, Type settingType, Exception innerException = null) : base(message, innerException)
+        internal InvalidSettingConverterException(string message, Type settingType, Exception innerException = null) : base(message, innerException)
         {
             SettingType = settingType;
         }
@@ -44,7 +47,7 @@ namespace NFig
         public bool IsDefault { get; }
         public bool IsOverride => !IsDefault;
 
-        public InvalidSettingValueException(
+        internal InvalidSettingValueException(
             string message,
             string settingName,
             object value,
@@ -67,7 +70,7 @@ namespace NFig
     {
         public IList<InvalidSettingValueException> Exceptions { get; }
 
-        public InvalidSettingOverridesException(IList<InvalidSettingValueException> exceptions, string stackTrace) : base(GetMessage(exceptions))
+        internal InvalidSettingOverridesException(IList<InvalidSettingValueException> exceptions, string stackTrace) : base(GetMessage(exceptions))
         {
             Exceptions = exceptions;
             UnthrownStackTrace = stackTrace;
