@@ -3,13 +3,23 @@ using System.IO;
 
 namespace NFig.Logging
 {
+    /// <summary>
+    /// An enumeration of the types of events which can be logged by a <see cref="SettingsLogger{TSubApp,TTier,TDataCenter}"/>.
+    /// </summary>
     public enum NFigLogEventType : byte
     {
+        /// <summary>An override was set.</summary>
         SetOverride = 1,
+        /// <summary>An override was cleared.</summary>
         ClearOverride = 2,
+        /// <summary>Overrides were restored to a previous state.</summary>
         RestoreSnapshot = 3,
     }
 
+    /// <summary>
+    /// Represents a loggable NFig event.
+    /// </summary>
+    /// <typeparam name="TDataCenter"></typeparam>
     public class NFigLogEvent<TDataCenter>
         where TDataCenter : struct
     {
@@ -50,8 +60,24 @@ namespace NFig.Logging
         /// </summary>
         public string User { get; set; }
 
+        /// <summary>
+        /// This method is primarily intended to support deserialization strategies. Manual construction should typically be performed with the alternate
+        /// constructor.
+        /// </summary>
         public NFigLogEvent() { }
 
+        /// <summary>
+        /// Initializes a new log event.
+        /// </summary>
+        /// <param name="type">The type of event.</param>
+        /// <param name="globalAppName">The "Global" application name.</param>
+        /// <param name="commit">The resulting commit ID (after the event has occurred).</param>
+        /// <param name="timestamp">Time that the event occurred</param>
+        /// <param name="settingName">The name of the setting which the event is applicable to. Use null for restore events.</param>
+        /// <param name="settingValue">The new value of a setting. Use null if a no setting is being set.</param>
+        /// <param name="restoredCommit">The commit ID being restored (only applicable to restore events).</param>
+        /// <param name="dataCenter">The data center which was affected by the event. For restores, it should always be the default "Any" data center.</param>
+        /// <param name="user"></param>
         public NFigLogEvent(
             NFigLogEventType type,
             string globalAppName,
@@ -74,11 +100,17 @@ namespace NFig.Logging
             User = user;
         }
 
+        /// <summary>
+        /// Creates a memberwise-clone of this event.
+        /// </summary>
         public NFigLogEvent<TDataCenter> Clone()
         {
             return (NFigLogEvent<TDataCenter>)MemberwiseClone();
         }
 
+        /// <summary>
+        /// Produces a binary-encoded representation of the event, which may be useful for storing.
+        /// </summary>
         public byte[] BinarySerialize()
         {
             using (var s = new MemoryStream())
@@ -99,6 +131,9 @@ namespace NFig.Logging
             }
         }
 
+        /// <summary>
+        /// Deserializes binary blobs encoded by <see cref="BinarySerialize"/>.
+        /// </summary>
         public static NFigLogEvent<TDataCenter> BinaryDeserialize(byte[] data)
         {
             if (data == null || data.Length == 0)

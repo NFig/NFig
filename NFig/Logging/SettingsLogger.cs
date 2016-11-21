@@ -1,9 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using JetBrains.Annotations;
 
 namespace NFig.Logging
 {
+    /// <summary>
+    /// The base class for all settings loggers. A settings logger records events that occur on an NFigStore.
+    /// </summary>
     public abstract class SettingsLogger<TSubApp, TTier, TDataCenter>
         where TSubApp : struct
         where TTier : struct
@@ -11,7 +15,13 @@ namespace NFig.Logging
     {
         readonly Action<Exception, OverridesSnapshot<TSubApp, TTier, TDataCenter>> _onLogException;
 
-        protected SettingsLogger(Action<Exception, OverridesSnapshot<TSubApp, TTier, TDataCenter>> onLogException)
+        /// <summary>
+        /// Initializes the base logger class.
+        /// </summary>
+        /// <param name="onLogException">
+        /// Since events are logged asynchronously, all exceptions will be sent to this callback.
+        /// </param>
+        protected SettingsLogger([NotNull] Action<Exception, OverridesSnapshot<TSubApp, TTier, TDataCenter>> onLogException)
         {
             if (onLogException == null)
                 throw new ArgumentNullException(nameof(onLogException));
@@ -19,6 +29,10 @@ namespace NFig.Logging
             _onLogException = onLogException;
         }
 
+        /// <summary>
+        /// Queues an event to be logged asynchronously.
+        /// </summary>
+        /// <param name="snapshot">The snapshot immediately following the event.</param>
         public void Log(OverridesSnapshot<TSubApp, TTier, TDataCenter> snapshot)
         {
             Task.Run(async () =>
@@ -56,8 +70,14 @@ namespace NFig.Logging
             int? limit = null,
             int skip = 0);
 
+        /// <summary>
+        /// Retrieves a saved snapshot. Should return null if no matching snapshot is found.
+        /// </summary>
         public abstract Task<OverridesSnapshot<TSubApp, TTier, TDataCenter>> GetSnapshotAsync(string globalAppName, string commit);
 
+        /// <summary>
+        /// Actual implementation for logging. Must be provided by inheriting classes.
+        /// </summary>
         protected abstract Task LogAsyncImpl(OverridesSnapshot<TSubApp, TTier, TDataCenter> snapshot);
     }
 }

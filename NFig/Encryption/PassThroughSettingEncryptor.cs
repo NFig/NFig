@@ -6,11 +6,17 @@
     /// </summary>
     public class PassThroughSettingEncryptor : ISettingEncryptor
     {
+        /// <summary>
+        /// Simply returns the string which is passed to it (no encryption).
+        /// </summary>
         public string Encrypt(string value)
         {
             return value;
         }
 
+        /// <summary>
+        /// Simply returns the string which is passed to it (no encryption).
+        /// </summary>
         public string Decrypt(string encryptedValue)
         {
             return encryptedValue;

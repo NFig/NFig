@@ -5,6 +5,9 @@ using NFig.Logging;
 
 namespace NFig.InMemory
 {
+    /// <summary>
+    /// An in-memory settings logger.
+    /// </summary>
     public class NFigMemoryLogger<TSubApp, TTier, TDataCenter> : SettingsLogger<TSubApp, TTier, TDataCenter>
         where TSubApp : struct
         where TTier : struct
@@ -12,10 +15,19 @@ namespace NFig.InMemory
     {
         readonly List<OverridesSnapshot<TSubApp, TTier, TDataCenter>> _history = new List<OverridesSnapshot<TSubApp, TTier, TDataCenter>>();
 
+        /// <summary>
+        /// Initializes a new in-memory settings logger. This class is primarily for testing purposes. Is has no persistence.
+        /// </summary>
+        /// <param name="onLogException">
+        /// Since events are logged asynchronously, all exceptions will be sent to this callback.
+        /// </param>
         public NFigMemoryLogger(Action<Exception, OverridesSnapshot<TSubApp, TTier, TDataCenter>> onLogException) : base(onLogException)
         {
         }
-
+        
+        /// <summary>
+        /// Logging implementation.
+        /// </summary>
         protected override Task LogAsyncImpl(OverridesSnapshot<TSubApp, TTier, TDataCenter> snapshot)
         {
             lock (_history)
@@ -30,6 +42,18 @@ namespace NFig.InMemory
             return Task.FromResult(0);
         }
 
+        /// <summary>
+        /// Gets log entries filtered by the provided criteria. Results are always returned in descending chronological order.
+        /// </summary>
+        /// <param name="globalAppName">Application name to filter on. Null to include all applications.</param>
+        /// <param name="settingName">Setting name to filter on. Null to include all settings.</param>
+        /// <param name="includeRestores">If true, restore events will be included, even when filtering by setting name.</param>
+        /// <param name="minDate">Minimum (inclusive) event date to include in results.</param>
+        /// <param name="maxDate">Maximum (exclusive) event date to include in results.</param>
+        /// <param name="user">User to filter on. Null to include events by all users.</param>
+        /// <param name="limit">Maximum number of results to return.</param>
+        /// <param name="skip">Number of results to skip - useful for pagination.</param>
+        /// <returns></returns>
         public override Task<IEnumerable<NFigLogEvent<TDataCenter>>> GetLogsAsync(
             string globalAppName = null,
             string settingName = null,
@@ -84,6 +108,9 @@ namespace NFig.InMemory
             return Task.FromResult<IEnumerable<NFigLogEvent<TDataCenter>>>(list);
         }
 
+        /// <summary>
+        /// Retrieves a saved snapshot. Should return null if no matching snapshot is found.
+        /// </summary>
         public override Task<OverridesSnapshot<TSubApp, TTier, TDataCenter>> GetSnapshotAsync(string globalAppName, string commit)
         {
             lock (_history)
@@ -103,6 +130,9 @@ namespace NFig.InMemory
             return Task.FromResult<OverridesSnapshot<TSubApp, TTier, TDataCenter>>(null);
         }
 
+        /// <summary>
+        /// Actual implementation for logging. Must be provided by inheriting classes.
+        /// </summary>
         static int CompareLogs(OverridesSnapshot<TSubApp, TTier, TDataCenter> a, OverridesSnapshot<TSubApp, TTier, TDataCenter> b)
         {
             if (a.LastEvent.Timestamp > b.LastEvent.Timestamp)
