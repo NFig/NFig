@@ -685,7 +685,14 @@ namespace NFig
             {
                 il.Emit(OpCodes.Dup);                                       // [group] [group]
                 EmitNewGroupObject(il, subGroup);                           // [group] [group] [sub]
-                il.Emit(OpCodes.Callvirt, subGroup.PropertyInfo.SetMethod); // [group]
+                if (subGroup.PropertyInfo.SetMethod != null)
+                {
+                    il.Emit(OpCodes.Callvirt, subGroup.PropertyInfo.SetMethod); // [group]
+                }
+                else
+                {
+                    il.Emit(OpCodes.Stfld, GetGetterOnlyBackingField(subGroup.PropertyInfo)); // [group]
+                }
             }
         }
 
@@ -934,8 +941,14 @@ namespace NFig
             }
 
             // stack should be: [s] [group] [group] [valueToSet]
-
-            il.Emit(OpCodes.Callvirt, setting.PropertyInfo.SetMethod); // [s] [group]
+            if (setting.PropertyInfo.SetMethod != null)
+            {
+                il.Emit(OpCodes.Callvirt, setting.PropertyInfo.SetMethod); // [s] [group]
+            }
+            else
+            {
+                il.Emit(OpCodes.Stfld, GetGetterOnlyBackingField(setting.PropertyInfo)); // [s] [group]                
+            }
         }
 
         int AddToValueCache(object value)
@@ -1214,6 +1227,11 @@ namespace NFig
 
         delegate TValue SettingGetterDelegate<TValue>(TSettings settings);
 
+        static FieldInfo GetGetterOnlyBackingField(PropertyInfo property)
+        {
+            return property.DeclaringType.GetField("<" + property.Name + ">k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic);
+        }
+
         class ReflectionCache
         {
             public FieldInfo SettingsField;
@@ -1394,11 +1412,18 @@ namespace NFig
 
                 // arg 0 = TSettings settings
                 // arg 1 = TValue value
-                
+
                 il.Emit(OpCodes.Ldarg_0);                          // [settings]
                 EmitLoadGroup(il, Group);                          // [group]
                 il.Emit(OpCodes.Ldarg_1);                          // [group] [value]
-                il.Emit(OpCodes.Callvirt, PropertyInfo.SetMethod); // empty
+                if (PropertyInfo.SetMethod != null)
+                {
+                    il.Emit(OpCodes.Callvirt, PropertyInfo.SetMethod);  // empty
+                }
+                else
+                {
+                    il.Emit(OpCodes.Stfld, GetGetterOnlyBackingField(PropertyInfo));
+                }
                 il.Emit(OpCodes.Ret);
 
                 return (SettingSetterDelegate<TValue>)dm.CreateDelegate(typeof(SettingSetterDelegate<TValue>));
