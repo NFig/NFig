@@ -27,6 +27,45 @@ namespace NFig.Tests.FactoryTests
             Assert.AreEqual(s.Two.B.C, 11);
         }
 
+        [Test]
+
+        public void NoGetterThrows()
+        {
+            Assert.Throws<NFigException>(() =>
+            {
+                var factory = Utils.CreateFactory<NoSetterTraditionalSettings>();
+                var snapshot = Utils.CreateSnapshot();
+
+                factory.GetSettings(snapshot);
+            });
+
+            Assert.Throws<NFigException>(() =>
+            {
+                var factory = Utils.CreateFactory<NoSetterExpressionSettings>();
+                var snapshot = Utils.CreateSnapshot();
+
+                factory.GetSettings(snapshot);
+            });
+        }
+
+        class NoSetterTraditionalSettings : SettingsBase
+        {
+            private string _nope;
+
+            [Setting("Test")]
+            public string NopeTraditional
+            {
+                get { return _nope; }
+            }
+        }
+
+        class NoSetterExpressionSettings : SettingsBase
+        {
+            private string _nope;
+
+            [Setting("Test")]
+            public string NopeExpression => _nope;
+        }
 
         class GetterOnlySettings : SettingsBase
         {
