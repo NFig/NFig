@@ -29,42 +29,25 @@ namespace NFig.Tests.FactoryTests
 
         [Test]
 
-        public void NoGetterThrows()
+        public void ExplicitBackingFieldThrows()
         {
             Assert.Throws<NFigException>(() =>
             {
-                var factory = Utils.CreateFactory<NoSetterTraditionalSettings>();
-                var snapshot = Utils.CreateSnapshot();
-
-                factory.GetSettings(snapshot);
-            });
-
-            Assert.Throws<NFigException>(() =>
-            {
-                var factory = Utils.CreateFactory<NoSetterExpressionSettings>();
+                var factory = Utils.CreateFactory<ExplicitBackingFieldSettings>();
                 var snapshot = Utils.CreateSnapshot();
 
                 factory.GetSettings(snapshot);
             });
         }
 
-        class NoSetterTraditionalSettings : SettingsBase
+        class ExplicitBackingFieldSettings : SettingsBase
         {
-            private string _nope;
+#pragma warning disable 649
+            string _explicitBackingField;
+#pragma warning restore 649
 
             [Setting("Test")]
-            public string NopeTraditional
-            {
-                get { return _nope; }
-            }
-        }
-
-        class NoSetterExpressionSettings : SettingsBase
-        {
-            private string _nope;
-
-            [Setting("Test")]
-            public string NopeExpression => _nope;
+            public string ExplicitBackingFieldExpression => _explicitBackingField;
         }
 
         class GetterOnlySettings : SettingsBase
