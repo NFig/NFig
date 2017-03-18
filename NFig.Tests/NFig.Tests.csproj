@@ -52,7 +52,7 @@
     <Compile Include="FactoryTests\CustomConverterTests.cs" />
     <Compile Include="EncryptedSettingsTests.cs" />
     <Compile Include="FactoryTests\EnumTests.cs" />
-    <Compile Include="FactoryTests\GetterOnlyTests.cs" />
+    <Compile Include="GetterOnlyTests.cs" />
     <Compile Include="InMemoryStoreTests.cs" />
     <Compile Include="FactoryTests\NestedSettingsTests.cs" />
     <Compile Include="FactoryTests\OverrideTests.cs" />
