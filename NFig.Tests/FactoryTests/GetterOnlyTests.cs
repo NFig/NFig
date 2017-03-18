@@ -28,7 +28,6 @@ namespace NFig.Tests.FactoryTests
         }
 
         [Test]
-
         public void ExplicitBackingFieldThrows()
         {
             Assert.Throws<NFigException>(() =>
