@@ -685,7 +685,7 @@ namespace NFig
             {
                 il.Emit(OpCodes.Dup);                                       // [group] [group]
                 EmitNewGroupObject(il, subGroup);                           // [group] [group] [sub]
-                EmitSetter(il, subGroup.PropertyInfo);                      // [group]
+                EmitSetProperty(il, subGroup.PropertyInfo);                      // [group]
             }
         }
 
@@ -934,7 +934,30 @@ namespace NFig
             }
 
             // stack should be: [s] [group] [group] [valueToSet]
-            EmitSetter(il, setting.PropertyInfo); // [s] [group]
+            EmitSetProperty(il, setting.PropertyInfo); // [s] [group]
+        }
+
+        /// <summary>
+        /// Assigns a property by either calling the setting, or by directly setting a backing field when no setter exists.
+        /// Top of stack should be [obj] [value] before calling this method. Both are popped from the stack before returning.
+        /// </summary>
+        static void EmitSetProperty(ILGenerator il, PropertyInfo property)
+        {
+            if (property.SetMethod == null)
+            {
+                // possible a getter-only property
+                var backingField = property.DeclaringType.GetField("<" + property.Name + ">k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic);
+                if (backingField == null)
+                {
+                    throw new NFigException($"Property {property.Name} does not have a setter.");
+                }
+
+                il.Emit(OpCodes.Stfld, backingField);
+            }
+            else
+            {
+                il.Emit(OpCodes.Callvirt, property.SetMethod);
+            }
         }
 
         int AddToValueCache(object value)
@@ -1213,25 +1236,6 @@ namespace NFig
 
         delegate TValue SettingGetterDelegate<TValue>(TSettings settings);
 
-        static void EmitSetter(ILGenerator il, PropertyInfo property)
-        {
-            if (property.SetMethod == null)
-            {
-                // possible a getter-only property
-                var backingField = property.DeclaringType.GetField("<" + property.Name + ">k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic);
-                if (backingField == null)
-                {
-                    throw new NFigException($"Property {property.Name} does not have a setter.");
-                }
-
-                il.Emit(OpCodes.Stfld, backingField);
-            }
-            else
-            {
-                il.Emit(OpCodes.Callvirt, property.SetMethod);
-            }
-        }
-
         class ReflectionCache
         {
             public FieldInfo SettingsField;
@@ -1416,7 +1420,7 @@ namespace NFig
                 il.Emit(OpCodes.Ldarg_0);                          // [settings]
                 EmitLoadGroup(il, Group);                          // [group]
                 il.Emit(OpCodes.Ldarg_1);                          // [group] [value]
-                EmitSetter(il, PropertyInfo);                      // empty
+                EmitSetProperty(il, PropertyInfo);                      // empty
                 il.Emit(OpCodes.Ret);
 
                 return (SettingSetterDelegate<TValue>)dm.CreateDelegate(typeof(SettingSetterDelegate<TValue>));
