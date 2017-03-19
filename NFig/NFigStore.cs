@@ -355,25 +355,6 @@ namespace NFig
         }
 
         /// <summary>
-        /// Returns a SettingInfo object for each setting. The SettingInfo contains meta data about the setting, as well as lists of the default values and current overrides.
-        /// Default values which are not applicable to the current tier are not included.
-        /// </summary>
-        public async Task<SettingInfo<TSubApp, TTier, TDataCenter>[]> GetAllSettingInfosAsync()
-        {
-            var data = await GetSnapshotAsync().ConfigureAwait(false);
-            return _factory.GetAllSettingInfos(data.Overrides);
-        }
-
-        /// <summary>
-        /// Synchronous version of <see cref="GetAllSettingInfosAsync"/>.
-        /// </summary>
-        public SettingInfo<TSubApp, TTier, TDataCenter>[] GetAllSettingInfos()
-        {
-            var data = GetSnapshot();
-            return _factory.GetAllSettingInfos(data.Overrides);
-        }
-
-        /// <summary>
         /// Returns true if the commit ID on the settings object matches the most current commit ID.
         /// </summary>
         public async Task<bool> IsCurrentAsync(TSettings settings)

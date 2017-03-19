@@ -204,38 +204,6 @@ namespace NFig
             }
         }
 
-        public SettingInfo<TSubApp, TTier, TDataCenter>[] GetAllSettingInfos(IEnumerable<SettingValue<TSubApp, TTier, TDataCenter>> overrides = null)
-        {
-            Dictionary<string, List<SettingValue<TSubApp, TTier, TDataCenter>>> overrideListBySetting = null;
-
-            if (overrides != null)
-            {
-                overrideListBySetting = new Dictionary<string, List<SettingValue<TSubApp, TTier, TDataCenter>>>();
-                foreach (var over in overrides)
-                {
-                    List<SettingValue<TSubApp, TTier, TDataCenter>> overList;
-                    if (!overrideListBySetting.TryGetValue(over.Name, out overList))
-                        overrideListBySetting[over.Name] = overList = new List<SettingValue<TSubApp, TTier, TDataCenter>>();
-
-                    overList.Add(over);
-                }
-            }
-
-            var infos = new SettingInfo<TSubApp, TTier, TDataCenter>[_settings.Count];
-            for (var i = 0; i < _settings.Count; i++)
-            {
-                var s = _settings[i];
-
-                List<SettingValue<TSubApp, TTier, TDataCenter>> overList;
-                if (overrideListBySetting == null || !overrideListBySetting.TryGetValue(s.Name, out overList))
-                    overList = new List<SettingValue<TSubApp, TTier, TDataCenter>>();
-
-                infos[i] = new SettingInfo<TSubApp, TTier, TDataCenter>(s.Name, s.Description, s.ChangeRequiresRestart, s.IsEncrypted, s.PropertyInfo, s.Defaults, overList);
-            }
-
-            return infos;
-        }
-
         public string Encrypt(string plainText)
         {
             if (plainText == null)
