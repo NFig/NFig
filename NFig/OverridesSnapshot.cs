@@ -27,7 +27,7 @@ namespace NFig
         /// A list of overrides which existed at the time the snapshot was taken.
         /// </summary>
         [CanBeNull]
-        public IList<SettingValue<TSubApp, TTier, TDataCenter>> Overrides { get; }
+        public IList<OverrideValue<TSubApp, TTier, TDataCenter>> Overrides { get; }
         /// <summary>
         /// The last event which had occurred prior to taking the snapshot.
         /// </summary>
@@ -44,7 +44,7 @@ namespace NFig
         public OverridesSnapshot(
             [NotNull] string globalAppName,
             [NotNull] string commit,
-            IList<SettingValue<TSubApp, TTier, TDataCenter>> overrides,
+            IList<OverrideValue<TSubApp, TTier, TDataCenter>> overrides,
             NFigLogEvent<TDataCenter> lastEvent)
         {
             if (globalAppName == null)

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using NUnit.Framework;
 
-using SettingValue = NFig.SettingValue<NFig.Tests.SubApp, NFig.Tests.Tier, NFig.Tests.DataCenter>;
+using OverrideValue = NFig.OverrideValue<NFig.Tests.SubApp, NFig.Tests.Tier, NFig.Tests.DataCenter>;
 
 namespace NFig.Tests.FactoryTests
 {
@@ -14,10 +14,10 @@ namespace NFig.Tests.FactoryTests
         {
             var factory = Utils.CreateFactory<OverrideSettings>();
 
-            var overrides = new List<SettingValue>()
+            var overrides = new List<OverrideValue>()
             {
-                SettingValue.CreateOverrideValue("A", "10", SubApp.Global, DataCenter.Any),
-                SettingValue.CreateOverrideValue("B", "11", SubApp.Global, DataCenter.Any),
+                new OverrideValue("A", "10", SubApp.Global, DataCenter.Any),
+                new OverrideValue("B", "11", SubApp.Global, DataCenter.Any),
             };
 
             var snapshot = Utils.CreateSnapshot(overrides: overrides);
@@ -33,11 +33,11 @@ namespace NFig.Tests.FactoryTests
         {
             var factory = Utils.CreateFactory<OverrideSettings>();
 
-            var overrides = new List<SettingValue>()
+            var overrides = new List<OverrideValue>()
             {
-                SettingValue.CreateOverrideValue("A", "a", SubApp.Global, DataCenter.Any),
-                SettingValue.CreateOverrideValue("B", "b", SubApp.Global, DataCenter.Any),
-                SettingValue.CreateOverrideValue("C", "12", SubApp.Global, DataCenter.Any),
+                new OverrideValue("A", "a", SubApp.Global, DataCenter.Any),
+                new OverrideValue("B", "b", SubApp.Global, DataCenter.Any),
+                new OverrideValue("C", "12", SubApp.Global, DataCenter.Any),
             };
 
             var snapshot = Utils.CreateSnapshot(overrides: overrides);

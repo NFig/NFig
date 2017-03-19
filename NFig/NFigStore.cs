@@ -892,10 +892,10 @@ namespace NFig
 
         /// <summary>
         /// Takes a key generated from <see cref="GetOverrideKey"/>, and an override value, and attempts to create a
-        /// <see cref="SettingValue{TSubApp,TTier,TDataCenter}"/> object.
+        /// <see cref="OverrideValue{TSubApp,TTier,TDataCenter}"/> object.
         /// </summary>
         /// <returns>True if the key was successfully parsed and the SettingValue object was created. Otherwise, false.</returns>
-        protected bool TryGetValueFromOverride(string key, string stringValue, out SettingValue<TSubApp, TTier, TDataCenter> value)
+        protected bool TryGetValueFromOverride(string key, string stringValue, out OverrideValue<TSubApp, TTier, TDataCenter> value)
         {
             string settingName;
             TSubApp subApp;
@@ -903,7 +903,7 @@ namespace NFig
 
             if (TryParseOverrideKey(key, out settingName, out subApp, out dataCenter))
             {
-                value = SettingValue<TSubApp, TTier, TDataCenter>.CreateOverrideValue(settingName, stringValue, subApp, dataCenter);
+                value = new OverrideValue<TSubApp, TTier, TDataCenter>(settingName, stringValue, subApp, dataCenter);
                 return true;
             }
 

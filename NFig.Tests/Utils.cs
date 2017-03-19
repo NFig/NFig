@@ -37,7 +37,7 @@ namespace NFig.Tests
         public static OverridesSnapshot<SubApp, Tier, DataCenter> CreateSnapshot(
             string globalAppName = GLOBAL_APP_1,
             string commit = NFigStore.INITIAL_COMMIT,
-            List<SettingValue<SubApp, Tier, DataCenter>> overrides = null,
+            List<OverrideValue<SubApp, Tier, DataCenter>> overrides = null,
             NFigLogEvent<DataCenter> lastEvent = null)
         {
             return new OverridesSnapshot<SubApp, Tier, DataCenter>(globalAppName, commit, overrides, lastEvent);

@@ -240,10 +240,10 @@ namespace NFig.InMemory
 
         OverridesSnapshot<TSubApp, TTier, TDataCenter> CreateSnapshot(InMemoryAppData data)
         {
-            var overrides = new List<SettingValue<TSubApp, TTier, TDataCenter>>();
+            var overrides = new List<OverrideValue<TSubApp, TTier, TDataCenter>>();
             foreach (var kvp in data.Overrides)
             {
-                SettingValue<TSubApp, TTier, TDataCenter> value;
+                OverrideValue<TSubApp, TTier, TDataCenter> value;
                 if (TryGetValueFromOverride(kvp.Key, kvp.Value, out value))
                     overrides.Add(value);
             }

@@ -114,7 +114,7 @@ namespace NFig
         public InvalidSettingOverridesException TryGetSettingsForGlobalApp(out TSettings settings, [NotNull] OverridesSnapshot<TSubApp, TTier, TDataCenter> snapshot)
         {
             var overrides = snapshot.Overrides;
-            var overridesBySubApp = overrides == null ? null : OrganizeSettingValues(overrides, defaultOnly: true);
+            var overridesBySubApp = overrides == null ? null : OrganizeOverridesBySubApp(overrides, defaultOnly: true);
             List<InvalidSettingValueException> exceptions = null;
 
             settings = _initializer(this, default(TSubApp));
@@ -122,7 +122,7 @@ namespace NFig
 
             if (overridesBySubApp != null)
             {
-                Dictionary<string, SettingValue<TSubApp, TTier, TDataCenter>> globalOverrides;
+                Dictionary<string, OverrideValue<TSubApp, TTier, TDataCenter>> globalOverrides;
                 overridesBySubApp.TryGetValue(default(TSubApp), out globalOverrides);
 
                 SetOverrides(settings, globalOverrides, null, ref exceptions);
@@ -140,7 +140,7 @@ namespace NFig
             [NotNull] OverridesSnapshot<TSubApp, TTier, TDataCenter> snapshot)
         {
             var overrides = snapshot.Overrides;
-            var overridesBySubApp = overrides == null ? null : OrganizeSettingValues(overrides, defaultOnly: false);
+            var overridesBySubApp = overrides == null ? null : OrganizeOverridesBySubApp(overrides, defaultOnly: false);
             settingsBySubApp = new Dictionary<TSubApp, TSettings>();
             List<InvalidSettingValueException> exceptions = null;
 
@@ -151,7 +151,7 @@ namespace NFig
 
                 if (overridesBySubApp != null)
                 {
-                    Dictionary<string, SettingValue<TSubApp, TTier, TDataCenter>> globalOverrides, specificSubApp;
+                    Dictionary<string, OverrideValue<TSubApp, TTier, TDataCenter>> globalOverrides, specificSubApp;
                     overridesBySubApp.TryGetValue(default(TSubApp), out globalOverrides);
 
                     if (!Compare.IsDefault(subApp))
@@ -174,8 +174,8 @@ namespace NFig
 
         void SetOverrides(
             TSettings settings,
-            [CanBeNull] Dictionary<string, SettingValue<TSubApp, TTier, TDataCenter>> overrides,
-            [CanBeNull] Dictionary<string, SettingValue<TSubApp, TTier, TDataCenter>> moreSpecificOverrides,
+            [CanBeNull] Dictionary<string, OverrideValue<TSubApp, TTier, TDataCenter>> overrides,
+            [CanBeNull] Dictionary<string, OverrideValue<TSubApp, TTier, TDataCenter>> moreSpecificOverrides,
             ref List<InvalidSettingValueException> exceptions)
         {
             if (overrides == null)
@@ -385,21 +385,20 @@ namespace NFig
             var noInline = pi.GetCustomAttribute<DoNotInlineValuesAttribute>() != null;
 
             // default values
-            var allDefaults = new List<SettingValue<TSubApp, TTier, TDataCenter>>();
-            var applicableDefaults = new List<SettingValue<TSubApp, TTier, TDataCenter>>();
+            var allDefaults = new List<DefaultValue<TSubApp, TTier, TDataCenter>>();
+            var applicableDefaults = new List<DefaultValue<TSubApp, TTier, TDataCenter>>();
 
             {
                 // see if there are any default value attributes
                 var rootDefault = isEncrypted ? default(TValue) : sa.DefaultValue;
                 var defaultStringValue = GetStringFromDefaultAndValidate(name, rootDefault, default(TSubApp), default(TDataCenter), converter, isEncrypted);
 
-                var d = new SettingValue<TSubApp, TTier, TDataCenter>(
+                var d = new DefaultValue<TSubApp, TTier, TDataCenter>(
                     name,
                     defaultStringValue,
                     default(TSubApp),
                     default(TTier),
                     default(TDataCenter),
-                    true,
                     true
                 );
 
@@ -435,13 +434,12 @@ namespace NFig
                     var defaultStringValue = GetStringFromDefaultAndValidate(name, dsvaDefault, subApp, dc, converter, isEncrypted);
 
                     // create default
-                    var d = new SettingValue<TSubApp, TTier, TDataCenter>(
+                    var d = new DefaultValue<TSubApp, TTier, TDataCenter>(
                         name,
                         defaultStringValue,
                         subApp,
                         tier,
                         dc,
-                        true,
                         dsva.AllowOverrides
                     );
 
@@ -823,7 +821,7 @@ namespace NFig
             }
         }
 
-        void EmitSetting(ILGenerator il, Setting setting, int settingIndex, SettingValue<TSubApp, TTier, TDataCenter> sv)
+        void EmitSetting(ILGenerator il, Setting setting, int settingIndex, ISettingValue<TSubApp, TTier, TDataCenter> sv)
         {
             // Initial stack: [s] [group]
             // End stack:     [s] [group]
@@ -1032,7 +1030,7 @@ namespace NFig
                         best[subApp] = list;
                     }
 
-                    SettingValue<TSubApp, TTier, TDataCenter> _;
+                    ISettingValue<TSubApp, TTier, TDataCenter> _;
                     var defIndex = defaults.GetBestValueFor(subApp, tier, dataCenter, out _);
                     list.Add(new BestDefault(i, defIndex));
                 }
@@ -1061,16 +1059,16 @@ namespace NFig
             return false;
         }
 
-        Dictionary<TSubApp, Dictionary<string, SettingValue<TSubApp, TTier, TDataCenter>>> OrganizeSettingValues(
-            IEnumerable<SettingValue<TSubApp, TTier, TDataCenter>> values,
+        Dictionary<TSubApp, Dictionary<string, OverrideValue<TSubApp, TTier, TDataCenter>>> OrganizeOverridesBySubApp(
+            IEnumerable<OverrideValue<TSubApp, TTier, TDataCenter>> overrides,
             bool defaultOnly)
         {
-            var bySubApp = new Dictionary<TSubApp, Dictionary<string, SettingValue<TSubApp, TTier, TDataCenter>>>();
+            var bySubApp = new Dictionary<TSubApp, Dictionary<string, OverrideValue<TSubApp, TTier, TDataCenter>>>();
 
             var tier = Tier;
             var dataCenter = DataCenter;
 
-            foreach (var value in values)
+            foreach (var value in overrides)
             {
                 var subApp = value.SubApp;
 
@@ -1080,14 +1078,14 @@ namespace NFig
                 if (!value.IsValidFor(subApp, tier, dataCenter))
                     continue;
 
-                Dictionary<string, SettingValue<TSubApp, TTier, TDataCenter>> bySettingName;
+                Dictionary<string, OverrideValue<TSubApp, TTier, TDataCenter>> bySettingName;
                 if (!bySubApp.TryGetValue(subApp, out bySettingName))
                 {
-                    bySettingName = new Dictionary<string, SettingValue<TSubApp, TTier, TDataCenter>>();
+                    bySettingName = new Dictionary<string, OverrideValue<TSubApp, TTier, TDataCenter>>();
                     bySubApp[subApp] = bySettingName;
                 }
 
-                SettingValue<TSubApp, TTier, TDataCenter> existingValue;
+                OverrideValue<TSubApp, TTier, TDataCenter> existingValue;
                 if (bySettingName.TryGetValue(value.Name, out existingValue))
                 {
                     if (!value.IsMoreSpecificThan(existingValue))
@@ -1254,13 +1252,13 @@ namespace NFig
             public bool ChangeRequiresRestart { get; protected set; }
             public bool IsEncrypted { get; protected set; }
             public PropertyInfo PropertyInfo { get; protected set; }
-            public SettingValue<TSubApp, TTier, TDataCenter>[] Defaults { get; protected set; }
+            public DefaultValue<TSubApp, TTier, TDataCenter>[] Defaults { get; protected set; }
             public Type TypeOfValue { get; protected set; }
             public SettingGroup Group { get; protected set; }
             public bool DoNotInlineValues { get; protected set; }
 
             public abstract object GetValueAsObject(TSettings settings);
-            public abstract InvalidSettingValueException TryApplyOverride(TSettings settings, SettingValue<TSubApp, TTier, TDataCenter> over, string strValue);
+            public abstract InvalidSettingValueException TryApplyOverride(TSettings settings, OverrideValue<TSubApp, TTier, TDataCenter> over, string strValue);
             public abstract object GetValueFromString(string str);
             public abstract bool TryGetValueFromString(string str, out object value);
             public abstract bool TryGetStringFromValue(object value, out string str);
@@ -1280,7 +1278,7 @@ namespace NFig
                 bool isEncrypted,
                 PropertyInfo propertyInfo,
                 SettingGroup group,
-                SettingValue<TSubApp, TTier, TDataCenter>[] defaults,
+                DefaultValue<TSubApp, TTier, TDataCenter>[] defaults,
                 ISettingConverter<TValue> converter,
                 bool noInline
             )
@@ -1311,7 +1309,7 @@ namespace NFig
                 return GetValue(settings);
             }
 
-            public override InvalidSettingValueException TryApplyOverride(TSettings settings, SettingValue<TSubApp, TTier, TDataCenter> over, string strValue)
+            public override InvalidSettingValueException TryApplyOverride(TSettings settings, OverrideValue<TSubApp, TTier, TDataCenter> over, string strValue)
             {
                 TValue value;
 
