@@ -635,7 +635,7 @@ namespace NFig
             {
                 il.Emit(OpCodes.Dup);                                       // [group] [group]
                 EmitNewGroupObject(il, subGroup);                           // [group] [group] [sub]
-                EmitSetProperty(il, subGroup.PropertyInfo);                      // [group]
+                EmitSetProperty(il, subGroup.PropertyInfo);                 // [group]
             }
         }
 
@@ -1391,7 +1391,7 @@ namespace NFig
                 il.Emit(OpCodes.Ldarg_0);                          // [settings]
                 EmitLoadGroup(il, Group);                          // [group]
                 il.Emit(OpCodes.Ldarg_1);                          // [group] [value]
-                EmitSetProperty(il, PropertyInfo);                      // empty
+                EmitSetProperty(il, PropertyInfo);                 // empty
                 il.Emit(OpCodes.Ret);
 
                 return (SettingSetterDelegate<TValue>)dm.CreateDelegate(typeof(SettingSetterDelegate<TValue>));
