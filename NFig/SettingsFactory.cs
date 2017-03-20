@@ -649,7 +649,7 @@ namespace NFig
 
             var loadSubAppArg = OpCodes.Ldarg_1;
 
-            var bestDefaults = GetBestDefaults();
+            var bestDefaults = GetBestDefaultsBySubApp();
 
             // first thing we want to do is emit the list of defaults for the default sub app
             EmitDefaultList(il, bestDefaults[default(TSubApp)]); // [s]
@@ -980,7 +980,7 @@ namespace NFig
             return InlineStrategy.Cache; // only other primitive types are IntPtr and UIntPtr (never actually going to happen)
         }
 
-        Dictionary<TSubApp, List<BestDefault>> GetBestDefaults()
+        Dictionary<TSubApp, List<BestDefault>> GetBestDefaultsBySubApp()
         {
             var best = new Dictionary<TSubApp, List<BestDefault>>();
             best[default(TSubApp)] = new List<BestDefault>();
