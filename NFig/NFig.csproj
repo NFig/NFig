@@ -70,6 +70,7 @@
     <Compile Include="NFigStore.cs" />
     <Compile Include="ChangeRequiresRestartAttribute.cs" />
     <Compile Include="SettingAttribute.cs" />
+    <Compile Include="SettingMetadata.cs" />
     <Compile Include="SettingsGroupAttribute.cs" />
     <Compile Include="SettingsFactory.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
