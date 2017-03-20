@@ -83,23 +83,7 @@ namespace NFig
             AssertEncryptorIsNullOrValid(encryptor);
             _encryptor = encryptor;
 
-            if (additionalDefaultConverters != null)
-            {
-                foreach (var kvp in additionalDefaultConverters)
-                {
-                    _defaultConverters[kvp.Key] = kvp.Value;
-                }
-            }
-
-            // make sure all of the converters are valid
-            foreach (var kvp in _defaultConverters)
-            {
-                if (!IsConverterOfType(kvp.Value, kvp.Key))
-                {
-                    throw new InvalidSettingConverterException(
-                        $"Cannot use {kvp.Value.GetType().Name} as setting converter for type {kvp.Key.Name}. The converter must implement SettingConverter<{kvp.Key.Name}>.", kvp.Key);
-                }
-            }
+            SetupConverters(additionalDefaultConverters);
 
             _reflectionCache = CreateReflectionCache();
 
@@ -1162,6 +1146,27 @@ namespace NFig
             il.Emit(OpCodes.Ret);
 
             return (Func<int, T>)dm.CreateDelegate(typeof(Func<int, T>));
+        }
+
+        void SetupConverters(Dictionary<Type, object> additionalDefaultConverters)
+        {
+            if (additionalDefaultConverters != null)
+            {
+                foreach (var kvp in additionalDefaultConverters)
+                {
+                    _defaultConverters[kvp.Key] = kvp.Value;
+                }
+            }
+
+            // make sure all of the converters are valid
+            foreach (var kvp in _defaultConverters)
+            {
+                if (!IsConverterOfType(kvp.Value, kvp.Key))
+                {
+                    throw new InvalidSettingConverterException(
+                        $"Cannot use {kvp.Value.GetType().Name} as setting converter for type {kvp.Key.Name}. The converter must implement SettingConverter<{kvp.Key.Name}>.", kvp.Key);
+                }
+            }
         }
 
         ReflectionCache CreateReflectionCache()
