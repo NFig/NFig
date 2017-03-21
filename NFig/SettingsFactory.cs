@@ -32,6 +32,8 @@ namespace NFig
         
         readonly ReflectionCache _reflectionCache;
 
+        BySettingDictionary<SettingMetadata> _metadataBySetting;
+
         delegate Setting PropertyToSettingDelegate(PropertyInfo pi, SettingAttribute sa, SettingGroup group);
 
         readonly Dictionary<Type, object> _defaultConverters = new Dictionary<Type, object>
@@ -287,6 +289,27 @@ namespace NFig
                 throw new ArgumentException($"Setting \"{settingName}\" is not of the requested type {typeof (TValue)}");
 
             return typedSetting.GetValue(obj);
+        }
+
+        public BySettingDictionary<SettingMetadata> GetMetadata()
+        {
+            var bySetting = _metadataBySetting;
+
+            if (bySetting == null)
+            {
+                var settings = _settings;
+                var metas = new SettingMetadata[settings.Count];
+                for (var i = 0; i < metas.Length; i++)
+                {
+                    var s = settings[i];
+                    metas[i] = new SettingMetadata(s.Name, s.Description, s.TypeOfValue, s.IsEncrypted, s.ChangeRequiresRestart);
+                }
+
+                bySetting = new BySettingDictionary<SettingMetadata>(metas);
+                _metadataBySetting = bySetting;
+            }
+
+            return bySetting;
         }
 
         SettingGroup GetSettingsTree()

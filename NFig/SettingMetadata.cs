@@ -5,7 +5,7 @@ namespace NFig
     /// <summary>
     /// Describes all information about an individual setting, except for its values.
     /// </summary>
-    public class SettingMetadata
+    public class SettingMetadata : IBySettingDictionaryItem
     {
         /// <summary>
         /// The name of the setting. Dots in the name represent nesting levels.
@@ -44,13 +44,13 @@ namespace NFig
         /// </summary>
         public bool ChangeRequiresRestart { get; }
 
-        internal SettingMetadata(string name, string description, Type type, bool isEncrypted, bool isEnum, bool changeRequiresRestart)
+        internal SettingMetadata(string name, string description, Type type, bool isEncrypted, bool changeRequiresRestart)
         {
             Name = name;
             Description = description;
             Type = type;
             IsEncrypted = isEncrypted;
-            IsEnum = isEnum;
+            IsEnum = type.IsEnum;
             ChangeRequiresRestart = changeRequiresRestart;
         }
     }

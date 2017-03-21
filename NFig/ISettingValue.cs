@@ -8,15 +8,11 @@ namespace NFig
     /// The common inferface for defaults and overrides. However, typically you'll want to use one of the concrete types
     /// <see cref="DefaultValue{TSubApp,TTier,TDataCenter}"/> or <see cref="OverrideValue{TSubApp,TTier,TDataCenter}"/>.
     /// </summary>
-    public interface ISettingValue<TSubApp, TTier, TDataCenter>
+    public interface ISettingValue<TSubApp, TTier, TDataCenter> : IBySettingDictionaryItem
         where TSubApp : struct
         where TTier : struct
         where TDataCenter : struct
     {
-        /// <summary>
-        /// The name of the setting which this value applies to.
-        /// </summary>
-        string Name { get; }
         /// <summary>
         /// A string-representation of the value. If the setting is encrypted, then this property will be the encrypted string.
         /// </summary>

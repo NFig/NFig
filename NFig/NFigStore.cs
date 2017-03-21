@@ -549,6 +549,11 @@ namespace NFig
             return newSnapshot;
         }
 
+        /// <summary>
+        /// Gets a dictionary of metadata keyed by setting name.
+        /// </summary>
+        public BySettingDictionary<SettingMetadata> GetMetadata() => _factory.GetMetadata();
+
 // === Virtual Methods ===
 
         /// <summary>

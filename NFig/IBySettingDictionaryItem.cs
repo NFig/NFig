@@ -6,7 +6,7 @@
     public interface IBySettingDictionaryItem
     {
         /// <summary>
-        /// The setting name. This property will become the key in a <see cref="BySettingDictionary{TValue}"/>.
+        /// The setting name. When used in a <see cref="BySettingDictionary{TValue}"/>, this property will become the key.
         /// </summary>
         string Name { get; }
     }
