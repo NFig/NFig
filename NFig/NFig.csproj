@@ -56,8 +56,10 @@
     <Compile Include="Encryption\RsaSettingEncryptor.cs" />
     <Compile Include="EnumConverters.cs" />
     <Compile Include="Exceptions.cs" />
+    <Compile Include="IBySettingDictionaryItem.cs" />
     <Compile Include="INFigSettings.cs" />
     <Compile Include="ISettingValue.cs" />
+    <Compile Include="BySettingDictionary.cs" />
     <Compile Include="OverridesSnapshot.cs" />
     <Compile Include="Encryption\ISettingEncryptor.cs" />
     <Compile Include="InMemory\NFigMemoryLogger.cs" />
