@@ -30,12 +30,15 @@ namespace NFig
         /// <summary>
         /// Enumerates the setting names (keys) in alphabetical order.
         /// </summary>
-        public IEnumerable<string> Keys => GetKeys();
+        public KeyCollection Keys => new KeyCollection(this);
 
         /// <summary>
         /// Enumerates the values in alphabetical order by setting name (key).
         /// </summary>
-        public IEnumerable<TValue> Values => GetValues();
+        public ValueCollection Values => new ValueCollection(this);
+
+        IEnumerable<string> IReadOnlyDictionary<string, TValue>.Keys => Keys;
+        IEnumerable<TValue> IReadOnlyDictionary<string, TValue>.Values => Values;
 
         /// <summary>
         /// Gets a value by setting name. A KeyNotFoundException exception is thrown if the value does not exist.
@@ -113,22 +116,6 @@ namespace NFig
         IEnumerator<KeyValuePair<string, TValue>> IEnumerable<KeyValuePair<string, TValue>>.GetEnumerator() => GetEnumerator();
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-
-        IEnumerable<string> GetKeys()
-        {
-            for (var i = 0; i < _entries.Length; i++)
-            {
-                yield return _entries[i].Key;
-            }
-        }
-
-        IEnumerable<TValue> GetValues()
-        {
-            for (var i = 0; i < _entries.Length; i++)
-            {
-                yield return _entries[i].Value;
-            }
-        }
 
         static Entry[] GetEntries(IReadOnlyCollection<TValue> values)
         {
@@ -236,6 +223,178 @@ namespace NFig
                 }
 
                 Current = default(KeyValuePair<string, TValue>);
+                return false;
+            }
+
+            /// <summary>
+            /// Resets the enumerator to its original position.
+            /// </summary>
+            public void Reset()
+            {
+                _entryIndex = -1;
+            }
+        }
+
+        /// <summary>
+        /// A value-type collection for keys (setting names).
+        /// </summary>
+        public struct KeyCollection : IReadOnlyCollection<string>
+        {
+            readonly BySettingDictionary<TValue> _dictionary;
+
+            /// <summary>
+            /// The number of keys to enumerate.
+            /// </summary>
+            public int Count => _dictionary.Count;
+
+            internal KeyCollection(BySettingDictionary<TValue> dictionary)
+            {
+                _dictionary = dictionary;
+            }
+
+            /// <summary>
+            /// Gets the enumerator for keys (setting names).
+            /// </summary>
+            public KeyEnumerator GetEnumerator()
+            {
+                return new KeyEnumerator(_dictionary);
+            }
+
+            IEnumerator<string> IEnumerable<string>.GetEnumerator() => GetEnumerator();
+
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        }
+
+        /// <summary>
+        /// A value-type enumerator for keys (setting names).
+        /// </summary>
+        public struct KeyEnumerator : IEnumerator<string>
+        {
+            readonly Entry[] _entries;
+            int _entryIndex;
+
+            /// <summary>
+            /// The current value of the enumerator. This is undefined before <see cref="MoveNext"/> is called, and after <see cref="MoveNext"/> returns false.
+            /// </summary>
+            public string Current { get; private set; }
+
+            object IEnumerator.Current => Current;
+
+            internal KeyEnumerator(BySettingDictionary<TValue> dictionary)
+            {
+                _entries = dictionary._entries;
+                _entryIndex = -1;
+                Current = null;
+            }
+
+            /// <summary>
+            /// Does nothing.
+            /// </summary>
+            public void Dispose()
+            {
+            }
+
+            /// <summary>
+            /// Advances the enumerator. Returns false if the enumerator has reached the end of the dictionary.
+            /// </summary>
+            public bool MoveNext()
+            {
+                var index = _entryIndex + 1;
+                _entryIndex = index;
+
+                if (index < _entries.Length)
+                {
+                    Current = _entries[index].Key;
+                    return true;
+                }
+
+                Current = null;
+                return false;
+            }
+
+            /// <summary>
+            /// Resets the enumerator to its original position.
+            /// </summary>
+            public void Reset()
+            {
+                _entryIndex = -1;
+            }
+        }
+
+        /// <summary>
+        /// A value-type collection of dictionary values.
+        /// </summary>
+        public struct ValueCollection : IReadOnlyCollection<TValue>
+        {
+            readonly BySettingDictionary<TValue> _dictionary;
+
+            /// <summary>
+            /// The number of values to enumerate.
+            /// </summary>
+            public int Count => _dictionary.Count;
+
+            internal ValueCollection(BySettingDictionary<TValue> dictionary)
+            {
+                _dictionary = dictionary;
+            }
+
+            /// <summary>
+            /// Gets the enumerator for dictionary values.
+            /// </summary>
+            public ValueEnumerator GetEnumerator()
+            {
+                return new ValueEnumerator(_dictionary);
+            }
+
+            IEnumerator<TValue> IEnumerable<TValue>.GetEnumerator() => GetEnumerator();
+
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        }
+
+        /// <summary>
+        /// A value-type enumerable for dictionary values.
+        /// </summary>
+        public struct ValueEnumerator : IEnumerator<TValue>
+        {
+            readonly Entry[] _entries;
+            int _entryIndex;
+
+            /// <summary>
+            /// The current value of the enumerator. This is undefined before <see cref="MoveNext"/> is called, and after <see cref="MoveNext"/> returns false.
+            /// </summary>
+            public TValue Current { get; private set; }
+
+            object IEnumerator.Current => Current;
+
+            internal ValueEnumerator(BySettingDictionary<TValue> dictionary)
+            {
+                _entries = dictionary._entries;
+                _entryIndex = -1;
+                Current = default(TValue);
+            }
+
+            /// <summary>
+            /// Does nothing.
+            /// </summary>
+            public void Dispose()
+            {
+            }
+
+            /// <summary>
+            /// Advances the enumerator. Returns false if the enumerator has reached the end of the dictionary.
+            /// </summary>
+            public bool MoveNext()
+            {
+                var index = _entryIndex + 1;
+                _entryIndex = index;
+
+                if (index < _entries.Length)
+                {
+                    Current = _entries[index].Value;
+                    return true;
+                }
+
+                Current = default(TValue);
                 return false;
             }
 
