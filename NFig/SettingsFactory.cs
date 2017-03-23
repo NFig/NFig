@@ -36,7 +36,7 @@ namespace NFig
 
         delegate Setting PropertyToSettingDelegate(PropertyInfo pi, SettingAttribute sa, SettingGroup group);
 
-        readonly Dictionary<Type, object> _defaultConverters = new Dictionary<Type, object>
+        readonly Dictionary<Type, ISettingConverter> _defaultConverters = new Dictionary<Type, ISettingConverter>
         {
             {typeof(bool), new BooleanSettingConverter()},
             {typeof(byte), new ByteSettingConverter()},
@@ -67,7 +67,7 @@ namespace NFig
             TTier tier,
             TDataCenter dataCenter,
             ISettingEncryptor encryptor,
-            Dictionary<Type, object> additionalDefaultConverters)
+            Dictionary<Type, ISettingConverter> additionalDefaultConverters)
         {
             _settingsType = typeof(TSettings);
             _subAppType = typeof(TSubApp);
@@ -471,7 +471,7 @@ namespace NFig
         {
             // see if there is a converter specified
             var converterAttribute = pi.GetCustomAttribute<SettingConverterAttribute>();
-            object convObj;
+            ISettingConverter convObj;
 
             if (converterAttribute != null)
             {
@@ -1171,7 +1171,7 @@ namespace NFig
             return (Func<int, T>)dm.CreateDelegate(typeof(Func<int, T>));
         }
 
-        void SetupConverters(Dictionary<Type, object> additionalDefaultConverters)
+        void SetupConverters(Dictionary<Type, ISettingConverter> additionalDefaultConverters)
         {
             if (additionalDefaultConverters != null)
             {

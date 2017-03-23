@@ -143,7 +143,7 @@ namespace NFig
             TDataCenter dataCenter,
             SettingsLogger<TSubApp, TTier, TDataCenter> logger,
             ISettingEncryptor encryptor,
-            Dictionary<Type, object> additionalDefaultConverters,
+            Dictionary<Type, ISettingConverter> additionalDefaultConverters,
             int pollingInterval = 60)
         {
             Logger = logger;

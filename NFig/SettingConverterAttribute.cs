@@ -11,7 +11,7 @@ namespace NFig
         /// <summary>
         /// The converter object. It will implement <see cref="ISettingConverter{TValue}"/> where TValue is the property type of the setting.
         /// </summary>
-        public object Converter { get; private set; }
+        public ISettingConverter Converter { get; private set; }
 
         /// <summary>
         /// Explicitly assigns a converter to a specific setting. If you want a converter to automatically apply to any setting of a particular type, pass the
@@ -27,7 +27,7 @@ namespace NFig
                 throw new InvalidOperationException($"Cannot use type {converterType.Name} as a setting converter. It does not implement ISettingConverter<T>.");
             }
 
-            Converter = Activator.CreateInstance(converterType);
+            Converter = (ISettingConverter)Activator.CreateInstance(converterType);
         }
     }
 }

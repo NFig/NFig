@@ -56,7 +56,7 @@ namespace NFig.InMemory
             TDataCenter dataCenter,
             SettingsLogger<TSubApp, TTier, TDataCenter> logger = null,
             ISettingEncryptor encryptor = null,
-            Dictionary<Type, object> additionalDefaultConverters = null)
+            Dictionary<Type, ISettingConverter> additionalDefaultConverters = null)
             : base(globalAppName, tier, dataCenter, logger, encryptor, additionalDefaultConverters, pollingInterval: 0)
         {
         }

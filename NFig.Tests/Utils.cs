@@ -16,7 +16,7 @@ namespace NFig.Tests
             Tier tier = Tier.Local,
             DataCenter dataCenter = DataCenter.Local,
             ISettingEncryptor encryptor = null,
-            Dictionary<Type, object> additionalConverters = null)
+            Dictionary<Type, ISettingConverter> additionalConverters = null)
             where TSettings : class, INFigSettings<SubApp, Tier, DataCenter>, new()
         {
             return new SettingsFactory<TSettings, SubApp, Tier, DataCenter>(globalAppName, tier, dataCenter, encryptor, additionalConverters);
@@ -28,7 +28,7 @@ namespace NFig.Tests
             DataCenter dataCenter = DataCenter.Local,
             SettingsLogger<SubApp, Tier, DataCenter> logger = null,
             ISettingEncryptor encryptor = null,
-            Dictionary<Type, object> additionalConverters = null)
+            Dictionary<Type, ISettingConverter> additionalConverters = null)
             where TSettings : class, INFigSettings<SubApp, Tier, DataCenter>, new()
         {
             return new NFigMemoryStore<TSettings, SubApp, Tier, DataCenter>(globalAppName, tier, dataCenter, logger, encryptor, additionalConverters);
