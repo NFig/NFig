@@ -30,7 +30,7 @@ namespace NFig
         /// converter as part of the "additionalDefaultConverters" argument to the NFigStore you're using.
         /// </summary>
         /// <param name="converter">
-        /// An instance of <see cref="ISettingConverter"/>. The concrete type must implement  <see cref="ISettingConverter{TValue}"/> 
+        /// An instance of <see cref="ISettingConverter"/>. The concrete type must implement  <see cref="ISettingConverter{TValue}"/>
         /// where TValue is the property type of the setting.
         /// </param>
         protected SettingConverterAttribute([NotNull] ISettingConverter converter)

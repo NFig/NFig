@@ -12,7 +12,7 @@ namespace NFig.InMemory
     /// persistent overrides, it could be used in a production environment.
     /// </summary>
     /// <typeparam name="TSettings">
-    /// The type where your settings are defined. Must implement <see cref="INFigSettings{TSubApp,TTier,TDataCenter}"/> or inherit from 
+    /// The type where your settings are defined. Must implement <see cref="INFigSettings{TSubApp,TTier,TDataCenter}"/> or inherit from
     /// <see cref="NFigSettingsBase{TSubApp,TTier,TDataCenter}"/>
     /// </typeparam>
     /// <typeparam name="TSubApp">
@@ -33,7 +33,7 @@ namespace NFig.InMemory
             public byte[] LastEvent { get; set; }
             public Dictionary<string, string> Overrides { get; } = new Dictionary<string, string>();
         }
-        
+
         readonly InMemoryAppData _appData = new InMemoryAppData();
 
         /// <summary>
@@ -130,7 +130,7 @@ namespace NFig.InMemory
         {
             var key = GetOverrideKey(settingName, subApp, dataCenter);
             var data = _appData;
-            
+
             lock (data)
             {
                 if (commit != null && commit != data.Commit)

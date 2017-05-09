@@ -27,7 +27,7 @@ namespace NFig
     /// likely want to use a more persistent store, such as NFig.Redis.
     /// </summary>
     /// <typeparam name="TSettings">
-    /// The type where your settings are defined. Must implement <see cref="INFigSettings{TSubApp,TTier,TDataCenter}"/> or inherit from 
+    /// The type where your settings are defined. Must implement <see cref="INFigSettings{TSubApp,TTier,TDataCenter}"/> or inherit from
     /// <see cref="NFigSettingsBase{TSubApp,TTier,TDataCenter}"/>
     /// </typeparam>
     /// <typeparam name="TSubApp">
@@ -52,7 +52,7 @@ namespace NFig
         /// The Commit value which should be used when no overrides have ever been set for the application.
         /// </summary>
         public string InitialCommit => NFigStore.INITIAL_COMMIT;
-        
+
         /// <summary>
         /// The method signature for Global app update callbacks.
         /// </summary>
@@ -82,12 +82,12 @@ namespace NFig
                 Callback = callback;
             }
         }
-        
+
         readonly List<CallbackInfo<GlobalAppUpdateDelegate>> _globalAppCallbacks = new List<CallbackInfo<GlobalAppUpdateDelegate>>();
         readonly List<CallbackInfo<SubAppsUpdateDelegate>> _subAppsCallbacks = new List<CallbackInfo<SubAppsUpdateDelegate>>();
 
         readonly SettingsFactory<TSettings, TSubApp, TTier, TDataCenter> _factory;
-        
+
         OverridesSnapshot<TSubApp, TTier, TDataCenter> _snapshotCache;
 
         Timer _pollingTimer;
@@ -240,7 +240,7 @@ namespace NFig
         /// <param name="subApp">The sub app which the override is applied to.</param>
         /// <param name="commit">(optional) If non-null, the override will only be cleared if this is the current commit ID.</param>
         /// <returns>
-        /// A snapshot of the state immediately after the override is cleared. If the override is not applied, either because it didn't exist, or because the 
+        /// A snapshot of the state immediately after the override is cleared. If the override is not applied, either because it didn't exist, or because the
         /// current commit didn't match the commit parameter, the return value will be null.
         /// </returns>
         public async Task<OverridesSnapshot<TSubApp, TTier, TDataCenter>> ClearOverrideAsync(
@@ -267,7 +267,7 @@ namespace NFig
         /// <param name="subApp">The sub app which the override is applied to.</param>
         /// <param name="commit">(optional) If non-null, the override will only be cleared if this is the current commit ID.</param>
         /// <returns>
-        /// A snapshot of the state immediately after the override is cleared. If the override is not applied, either because it didn't exist, or because the 
+        /// A snapshot of the state immediately after the override is cleared. If the override is not applied, either because it didn't exist, or because the
         /// current commit didn't match the commit parameter, the return value will be null.
         /// </returns>
         public OverridesSnapshot<TSubApp, TTier, TDataCenter> ClearOverride(
@@ -326,7 +326,7 @@ namespace NFig
                 return new Dictionary<TSubApp, TSettings>();
 
             var snapshot = await GetSnapshotAsync().ConfigureAwait(false);
-            
+
             Dictionary<TSubApp, TSettings> bySubApp;
             var ex = _factory.TryGetSettingsBySubApp(out bySubApp, subApps, snapshot);
             if (ex != null)
@@ -431,7 +431,7 @@ namespace NFig
         }
 
         /// <summary>
-        /// Returns the property type 
+        /// Returns the property type
         /// </summary>
         public Type GetSettingType(string settingName)
         {
@@ -455,7 +455,7 @@ namespace NFig
         }
 
         /// <summary>
-        /// Returns true if the given string can be converted into a valid value 
+        /// Returns true if the given string can be converted into a valid value
         /// </summary>
         public bool IsValidStringForSetting(string settingName, string value)
         {
@@ -837,7 +837,7 @@ namespace NFig
         void PollForChanges(object _)
         {
             var commit = GetCurrentCommit();
-            
+
             var snapshot = _snapshotCache;
             if (snapshot == null || snapshot.Commit != commit)
             {

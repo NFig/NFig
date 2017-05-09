@@ -4,7 +4,7 @@ namespace NFig
 {
     /// <summary>
     /// This is the base class for all NFig attributes which specify default values, except for the <see cref="SettingAttribute"/> itself. This attribute is
-    /// abstract because you should provide the attributes which make sense for your individual setup. The subApp/tier/dataCenter parameters in inheriting 
+    /// abstract because you should provide the attributes which make sense for your individual setup. The subApp/tier/dataCenter parameters in inheriting
     /// attributes should be strongly typed (rather than using "object"), and match the generic parameters used for the NFigStore and Settings object.
     /// </summary>
     [AttributeUsage(AttributeTargets.Property, AllowMultiple = true)]

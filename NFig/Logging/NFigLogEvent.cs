@@ -40,7 +40,7 @@ namespace NFig.Logging
         /// </summary>
         public DateTime Timestamp { get; set; }
         /// <summary>
-        /// If Type is SetOverride or ClearOverride, this property will indicate which setting was affected. 
+        /// If Type is SetOverride or ClearOverride, this property will indicate which setting was affected.
         /// </summary>
         public string SettingName { get; set; }
         /// <summary>

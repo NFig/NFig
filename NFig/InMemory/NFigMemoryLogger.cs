@@ -24,7 +24,7 @@ namespace NFig.InMemory
         public NFigMemoryLogger(Action<Exception, OverridesSnapshot<TSubApp, TTier, TDataCenter>> onLogException) : base(onLogException)
         {
         }
-        
+
         /// <summary>
         /// Logging implementation.
         /// </summary>

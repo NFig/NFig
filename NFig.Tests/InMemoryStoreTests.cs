@@ -101,7 +101,7 @@ namespace NFig.Tests
                 settings = settingsObj;
                 callbackCount++;
             });
-            
+
             Assert.AreEqual(1, callbackCount);
             Assert.IsNotNull(settings);
             Assert.AreEqual(NFigStore.INITIAL_COMMIT, settings.Commit);

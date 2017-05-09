@@ -29,7 +29,7 @@ namespace NFig
         readonly Type _dataCenterType;
 
         readonly ISettingEncryptor _encryptor;
-        
+
         readonly ReflectionCache _reflectionCache;
 
         BySettingDictionary<SettingMetadata> _metadataBySetting;
@@ -151,7 +151,7 @@ namespace NFig
 
                 settingsBySubApp[subApp] = settings;
             }
-            
+
             if (exceptions != null)
                 return new InvalidSettingOverridesException(exceptions, new StackTrace(true).ToString());
 
@@ -820,7 +820,7 @@ namespace NFig
                 g = g.Parent;
 
             } while (g != null && g.PropertyInfo != null);
-            
+
             // the list was built bottom up, but we need to emit top down, so we go in reverse
             for (var i = methodList.Count - 1; i >= 0; i--)
             {
@@ -849,7 +849,7 @@ namespace NFig
 
                 var settingsField = _reflectionCache.SettingsField;
                 var getSettingItem = _reflectionCache.GetSettingItemMethod;
-                
+
                 il.Emit(loadFactoryArg);                            // [s] [group] [group] [this]
                 il.Emit(OpCodes.Ldfld, settingsField);              // [s] [group] [group] [_settings]
                 il.Emit(OpCodes.Ldc_I4, settingIndex);              // [s] [group] [group] [_settings] [index]
@@ -1426,7 +1426,7 @@ namespace NFig
                 var il = dm.GetILGenerator();
 
                 // arg 0 = TSettings settings
-                
+
                 il.Emit(OpCodes.Ldarg_0);                          // [settings]
                 EmitLoadGroup(il, Group);                          // [group]
                 il.Emit(OpCodes.Callvirt, PropertyInfo.GetMethod); // [value]
