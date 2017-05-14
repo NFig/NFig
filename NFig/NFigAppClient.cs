@@ -51,7 +51,10 @@ namespace NFig
         /// </summary>
         public TDataCenter DataCenter { get; }
 
-        internal NFigAppClient(NFigStore<TTier, TDataCenter> store, string appName, TTier tier, TDataCenter dataCenter)
+        /// <summary>
+        /// Initializes the app client.
+        /// </summary>
+        protected internal NFigAppClient(NFigStore<TTier, TDataCenter> store, string appName, TTier tier, TDataCenter dataCenter)
         {
             Store = store;
             AppName = appName;
