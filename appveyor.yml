@@ -5,7 +5,7 @@
 #---------------------------------#
 
 environment:
-  NUGET_RELEASE_VERSION: 2.0.0
+  NUGET_RELEASE_VERSION: 3.0.0-alpha
   NUGET_FILE: NFig\NFig.nuspec
   ASSEMBLY_FILE: NFig\Properties\AssemblyInfo.cs
 
