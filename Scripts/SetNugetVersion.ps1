@@ -1,3 +1,5 @@
+# Version 2017-05-14
+
 # make sure AssemblyInfo.cs has AssemblyInformationalVersion
 $asmInfo = (Get-Content "$PSScriptRoot\..\$env:ASSEMBLY_FILE") | Out-String
 $pattern = '^\s*\[\s*assembly\s*:\s*AssemblyInformationalVersion\s*\(\s*"[^"]*"\s*\)\]\s*$'
@@ -11,7 +13,7 @@ if (-not [Regex]::IsMatch($asmInfo, $pattern, [System.Text.RegularExpressions.Re
 $version = "$env:NUGET_RELEASE_VERSION"
 
 # make sure version follows the 0.0.0 format
-$versionMatch = [Regex]::Match($version, '^(?<Major>\d+)\.(?<Minor>\d+)\.(?<Patch>\d+)$')
+$versionMatch = [Regex]::Match($version, '^(?<Major>\d+)\.(?<Minor>\d+)\.(?<Patch>\d+)(?<PreRelease>-\S+)?$')
 if (!$versionMatch.Success)
 {
 	Write-Error "Invalid NUGET_RELEASE_VERSION: $version"
@@ -23,15 +25,22 @@ $majorVersion = $versionMatch.Groups["Major"].Value
 # set the correct nuget package version (depends on whether this is a release or not)
 if ("$env:APPVEYOR_REPO_TAG" -ne "true") # non-tagged (pre-release build)
 {
-	# we want to increment the patch number for unstable builds
-	$version = [Regex]::Replace($version, '^(\d+\.\d+\.)(\d+)$', {
-		param([System.Text.RegularExpressions.Match] $match)
-		$val = [int]::Parse($match.Groups[2].Value)
-		$val++
-		$match.Groups[1].Value + $val
-	})
+	if (!$versionMatch.Groups["PreRelease"].Success)
+	{
+		# if this build isn't already explicitly marked as a pre-release, we want to increment
+		# the patch number and mark it as unstable.
+		$version = [Regex]::Replace($version, '^(\d+\.\d+\.)(\d+)$', {
+			param([System.Text.RegularExpressions.Match] $match)
+			$val = [int]::Parse($match.Groups[2].Value)
+			$val++
+			$match.Groups[1].Value + $val
+		})
 
-	$version += "-unstable$env:APPVEYOR_BUILD_NUMBER"
+		$version += "-unstable"
+	}
+
+	# append the build number to the version
+	$version += "-$env:APPVEYOR_BUILD_NUMBER"
 }
 
 # grab .nuspec file contents
