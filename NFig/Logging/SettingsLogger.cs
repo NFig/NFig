@@ -6,7 +6,7 @@ using JetBrains.Annotations;
 namespace NFig.Logging
 {
     /// <summary>
-    /// The base class for all settings loggers. A settings logger records events that occur on an NFigStore.
+    /// The base class for all settings loggers. A settings logger records events that occur on an NFigStoreOld.
     /// </summary>
     public abstract class SettingsLogger<TSubApp, TTier, TDataCenter>
         where TSubApp : struct

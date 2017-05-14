@@ -60,6 +60,9 @@
     <Compile Include="INFigSettings.cs" />
     <Compile Include="ISettingValue.cs" />
     <Compile Include="BySettingDictionary.cs" />
+    <Compile Include="NFigAdminClient.cs" />
+    <Compile Include="NFigAppClient.cs" />
+    <Compile Include="NFigStore.cs" />
     <Compile Include="OverridesSnapshot.cs" />
     <Compile Include="Encryption\ISettingEncryptor.cs" />
     <Compile Include="InMemory\NFigMemoryLogger.cs" />
@@ -69,7 +72,7 @@
     <Compile Include="SettingConverters.cs" />
     <Compile Include="Logging\NFigLogEvent.cs" />
     <Compile Include="Logging\SettingsLogger.cs" />
-    <Compile Include="NFigStore.cs" />
+    <Compile Include="NFigStoreOld.cs" />
     <Compile Include="ChangeRequiresRestartAttribute.cs" />
     <Compile Include="SettingAttribute.cs" />
     <Compile Include="SettingMetadata.cs" />

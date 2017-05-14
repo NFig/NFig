@@ -16,7 +16,7 @@ namespace NFig
 
         /// <summary>
         /// Explicitly assigns a converter to a specific setting. If you want a converter to automatically apply to any setting of a particular type, pass the
-        /// converter as part of the "additionalDefaultConverters" argument to the NFigStore you're using.
+        /// converter as part of the "additionalDefaultConverters" argument to the NFigStoreOld you're using.
         /// </summary>
         /// <param name="converterType">The type must implement <see cref="ISettingConverter{TValue}"/> where TValue is the property type of the setting.</param>
         public SettingConverterAttribute(Type converterType)
@@ -27,7 +27,7 @@ namespace NFig
 
         /// <summary>
         /// Explicitly assigns a converter to a specific setting. If you want a converter to automatically apply to any setting of a particular type, pass the
-        /// converter as part of the "additionalDefaultConverters" argument to the NFigStore you're using.
+        /// converter as part of the "additionalDefaultConverters" argument to the NFigStoreOld you're using.
         /// </summary>
         /// <param name="converter">
         /// An instance of <see cref="ISettingConverter"/>. The concrete type must implement  <see cref="ISettingConverter{TValue}"/>

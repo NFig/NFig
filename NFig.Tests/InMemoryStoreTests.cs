@@ -104,7 +104,7 @@ namespace NFig.Tests
 
             Assert.AreEqual(1, callbackCount);
             Assert.IsNotNull(settings);
-            Assert.AreEqual(NFigStore.INITIAL_COMMIT, settings.Commit);
+            Assert.AreEqual(NFigStoreOld.INITIAL_COMMIT, settings.Commit);
 
             store.SetOverride("Nested.Integer", "32", DataCenter.Any, USER_A);
 
@@ -188,10 +188,10 @@ namespace NFig.Tests
         public void AnyTierOrDataCenterStoreThrows()
         {
             TestDelegate anyTier = () => { Utils.CreateStore<InMemorySettings>(tier: Tier.Any); };
-            Assert.Throws<ArgumentOutOfRangeException>(anyTier, "NFigStore with Tier.Any should have thrown an exception.");
+            Assert.Throws<ArgumentOutOfRangeException>(anyTier, "NFigStoreOld with Tier.Any should have thrown an exception.");
 
             TestDelegate anyDc = () => { Utils.CreateStore<InMemorySettings>(dataCenter: DataCenter.Any); };
-            Assert.Throws<ArgumentOutOfRangeException>(anyDc, "NFigStore with DataCenter.Any should have thrown an exception.");
+            Assert.Throws<ArgumentOutOfRangeException>(anyDc, "NFigStoreOld with DataCenter.Any should have thrown an exception.");
         }
 
         [Test]

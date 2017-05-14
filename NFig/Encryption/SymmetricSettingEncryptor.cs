@@ -29,7 +29,7 @@ namespace NFig.Encryption
 
         /// <summary>
         /// Takes an unencrypted string and returns a base64-encoded encrypted string. Do not pass null values to this method.
-        /// NFig does not support encrypting null values. You should use NFigStore.Encrypt instead of this method, when possible.
+        /// NFig does not support encrypting null values. You should use NFigStoreOld.Encrypt instead of this method, when possible.
         /// </summary>
         public string Encrypt([NotNull] string value)
         {
@@ -40,7 +40,7 @@ namespace NFig.Encryption
 
         /// <summary>
         /// Takes a base64-encoded encrypted string and returns the unencrypted original string. Do not pass null values to this method.
-        /// NFig does not support encrypting null values. You should use NFigStore.Decrypt instead of this method, when possible.
+        /// NFig does not support encrypting null values. You should use NFigStoreOld.Decrypt instead of this method, when possible.
         /// </summary>
         public string Decrypt([NotNull] string encryptedValue)
         {

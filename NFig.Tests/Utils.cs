@@ -22,7 +22,7 @@ namespace NFig.Tests
             return new SettingsFactory<TSettings, SubApp, Tier, DataCenter>(globalAppName, tier, dataCenter, encryptor, additionalConverters);
         }
 
-        public static NFigStore<TSettings, SubApp, Tier, DataCenter> CreateStore<TSettings>(
+        public static NFigStoreOld<TSettings, SubApp, Tier, DataCenter> CreateStore<TSettings>(
             string globalAppName = GLOBAL_APP_1,
             Tier tier = Tier.Local,
             DataCenter dataCenter = DataCenter.Local,
@@ -36,7 +36,7 @@ namespace NFig.Tests
 
         public static OverridesSnapshot<SubApp, Tier, DataCenter> CreateSnapshot(
             string globalAppName = GLOBAL_APP_1,
-            string commit = NFigStore.INITIAL_COMMIT,
+            string commit = NFigStoreOld.INITIAL_COMMIT,
             List<OverrideValue<SubApp, Tier, DataCenter>> overrides = null,
             NFigLogEvent<DataCenter> lastEvent = null)
         {

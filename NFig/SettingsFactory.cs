@@ -516,7 +516,7 @@ namespace NFig
         void AssertValidEncryptedSettingAttribute(string name, SettingAttribute sa)
         {
             if (_encryptor == null)
-                throw new NFigException($"Setting {name} is marked as encrypted, but no ISettingEncryptor was provided to the NFigStore.");
+                throw new NFigException($"Setting {name} is marked as encrypted, but no ISettingEncryptor was provided to the NFigStoreOld.");
 
             if (sa.DefaultValue != null)
                 throw new NFigException($"The SettingAttribute for {name} assigns a default value and is marked as encrypted. It cannot have both. " +

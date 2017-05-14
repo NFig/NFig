@@ -14,7 +14,7 @@ namespace NFig
     /// <summary>
     /// A static class for convenience purposes only. It allows you easy access to certain constants without filling out generic types.
     /// </summary>
-    public static class NFigStore
+    public static class NFigStoreOld
     {
         /// <summary>
         /// The Commit value which should be used when no overrides have ever been set for the application.
@@ -37,7 +37,7 @@ namespace NFig
     /// <typeparam name="TTier">The type used to select the deployment tier. Must be an enum backed by a 32-bit, or smaller, integer.</typeparam>
     /// <typeparam name="TDataCenter">The type used to select the data center. Must be an enum backed by a 32-bit, or smaller, integer.</typeparam>
     [SuppressMessage("ReSharper", "StaticMemberInGenericType")]
-    public abstract class NFigStore<TSettings, TSubApp, TTier, TDataCenter>
+    public abstract class NFigStoreOld<TSettings, TSubApp, TTier, TDataCenter>
         where TSettings : class, INFigSettings<TSubApp, TTier, TDataCenter>, new()
         where TSubApp : struct
         where TTier : struct
@@ -46,12 +46,12 @@ namespace NFig
         /// <summary>
         /// The Commit value which should be used when no overrides have ever been set for the application.
         /// </summary>
-        public const string INITIAL_COMMIT = NFigStore.INITIAL_COMMIT;
+        public const string INITIAL_COMMIT = NFigStoreOld.INITIAL_COMMIT;
 
         /// <summary>
         /// The Commit value which should be used when no overrides have ever been set for the application.
         /// </summary>
-        public string InitialCommit => NFigStore.INITIAL_COMMIT;
+        public string InitialCommit => NFigStoreOld.INITIAL_COMMIT;
 
         /// <summary>
         /// The method signature for Global app update callbacks.
@@ -59,7 +59,7 @@ namespace NFig
         /// <param name="ex">An Exception object if there was a problem getting or applying overrides. This parameter will be null in most cases</param>
         /// <param name="settings">A hydrated settings object which represents the current active setting values.</param>
         /// <param name="store">A reference to the store which generated the settings object.</param>
-        public delegate void GlobalAppUpdateDelegate(Exception ex, TSettings settings, NFigStore<TSettings, TSubApp, TTier, TDataCenter> store);
+        public delegate void GlobalAppUpdateDelegate(Exception ex, TSettings settings, NFigStoreOld<TSettings, TSubApp, TTier, TDataCenter> store);
 
         /// <summary>
         /// The method signature for sub-app app update callbacks.
@@ -70,7 +70,7 @@ namespace NFig
         public delegate void SubAppsUpdateDelegate(
             Exception ex,
             Dictionary<TSubApp, TSettings> settingsBySubApp,
-            NFigStore<TSettings, TSubApp, TTier, TDataCenter> store);
+            NFigStoreOld<TSettings, TSubApp, TTier, TDataCenter> store);
 
         class CallbackInfo<T>
         {
@@ -137,7 +137,7 @@ namespace NFig
         /// (typeof(T), <see cref="ISettingConverter{T}"/>).
         /// </param>
         /// <param name="pollingInterval">The interval, in seconds, to poll for override changes. Use 0 to disable polling.</param>
-        protected NFigStore(
+        protected NFigStoreOld(
             string globalAppName,
             TTier tier,
             TDataCenter dataCenter,
@@ -362,7 +362,7 @@ namespace NFig
             if (settings.GlobalAppName != GlobalAppName)
             {
                 var ex = new NFigException("Cannot evaluate IsCurrentAsync() for settings object. GlobalAppName does not match the store.");
-                ex.Data["NFigStore.GlobalAppName"] = GlobalAppName;
+                ex.Data["NFigStoreOld.GlobalAppName"] = GlobalAppName;
                 ex.Data["settings.GlobalAppName"] = settings.GlobalAppName;
                 throw ex;
             }
@@ -379,7 +379,7 @@ namespace NFig
             if (settings.GlobalAppName != GlobalAppName)
             {
                 var ex = new NFigException("Cannot evaluate IsCurrent() for settings object. GlobalAppName does not match the store.");
-                ex.Data["NFigStore.GlobalAppName"] = GlobalAppName;
+                ex.Data["NFigStoreOld.GlobalAppName"] = GlobalAppName;
                 ex.Data["settings.GlobalAppName"] = settings.GlobalAppName;
                 throw ex;
             }
@@ -405,27 +405,27 @@ namespace NFig
         }
 
         /// <summary>
-        /// Returns a string encrypted with the ISettingEncryptor provided when the NFigStore was initialized.
+        /// Returns a string encrypted with the ISettingEncryptor provided when the NFigStoreOld was initialized.
         /// If no encryptor was provided, this method will throw an exception.
         /// Null values are not encrypted, and are simply returned as null.
         /// </summary>
         public string Encrypt(string plainText)
         {
             if (!_factory.HasEncryptor)
-                throw new NFigException("No ISettingEncryptor was provided when the NFigStore was initialized");
+                throw new NFigException("No ISettingEncryptor was provided when the NFigStoreOld was initialized");
 
             return _factory.Encrypt(plainText);
         }
 
         /// <summary>
-        /// Decrypts the string using the ISettingEncryptor provided when the NFigStore was initialized.
+        /// Decrypts the string using the ISettingEncryptor provided when the NFigStoreOld was initialized.
         /// If no encryptor was provided, this method will throw an exception.
         /// Null are considered to be unencrypted to begin with, and will result in a null return value.
         /// </summary>
         public string Decrypt(string encrypted)
         {
             if (!_factory.HasEncryptor)
-                throw new NFigException("No ISettingEncryptor was provided when the NFigStore was initialized");
+                throw new NFigException("No ISettingEncryptor was provided when the NFigStoreOld was initialized");
 
             return _factory.Decrypt(encrypted);
         }
@@ -523,7 +523,7 @@ namespace NFig
             if (snapshot.GlobalAppName != GlobalAppName)
             {
                 var ex = new NFigException("Cannot restore snapshot. GlobalAppName does not match that of the store.");
-                ex.Data["NFigStore.GlobalAppName"] = GlobalAppName;
+                ex.Data["NFigStoreOld.GlobalAppName"] = GlobalAppName;
                 ex.Data["snapshot.GlobalAppName"] = snapshot.GlobalAppName;
             }
 
@@ -540,7 +540,7 @@ namespace NFig
             if (snapshot.GlobalAppName != GlobalAppName)
             {
                 var ex = new NFigException("Cannot restore snapshot. GlobalAppName does not match that of the store.");
-                ex.Data["NFigStore.GlobalAppName"] = GlobalAppName;
+                ex.Data["NFigStoreOld.GlobalAppName"] = GlobalAppName;
                 ex.Data["snapshot.GlobalAppName"] = snapshot.GlobalAppName;
             }
 

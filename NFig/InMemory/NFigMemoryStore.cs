@@ -7,7 +7,7 @@ using NFig.Logging;
 namespace NFig.InMemory
 {
     /// <summary>
-    /// An in-memory implementation of NFigStore. Overrides set using this store are not persistent. They will be lost every time the application restarts.
+    /// An in-memory implementation of NFigStoreOld. Overrides set using this store are not persistent. They will be lost every time the application restarts.
     /// This store is primarily intended for testing purposes, or for getting familiar with NFig in a lightweight way. However, if you don't have any need for
     /// persistent overrides, it could be used in a production environment.
     /// </summary>
@@ -21,7 +21,7 @@ namespace NFig.InMemory
     /// </typeparam>
     /// <typeparam name="TTier">The type used to select the deployment tier. Must be an enum backed by a 32-bit, or smaller, integer.</typeparam>
     /// <typeparam name="TDataCenter">The type used to select the data center. Must be an enum backed by a 32-bit, or smaller, integer.</typeparam>
-    public class NFigMemoryStore<TSettings, TSubApp, TTier, TDataCenter> : NFigStore<TSettings, TSubApp, TTier, TDataCenter>
+    public class NFigMemoryStore<TSettings, TSubApp, TTier, TDataCenter> : NFigStoreOld<TSettings, TSubApp, TTier, TDataCenter>
         where TSettings : class, INFigSettings<TSubApp, TTier, TDataCenter>, new()
         where TSubApp : struct
         where TTier : struct

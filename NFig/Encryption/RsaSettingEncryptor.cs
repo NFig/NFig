@@ -31,7 +31,7 @@ namespace NFig.Encryption
         }
 
         /// <summary>
-        /// For internal NFig use only. You should use NFigStore.Encrypt().
+        /// For internal NFig use only. You should use NFigStoreOld.Encrypt().
         /// </summary>
         public string Encrypt([NotNull] string value)
         {
@@ -41,7 +41,7 @@ namespace NFig.Encryption
         }
 
         /// <summary>
-        /// For internal NFig use only. You should use NFigStore.Decrypt().
+        /// For internal NFig use only. You should use NFigStoreOld.Decrypt().
         /// </summary>
         /// <param name="encryptedValue"></param>
         /// <returns></returns>

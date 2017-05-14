@@ -97,7 +97,7 @@ namespace NFig
 
     /// <summary>
     /// This exception is used when one or more overrides (which already exist) cannot be applied to their settings. This could happen if the setting type or
-    /// converter was changed since the override was set. This exception is never thrown. It is returned from TryGet methods on NFigStore and passed as the
+    /// converter was changed since the override was set. This exception is never thrown. It is returned from TryGet methods on NFigStoreOld and passed as the
     /// first parameter to subscription callbacks.
     /// </summary>
     public class InvalidSettingOverridesException : NFigException
