@@ -65,14 +65,11 @@
     <Compile Include="NFigStore.cs" />
     <Compile Include="OverridesSnapshot.cs" />
     <Compile Include="Encryption\ISettingEncryptor.cs" />
-    <Compile Include="InMemory\NFigMemoryLogger.cs" />
-    <Compile Include="InMemory\NFigMemoryStore.cs" />
     <Compile Include="NFigSettingsBase.cs" />
     <Compile Include="OverrideValue.cs" />
     <Compile Include="SettingConverters.cs" />
     <Compile Include="Logging\NFigLogEvent.cs" />
     <Compile Include="Logging\SettingsLogger.cs" />
-    <Compile Include="NFigStoreOld.cs" />
     <Compile Include="ChangeRequiresRestartAttribute.cs" />
     <Compile Include="SettingAttribute.cs" />
     <Compile Include="SettingMetadata.cs" />
