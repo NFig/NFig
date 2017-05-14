@@ -80,6 +80,7 @@
     <Compile Include="SettingsFactory.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SettingConverterAttribute.cs" />
+    <Compile Include="SubAppInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
