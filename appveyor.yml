@@ -46,9 +46,9 @@ build:
 #       tests configuration       #
 #---------------------------------#
 
-test:
-  assemblies:
-    - '**\*.Tests.dll'
+#test:
+#  assemblies:
+#    - '**\*.Tests.dll'
 
 #---------------------------------#
 #      artifacts configuration    #
