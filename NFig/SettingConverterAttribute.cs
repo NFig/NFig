@@ -1,33 +1,37 @@
 using System;
-using System.Linq;
 using JetBrains.Annotations;
 
 namespace NFig
 {
     /// <summary>
-    /// Used to mark individual settings as using a specific converter.
+    /// Used to declare custom converters.
     /// </summary>
+    [AttributeUsage(AttributeTargets.Class|AttributeTargets.Property, AllowMultiple = true)]
     public class SettingConverterAttribute : Attribute
     {
+        /// <summary>
+        /// The type which the converter will be applied to.
+        /// </summary>
+        public Type SettingType { get; }
         /// <summary>
         /// The converter object. It will implement <see cref="ISettingConverter{TValue}"/> where TValue is the property type of the setting.
         /// </summary>
         public ISettingConverter Converter { get; }
 
         /// <summary>
-        /// Explicitly assigns a converter to a specific setting. If you want a converter to automatically apply to any setting of a particular type, pass the
-        /// converter as part of the "additionalDefaultConverters" argument to the NFigStoreOld you're using.
+        /// If placed on an individual setting, this attribute declares a custom converter for that setting. If placed on a class, it declares a default
+        /// converter which applies to all child settings of that class.
         /// </summary>
         /// <param name="converterType">The type must implement <see cref="ISettingConverter{TValue}"/> where TValue is the property type of the setting.</param>
         public SettingConverterAttribute(Type converterType)
         {
-            ValidateConverterType(converterType);
+            SettingType = GetSettingType(converterType);
             Converter = (ISettingConverter)Activator.CreateInstance(converterType);
         }
 
         /// <summary>
-        /// Explicitly assigns a converter to a specific setting. If you want a converter to automatically apply to any setting of a particular type, pass the
-        /// converter as part of the "additionalDefaultConverters" argument to the NFigStoreOld you're using.
+        /// This protected constructor is intended to be used for more complicated converters which require special initialization. Define your own child
+        /// attribute to perform the initialization and call this constructor.
         /// </summary>
         /// <param name="converter">
         /// An instance of <see cref="ISettingConverter"/>. The concrete type must implement  <see cref="ISettingConverter{TValue}"/>
@@ -36,23 +40,26 @@ namespace NFig
         protected SettingConverterAttribute([NotNull] ISettingConverter converter)
         {
             if (converter == null)
-            {
                 throw new ArgumentNullException(nameof(converter));
-            }
 
-            ValidateConverterType(converter.GetType());
-
+            SettingType = GetSettingType(converter.GetType());
             Converter = converter;
         }
 
-        static void ValidateConverterType(Type converterType)
+        static Type GetSettingType(Type converterType)
         {
             // make sure type implements SettingsConverter<>
             var genericType = typeof(ISettingConverter<>);
-            if (!converterType.GetInterfaces().Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == genericType))
+
+            foreach (var iface in converterType.GetInterfaces())
             {
-                throw new InvalidOperationException($"Cannot use type {converterType.Name} as a setting converter. It does not implement ISettingConverter<T>.");
+                if (iface.IsGenericType && iface.GetGenericTypeDefinition() == genericType)
+                {
+                    return iface.GenericTypeArguments[0];
+                }
             }
+
+            throw new InvalidOperationException($"Cannot use type {converterType.Name} as a setting converter. It does not implement ISettingConverter<T>.");
         }
     }
 }
