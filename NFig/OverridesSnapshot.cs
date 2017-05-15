@@ -35,14 +35,8 @@ namespace NFig
         /// <param name="overrides">A list of the overrides which exist at the time of the snapshot.</param>
         public OverridesSnapshot([NotNull] string appName, [NotNull] string commit, IList<OverrideValue<TTier, TDataCenter>> overrides)
         {
-            if (appName == null)
-                throw new ArgumentNullException(nameof(appName));
-
-            if (commit == null)
-                throw new ArgumentNullException(nameof(commit));
-
-            AppName = appName;
-            Commit = commit;
+            AppName = appName ?? throw new ArgumentNullException(nameof(appName));
+            Commit = commit ?? throw new ArgumentNullException(nameof(commit));
             Overrides = overrides;
         }
     }
