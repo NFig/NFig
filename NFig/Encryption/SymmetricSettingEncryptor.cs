@@ -13,6 +13,11 @@ namespace NFig.Encryption
         readonly SymmetricAlgorithm _algo;
 
         /// <summary>
+        /// True if the encryptor can decrypt. This may be false for asymmetric encryption methods where only the public key is available.
+        /// </summary>
+        public bool CanDecrypt => true;
+
+        /// <summary>
         /// Creates a Setting encryptor based on a symmetric encryption algorithm.
         /// </summary>
         /// <param name="algo">
@@ -48,6 +53,7 @@ namespace NFig.Encryption
             var decrypted = DecryptTransform(encrypted);
             return Encoding.UTF8.GetString(decrypted);
         }
+
         byte[] EncryptTransform(byte[] input)
         {
             var algo = _algo;

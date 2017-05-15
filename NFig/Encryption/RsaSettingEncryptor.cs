@@ -14,6 +14,11 @@ namespace NFig.Encryption
         readonly RSAEncryptionPadding _padding;
 
         /// <summary>
+        /// True if the encryptor can decrypt. This may be false for asymmetric encryption methods where only the public key is available.
+        /// </summary>
+        public bool CanDecrypt { get; }
+
+        /// <summary>
         /// Uses a pre-initialized RSA object to provide encryption and decryption.
         /// </summary>
         /// <param name="rsa">A pre-initialized RSA provider. Note that this object will be retained for the lifetime of the RsaSettingEncryptor.</param>
@@ -28,6 +33,8 @@ namespace NFig.Encryption
 
             _rsa = rsa;
             _padding = padding;
+
+            CanDecrypt = IsDecryptionPossible();
         }
 
         /// <summary>
@@ -50,6 +57,22 @@ namespace NFig.Encryption
             var encrypted = Convert.FromBase64String(encryptedValue);
             var decrypted = _rsa.Decrypt(encrypted, _padding);
             return Encoding.UTF8.GetString(decrypted);
+        }
+
+        bool IsDecryptionPossible()
+        {
+            const string original = "Test string";
+            var encrypted = Encrypt(original);
+
+            try
+            {
+                var plainText = Decrypt(encrypted);
+                return plainText == original;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
         }
     }
 }

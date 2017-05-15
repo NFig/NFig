@@ -7,6 +7,11 @@
     public class PassThroughSettingEncryptor : ISettingEncryptor
     {
         /// <summary>
+        /// True if the encryptor can decrypt. This may be false for asymmetric encryption methods where only the public key is available.
+        /// </summary>
+        public bool CanDecrypt => true;
+
+        /// <summary>
         /// Simply returns the string which is passed to it (no encryption).
         /// </summary>
         public string Encrypt(string value)
