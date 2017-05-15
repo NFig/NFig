@@ -46,7 +46,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="BinaryExtensions.cs" />
     <Compile Include="Compare.cs" />
     <Compile Include="Converters\BooleanSettingConverter.cs" />
     <Compile Include="Converters\ByteSettingConverter.cs" />
