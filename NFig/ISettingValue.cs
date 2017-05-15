@@ -44,7 +44,7 @@ namespace NFig
     public static class SettingValueExtensions // todo: rename
     {
         /// <summary>
-        /// True if SubApp is not the "Global"/0 sub-app.
+        /// True if SubAppId is not null.
         /// </summary>
         public static bool HasSubApp<TTier, TDataCenter>(this ISettingValue<TTier, TDataCenter> value)
             where TTier : struct

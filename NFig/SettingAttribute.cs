@@ -9,7 +9,7 @@ namespace NFig
     public class SettingAttribute : Attribute
     {
         /// <summary>
-        /// The default value (SubApp=Global, Tier=Any, DataCenter=Any) which will be used anywhere that a more specific default is not found.
+        /// The default value (SubApp=All, Tier=Any, DataCenter=Any) which will be used anywhere that a more specific default is not found.
         /// </summary>
         public object DefaultValue { get; }
         /// <summary>
@@ -21,7 +21,7 @@ namespace NFig
         /// Marks a property as an NFig Setting. For an encrypted setting, use <see cref="EncryptedSettingAttribute"/> instead.
         /// </summary>
         /// <param name="defaultValue">
-        /// The default value (SubApp=Global, Tier=Any, DataCenter=Any) which will be used anywhere that a more specific default is not found.
+        /// The default value (SubApp=All, Tier=Any, DataCenter=Any) which will be used anywhere that a more specific default is not found.
         /// </param>
         public SettingAttribute(object defaultValue)
         {
@@ -37,7 +37,7 @@ namespace NFig
     {
         /// <summary>
         /// Marks a property as an encrypted NFig Setting. For an unencrypted setting, use <see cref="SettingAttribute"/> instead. Encrypted settings do not
-        /// allow a (SubApp=Global, Tier=Any, DataCenter=Any) default, other than the default value for the setting's type (default(T)).
+        /// allow a (SubApp=All, Tier=Any, DataCenter=Any) default, other than the default value for the setting's type (default(T)).
         /// </summary>
         public EncryptedSettingAttribute() : base(null)
         {

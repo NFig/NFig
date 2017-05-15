@@ -12,7 +12,7 @@ namespace NFig
         where TDataCenter : struct
     {
         /// <summary>
-        /// The "Global" application name.
+        /// The application name.
         /// </summary>
         [NotNull]
         public string AppName { get; }
@@ -30,7 +30,7 @@ namespace NFig
         /// <summary>
         /// Initializes a new snapshot object.
         /// </summary>
-        /// <param name="appName">The "Global" application name.</param>
+        /// <param name="appName">The application name.</param>
         /// <param name="commit">The commit ID at the time of the snapshot.</param>
         /// <param name="overrides">A list of the overrides which exist at the time of the snapshot.</param>
         public OverridesSnapshot([NotNull] string appName, [NotNull] string commit, IList<OverrideValue<TTier, TDataCenter>> overrides)

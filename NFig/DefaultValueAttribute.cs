@@ -16,11 +16,10 @@ namespace NFig
         /// </summary>
         public object DefaultValue { get; protected set; }
         /// <summary>
-        /// The sub-app which the default is applicable to. If null or the zero-value, it is considered applicable to the "Global" app, as well as any sub-app
-        /// which does not have another default applied. If your application only uses the Global app (no sub-apps), then you should not include this parameter
-        /// in inheriting attributes.
+        /// The sub-app ID which the default is applicable to. If null, the default is not specific to a sub-app. If your application doesn't use sub-apps,
+        /// then you should not include this parameter in inheriting attributes.
         /// </summary>
-        public object SubApp { get; protected set; }
+        public int? SubAppId { get; protected set; }
         /// <summary>
         /// The deployment tier (e.g. local/dev/prod) which the default is applicable to. If null or the zero-value, the default is applicable to any tier.
         /// </summary>
