@@ -48,6 +48,20 @@
   <ItemGroup>
     <Compile Include="BinaryExtensions.cs" />
     <Compile Include="Compare.cs" />
+    <Compile Include="Converters\BooleanSettingConverter.cs" />
+    <Compile Include="Converters\ByteSettingConverter.cs" />
+    <Compile Include="Converters\CharSettingConverter.cs" />
+    <Compile Include="Converters\DecimalSettingConverter.cs" />
+    <Compile Include="Converters\DoubleSettingConverter.cs" />
+    <Compile Include="Converters\FloatSettingConverter.cs" />
+    <Compile Include="Converters\IntSettingConverter.cs" />
+    <Compile Include="Converters\ISettingConverter.cs" />
+    <Compile Include="Converters\LongSettingConverter.cs" />
+    <Compile Include="Converters\ShortSettingConverter.cs" />
+    <Compile Include="Converters\StringSettingConverter.cs" />
+    <Compile Include="Converters\UIntSettingConverter.cs" />
+    <Compile Include="Converters\ULongSettingConverter.cs" />
+    <Compile Include="Converters\UShortSettingConverter.cs" />
     <Compile Include="DefaultValue.cs" />
     <Compile Include="DefaultValueAttribute.cs" />
     <Compile Include="DoNotInlineValuesAttribute.cs" />
@@ -67,7 +81,6 @@
     <Compile Include="Encryption\ISettingEncryptor.cs" />
     <Compile Include="NFigSettingsBase.cs" />
     <Compile Include="OverrideValue.cs" />
-    <Compile Include="SettingConverters.cs" />
     <Compile Include="ChangeRequiresRestartAttribute.cs" />
     <Compile Include="SettingAttribute.cs" />
     <Compile Include="SettingMetadata.cs" />
