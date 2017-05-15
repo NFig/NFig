@@ -1,4 +1,5 @@
 ﻿using System;
+using NFig.Converters;
 
 namespace NFig
 {
@@ -18,14 +19,9 @@ namespace NFig
         public string Description { get; }
 
         /// <summary>
-        /// The runtime type of the setting's values.
-        /// </summary>
-        public Type Type { get; }
-
-        /// <summary>
         /// The full name of the setting's type.
         /// </summary>
-        public string TypeName => Type.FullName;
+        public string TypeName { get; }
 
         /// <summary>
         /// If true, all default and override values are encrypted.
@@ -39,18 +35,24 @@ namespace NFig
         public bool IsEnum { get; }
 
         /// <summary>
+        /// The fully-qualified type name of the setting's converter. All built-in converters begin with "NFig.Converters."
+        /// </summary>
+        public string ConverterTypeName { get; }
+
+        /// <summary>
         /// True if the setting was marked with the [ChangeRequiresRestart] attribute. This indicates that any edits to this setting likely won't have any
         /// affect until the application is restarted.
         /// </summary>
         public bool ChangeRequiresRestart { get; }
 
-        internal SettingMetadata(string name, string description, Type type, bool isEncrypted, bool changeRequiresRestart)
+        internal SettingMetadata(string name, string description, Type type, bool isEncrypted, ISettingConverter converter, bool changeRequiresRestart)
         {
             Name = name;
             Description = description;
-            Type = type;
+            TypeName = type.FullName;
             IsEncrypted = isEncrypted;
             IsEnum = type.IsEnum;
+            ConverterTypeName = converter.GetType().FullName;
             ChangeRequiresRestart = changeRequiresRestart;
         }
     }
