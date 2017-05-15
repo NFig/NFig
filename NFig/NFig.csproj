@@ -64,6 +64,7 @@
     <Compile Include="DefaultValue.cs" />
     <Compile Include="DefaultValueAttribute.cs" />
     <Compile Include="DoNotInlineValuesAttribute.cs" />
+    <Compile Include="EncryptedSettingAttribute.cs" />
     <Compile Include="Encryption\SymmetricSettingEncryptor.cs" />
     <Compile Include="Encryption\PassThroughSettingEncryptor.cs" />
     <Compile Include="Encryption\RsaSettingEncryptor.cs" />
