@@ -6,10 +6,9 @@ namespace NFig
 {
     /// <summary>
     /// The common inferface for defaults and overrides. However, typically you'll want to use one of the concrete types
-    /// <see cref="DefaultValue{TSubApp,TTier,TDataCenter}"/> or <see cref="OverrideValue{TSubApp,TTier,TDataCenter}"/>.
+    /// <see cref="DefaultValue{TTier,TDataCenter}"/> or <see cref="OverrideValue{TTier,TDataCenter}"/>.
     /// </summary>
-    public interface ISettingValue<TSubApp, TTier, TDataCenter> : IBySettingDictionaryItem
-        where TSubApp : struct
+    public interface ISettingValue<TTier, TDataCenter> : IBySettingDictionaryItem
         where TTier : struct
         where TDataCenter : struct
     {
@@ -18,9 +17,9 @@ namespace NFig
         /// </summary>
         string Value { get; }
         /// <summary>
-        /// The sub-app that this value applies to. SubApp=Global/0 means that this value can be applied to any sub-app.
+        /// The ID of the sub-app that this value applies to. Null means that the default is applicable to the top-level application, as well as all sub-apps.
         /// </summary>
-        TSubApp SubApp { get; }
+        int? SubAppId { get; }
         /// <summary>
         /// The tier that this value applies to. Tier=Any means that the value can be applied to any tier.
         /// </summary>
@@ -42,24 +41,22 @@ namespace NFig
     /// <summary>
     /// Helper methods for setting values which are applicable to both defaults and overrides.
     /// </summary>
-    public static class ISettingValueExtensions // todo: rename
+    public static class SettingValueExtensions // todo: rename
     {
         /// <summary>
         /// True if SubApp is not the "Global"/0 sub-app.
         /// </summary>
-        public static bool HasSubApp<TSubApp, TTier, TDataCenter>(this ISettingValue<TSubApp, TTier, TDataCenter> value)
-            where TSubApp : struct
+        public static bool HasSubApp<TTier, TDataCenter>(this ISettingValue<TTier, TDataCenter> value)
             where TTier : struct
             where TDataCenter : struct
         {
-            return !Compare.IsDefault(value.SubApp);
+            return value.SubAppId.HasValue;
         }
 
         /// <summary>
         /// True if Tier is not the "Any" tier.
         /// </summary>
-        public static bool HasTier<TSubApp, TTier, TDataCenter>(this ISettingValue<TSubApp, TTier, TDataCenter> value)
-            where TSubApp : struct
+        public static bool HasTier<TTier, TDataCenter>(this ISettingValue<TTier, TDataCenter> value)
             where TTier : struct
             where TDataCenter : struct
         {
@@ -69,8 +66,7 @@ namespace NFig
         /// <summary>
         /// True if DataCenter is not the "Any" data center.
         /// </summary>
-        public static bool HasDataCenter<TSubApp, TTier, TDataCenter>(this ISettingValue<TSubApp, TTier, TDataCenter> value)
-            where TSubApp : struct
+        public static bool HasDataCenter<TTier, TDataCenter>(this ISettingValue<TTier, TDataCenter> value)
             where TTier : struct
             where TDataCenter : struct
         {
@@ -80,12 +76,11 @@ namespace NFig
         /// <summary>
         /// Returns true if this value can be applied to the specified sub-app, tier, and data center.
         /// </summary>
-        public static bool IsValidFor<TSubApp, TTier, TDataCenter>(this ISettingValue<TSubApp, TTier, TDataCenter> value, TSubApp subApp, TTier tier, TDataCenter dataCenter)
-            where TSubApp : struct
+        public static bool IsValidFor<TTier, TDataCenter>(this ISettingValue<TTier, TDataCenter> value, int? subAppId, TTier tier, TDataCenter dataCenter)
             where TTier : struct
             where TDataCenter : struct
         {
-            if (value.HasSubApp() && !Compare.AreEqual(value.SubApp, subApp))
+            if (value.HasSubApp() && subAppId != value.SubAppId)
                 return false;
 
             if (value.HasTier() && !Compare.AreEqual(value.Tier, tier))
@@ -100,10 +95,9 @@ namespace NFig
         /// <summary>
         /// Returns true if <paramref name="a"/> (this) is considered more specific (greater precedence) than <paramref name="b"/>.
         /// </summary>
-        public static bool IsMoreSpecificThan<TSubApp, TTier, TDataCenter>(
-            [CanBeNull] this ISettingValue<TSubApp, TTier, TDataCenter> a,
-            [CanBeNull] ISettingValue<TSubApp, TTier, TDataCenter> b)
-            where TSubApp : struct
+        public static bool IsMoreSpecificThan<TTier, TDataCenter>(
+            [CanBeNull] this ISettingValue<TTier, TDataCenter> a,
+            [CanBeNull] ISettingValue<TTier, TDataCenter> b)
             where TTier : struct
             where TDataCenter : struct
         {
@@ -134,24 +128,22 @@ namespace NFig
         /// <summary>
         /// Returns true if the two ISettingValues share the same sub-app, tier, and data center.
         /// </summary>
-        public static bool HasSameSubAppTierDataCenter<TSubApp, TTier, TDataCenter>(
-            [NotNull] this ISettingValue<TSubApp, TTier, TDataCenter> a,
-            [NotNull] ISettingValue<TSubApp, TTier, TDataCenter> b)
-            where TSubApp : struct
+        public static bool HasSameSubAppTierDataCenter<TTier, TDataCenter>(
+            [NotNull] this ISettingValue<TTier, TDataCenter> a,
+            [NotNull] ISettingValue<TTier, TDataCenter> b)
             where TTier : struct
             where TDataCenter : struct
         {
-            return Compare.AreEqual(a.SubApp, b.SubApp) && Compare.AreEqual(a.Tier, b.Tier) && Compare.AreEqual(a.DataCenter, b.DataCenter);
+            return a.SubAppId == b.SubAppId && Compare.AreEqual(a.Tier, b.Tier) && Compare.AreEqual(a.DataCenter, b.DataCenter);
         }
 
-        internal static int GetBestValueFor<TSettingValue, TSubApp, TTier, TDataCenter>(
+        internal static int GetBestValueFor<TSettingValue, TTier, TDataCenter>(
             this IList<TSettingValue> values,
-            TSubApp subApp,
+            int? subAppId,
             TTier tier,
             TDataCenter dataCenter,
-            [CanBeNull] out ISettingValue<TSubApp, TTier, TDataCenter> bestValue)
-            where TSettingValue : ISettingValue<TSubApp, TTier, TDataCenter>
-            where TSubApp : struct
+            [CanBeNull] out ISettingValue<TTier, TDataCenter> bestValue)
+            where TSettingValue : ISettingValue<TTier, TDataCenter>
             where TTier : struct
             where TDataCenter : struct
         {
@@ -160,7 +152,7 @@ namespace NFig
             for (var i = 0; i < values.Count; i++)
             {
                 var val = values[i];
-                if (val.IsValidFor(subApp, tier, dataCenter) && val.IsMoreSpecificThan(bestValue))
+                if (val.IsValidFor(subAppId, tier, dataCenter) && val.IsMoreSpecificThan(bestValue))
                 {
                     bestIndex = i;
                     bestValue = val;

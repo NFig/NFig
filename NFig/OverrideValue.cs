@@ -3,8 +3,7 @@
     /// <summary>
     /// An override is a value defined at runtime which takes precendence over default values.
     /// </summary>
-    public class OverrideValue<TSubApp, TTier, TDataCenter> : ISettingValue<TSubApp, TTier, TDataCenter>
-        where TSubApp : struct
+    public class OverrideValue<TTier, TDataCenter> : ISettingValue<TTier, TDataCenter>
         where TTier : struct
         where TDataCenter : struct
     {
@@ -17,26 +16,26 @@
         /// </summary>
         public string Value { get; }
         /// <summary>
-        /// The sub-app that this value applies to. SubApp=Global/0 means that this value can be applied to any sub-app.
+        /// The ID of the sub-app that this value applies to. Null means that the default is applicable to the top-level application, as well as all sub-apps.
         /// </summary>
-        public TSubApp SubApp { get; }
+        public int? SubAppId { get; }
         /// <summary>
         /// The data center that this value applies to. DataCenter=Any means that the value can be applied to any data center.
         /// </summary>
         public TDataCenter DataCenter { get; }
 
-        TTier ISettingValue<TSubApp, TTier, TDataCenter>.Tier => default(TTier);
-        bool ISettingValue<TSubApp, TTier, TDataCenter>.IsDefault => false;
-        bool ISettingValue<TSubApp, TTier, TDataCenter>.IsOverride => true;
+        TTier ISettingValue<TTier, TDataCenter>.Tier => default(TTier);
+        bool ISettingValue<TTier, TDataCenter>.IsDefault => false;
+        bool ISettingValue<TTier, TDataCenter>.IsOverride => true;
 
         /// <summary>
         /// Instantiates a new override. Note: overrides always apply to the currently active tier.
         /// </summary>
-        public OverrideValue(string name, string value, TSubApp subApp, TDataCenter dataCenter)
+        public OverrideValue(string name, string value, int? subAppId, TDataCenter dataCenter)
         {
             Name = name;
             Value = value;
-            SubApp = subApp;
+            SubAppId = subAppId;
             DataCenter = dataCenter;
         }
     }

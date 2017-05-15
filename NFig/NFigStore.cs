@@ -29,13 +29,13 @@ namespace NFig
         /// Gets a client for consuming NFig settings within an application.
         /// </summary>
         /// <typeparam name="TSettings">
-        /// The class which represents your settings. It must inherit from <see cref="INFigSettings{TSubApp,TTier,TDataCenter}"/> or
-        /// <see cref="NFigSettingsBase{TSubApp,TTier,TDataCenter}"/>.
+        /// The class which represents your settings. It must inherit from <see cref="INFigSettings{TTier,TDataCenter}"/> or
+        /// <see cref="NFigSettingsBase{TTier,TDataCenter}"/>.
         /// </typeparam>
         /// <param name="appName">The name of your application. Overrides are keyed off of this name.</param>
         /// <param name="dataCenter">The data center where your application resides.</param>
         public NFigAppClient<TSettings, TTier, TDataCenter> GetAppClient<TSettings>(string appName, TDataCenter dataCenter)
-            where TSettings : class, INFigSettings<int, TTier, TDataCenter>, new() // todo remove TSubApp
+            where TSettings : class, INFigSettings<TTier, TDataCenter>, new()
         {
             throw new NotImplementedException();
         }

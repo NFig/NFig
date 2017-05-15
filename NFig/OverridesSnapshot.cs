@@ -7,8 +7,7 @@ namespace NFig
     /// <summary>
     /// Represents the state of all overrides, and the last event, for an application.
     /// </summary>
-    public class OverridesSnapshot<TSubApp, TTier, TDataCenter>
-        where TSubApp : struct
+    public class OverridesSnapshot<TTier, TDataCenter>
         where TTier : struct
         where TDataCenter : struct
     {
@@ -16,7 +15,7 @@ namespace NFig
         /// The "Global" application name.
         /// </summary>
         [NotNull]
-        public string GlobalAppName { get; }
+        public string AppName { get; }
         /// <summary>
         /// The commit ID at the time the snapshot was taken.
         /// </summary>
@@ -26,36 +25,25 @@ namespace NFig
         /// A list of overrides which existed at the time the snapshot was taken.
         /// </summary>
         [CanBeNull]
-        public IList<OverrideValue<TSubApp, TTier, TDataCenter>> Overrides { get; }
-        /// <summary>
-        /// The last event which had occurred prior to taking the snapshot.
-        /// </summary>
-        [CanBeNull]
-        public NFigLogEvent<TDataCenter> LastEvent { get; }
+        public IList<OverrideValue<TTier, TDataCenter>> Overrides { get; }
 
         /// <summary>
         /// Initializes a new snapshot object.
         /// </summary>
-        /// <param name="globalAppName">The "Global" application name.</param>
+        /// <param name="appName">The "Global" application name.</param>
         /// <param name="commit">The commit ID at the time of the snapshot.</param>
         /// <param name="overrides">A list of the overrides which exist at the time of the snapshot.</param>
-        /// <param name="lastEvent">The last event which occurred before the snapshot.</param>
-        public OverridesSnapshot(
-            [NotNull] string globalAppName,
-            [NotNull] string commit,
-            IList<OverrideValue<TSubApp, TTier, TDataCenter>> overrides,
-            NFigLogEvent<TDataCenter> lastEvent)
+        public OverridesSnapshot([NotNull] string appName, [NotNull] string commit, IList<OverrideValue<TTier, TDataCenter>> overrides)
         {
-            if (globalAppName == null)
-                throw new ArgumentNullException(nameof(globalAppName));
+            if (appName == null)
+                throw new ArgumentNullException(nameof(appName));
 
             if (commit == null)
                 throw new ArgumentNullException(nameof(commit));
 
-            GlobalAppName = globalAppName;
+            AppName = appName;
             Commit = commit;
             Overrides = overrides;
-            LastEvent = lastEvent;
         }
     }
 }

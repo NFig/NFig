@@ -4,8 +4,7 @@
     /// Represents a default value for an NFig setting. Defaults are defined at compile-time using attributes. They cannot be instantiated by consumers at
     /// runtime.
     /// </summary>
-    public class DefaultValue<TSubApp, TTier, TDataCenter> : ISettingValue<TSubApp, TTier, TDataCenter>
-        where TSubApp : struct
+    public class DefaultValue<TTier, TDataCenter> : ISettingValue<TTier, TDataCenter>
         where TTier : struct
         where TDataCenter : struct
     {
@@ -18,9 +17,9 @@
         /// </summary>
         public string Value { get; }
         /// <summary>
-        /// The sub-app that this value applies to. SubApp=Global/0 means that this value can be applied to any sub-app.
+        /// The ID of the sub-app that this value applies to. Null means that the default is applicable to the top-level application, as well as all sub-apps.
         /// </summary>
-        public TSubApp SubApp { get; }
+        public int? SubAppId { get; }
         /// <summary>
         /// The tier that this value applies to. Tier=Any means that the value can be applied to any tier.
         /// </summary>
@@ -34,14 +33,14 @@
         /// </summary>
         public bool AllowsOverrides { get; }
 
-        bool ISettingValue<TSubApp, TTier, TDataCenter>.IsDefault => true;
-        bool ISettingValue<TSubApp, TTier, TDataCenter>.IsOverride => false;
+        bool ISettingValue<TTier, TDataCenter>.IsDefault => true;
+        bool ISettingValue<TTier, TDataCenter>.IsOverride => false;
 
-        internal DefaultValue(string name, string value, TSubApp subApp, TTier tier, TDataCenter dataCenter, bool allowsOverrides)
+        internal DefaultValue(string name, string value, int? subAppId, TTier tier, TDataCenter dataCenter, bool allowsOverrides)
         {
             Name = name;
             Value = value;
-            SubApp = subApp;
+            SubAppId = subAppId;
             Tier = tier;
             DataCenter = dataCenter;
             AllowsOverrides = allowsOverrides;

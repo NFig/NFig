@@ -84,7 +84,7 @@ namespace NFig
         /// A snapshot of the state immediately after the override is applied. If the override is not applied because the current commit didn't match the
         /// commit parameter, the return value will be null.
         /// </returns>
-        public OverridesSnapshot<int, TTier, TDataCenter> SetOverride(
+        public OverridesSnapshot<TTier, TDataCenter> SetOverride(
             string settingName,
             TDataCenter dataCenter,
             string value,
@@ -109,7 +109,7 @@ namespace NFig
         /// A snapshot of the state immediately after the override is applied. If the override is not applied because the current commit didn't match the
         /// commit parameter, the return value will be null.
         /// </returns>
-        public Task<OverridesSnapshot<int, TTier, TDataCenter>> SetOverrideAsync(
+        public Task<OverridesSnapshot<TTier, TDataCenter>> SetOverrideAsync(
             string settingName,
             TDataCenter dataCenter,
             string value,
@@ -133,7 +133,7 @@ namespace NFig
         /// A snapshot of the state immediately after the override is cleared. If the override is not applied, either because it didn't exist, or because the
         /// current commit didn't match the commit parameter, the return value will be null.
         /// </returns>
-        public OverridesSnapshot<int, TTier, TDataCenter> ClearOverride(
+        public OverridesSnapshot<TTier, TDataCenter> ClearOverride(
             string settingName,
             TDataCenter dataCenter,
             string user,
@@ -156,7 +156,7 @@ namespace NFig
         /// A snapshot of the state immediately after the override is cleared. If the override is not applied, either because it didn't exist, or because the
         /// current commit didn't match the commit parameter, the return value will be null.
         /// </returns>
-        public Task<OverridesSnapshot<int, TTier, TDataCenter>> ClearOverrideAsync(
+        public Task<OverridesSnapshot<TTier, TDataCenter>> ClearOverrideAsync(
             string settingName,
             TDataCenter dataCenter,
             string user,
@@ -189,7 +189,7 @@ namespace NFig
         /// <summary>
         /// Returns a snapshot of all current overrides which can be used to restore the current state at a later date.
         /// </summary>
-        public OverridesSnapshot<int, TTier, TDataCenter> GetSnapshot()
+        public OverridesSnapshot<TTier, TDataCenter> GetSnapshot()
         {
             throw new NotImplementedException();
         }
@@ -197,7 +197,7 @@ namespace NFig
         /// <summary>
         /// Returns a snapshot of all current overrides which can be used to restore the current state at a later date.
         /// </summary>
-        public Task<OverridesSnapshot<int, TTier, TDataCenter>> GetSnapshotAsync()
+        public Task<OverridesSnapshot<TTier, TDataCenter>> GetSnapshotAsync()
         {
             throw new NotImplementedException();
         }
@@ -208,9 +208,7 @@ namespace NFig
         /// <param name="snapshot">The snapshot to restore.</param>
         /// <param name="user">The user performing the restore (for logging purposes).</param>
         /// <returns>A snapshot of the new current state (after restoring).</returns>
-        public OverridesSnapshot<int, TTier, TDataCenter> RestoreSnapshot(
-            OverridesSnapshot<int, TTier, TDataCenter> snapshot,
-            string user)
+        public OverridesSnapshot<TTier, TDataCenter> RestoreSnapshot(OverridesSnapshot<TTier, TDataCenter> snapshot, string user)
         {
             throw new NotImplementedException();
         }
@@ -221,9 +219,7 @@ namespace NFig
         /// <param name="snapshot">The snapshot to restore.</param>
         /// <param name="user">The user performing the restore (for logging purposes).</param>
         /// <returns>A snapshot of the new current state (after restoring).</returns>
-        public Task<OverridesSnapshot<int, TTier, TDataCenter>> RestoreSnapshotAsync(
-            OverridesSnapshot<int, TTier, TDataCenter> snapshot,
-            string user)
+        public Task<OverridesSnapshot<TTier, TDataCenter>> RestoreSnapshotAsync(OverridesSnapshot<TTier, TDataCenter> snapshot, string user)
         {
             throw new NotImplementedException();
         }
