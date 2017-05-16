@@ -1,12 +1,12 @@
 ﻿namespace NFig
 {
     /// <summary>
-    /// The interface for the values of an <see cref="BySettingDictionary{TValue}"/>.
+    /// The interface for the values of an <see cref="BySetting{TValue}"/> or <see cref="ListBySetting{TValue}"/>.
     /// </summary>
     public interface IBySettingDictionaryItem
     {
         /// <summary>
-        /// The setting name. When used in a <see cref="BySettingDictionary{TValue}"/>, this property will become the key.
+        /// The setting name. When used in a <see cref="BySetting{TValue}"/> or <see cref="ListBySetting{TValue}"/>, this property will become the key.
         /// </summary>
         string Name { get; }
     }
