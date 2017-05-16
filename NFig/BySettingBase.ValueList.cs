@@ -26,7 +26,7 @@ namespace NFig
             {
                 get
                 {
-                    if (index < _offset || index >= Count)
+                    if (index < 0 || index >= Count)
                         throw new ArgumentOutOfRangeException(nameof(index));
 
                     return _dictionary._entries[_offset + index].Value;
