@@ -41,7 +41,7 @@ namespace NFig
     /// <summary>
     /// Helper methods for setting values which are applicable to both defaults and overrides.
     /// </summary>
-    public static class SettingValueExtensions // todo: rename
+    public static class SettingValueExtensions
     {
         /// <summary>
         /// True if SubAppId is not null.
