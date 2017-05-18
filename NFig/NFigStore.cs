@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using NFig.Encryption;
 
 namespace NFig
 {
@@ -23,6 +24,17 @@ namespace NFig
         protected NFigStore(TTier tier)
         {
             Tier = tier;
+        }
+
+        /// <summary>
+        /// Sets an encryptor for an application. This will be used by both app and admin clients. It MUST be called before
+        /// <see cref="GetAppClient{TSettings}"/> if the application uses encrypted settings.
+        /// </summary>
+        /// <param name="appName">The application name.</param>
+        /// <param name="encryptor">The encryptor. If used for app clients, it must support decryption.</param>
+        public void SetEncryptor(string appName, ISettingEncryptor encryptor)
+        {
+            throw new NotImplementedException();
         }
 
         /// <summary>
