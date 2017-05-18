@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using NFig.Converters;
+using NFig.Encryption;
 
 namespace NFig
 {
@@ -12,6 +13,8 @@ namespace NFig
         where TTier : struct
         where TDataCenter : struct
     {
+        readonly ISettingEncryptor _encryptor;
+
         /// <summary>
         /// The backing store for NFig overrides and metadata.
         /// </summary>
@@ -27,20 +30,24 @@ namespace NFig
         /// <summary>
         /// True if this admin client is capable of encrypting settings for the application.
         /// </summary>
-        public bool CanEncrypt { get; } // todo
+        public bool CanEncrypt { get; }
         /// <summary>
         /// True if this admin client is capable of decrypting the application's encrypted settings.
         /// </summary>
-        public bool CanDecrypt { get; } // todo
+        public bool CanDecrypt { get; }
 
         /// <summary>
         /// Initializes the admin client.
         /// </summary>
-        protected internal NFigAdminClient(NFigStore<TTier, TDataCenter> store, string appName, TTier tier)
+        protected internal NFigAdminClient(NFigStore<TTier, TDataCenter> store, string appName, TTier tier, ISettingEncryptor encryptor)
         {
+            _encryptor = encryptor;
+
             Store = store;
             AppName = appName;
             Tier = tier;
+            CanEncrypt = encryptor != null;
+            CanDecrypt = encryptor?.CanDecrypt ?? false;
         }
 
         /// <summary>
