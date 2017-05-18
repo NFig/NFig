@@ -50,12 +50,6 @@
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\NFig\NFig.csproj">
-      <Project>{5d38adc2-7bb7-4ab0-83fd-0cc56a01bcb4}</Project>
-      <Name>NFig</Name>
-    </ProjectReference>
-  </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

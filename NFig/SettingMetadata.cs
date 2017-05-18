@@ -51,7 +51,7 @@ namespace NFig
             Description = description;
             TypeName = type.FullName;
             IsEncrypted = isEncrypted;
-            IsEnum = type.IsEnum;
+            IsEnum = type.IsEnum();
             ConverterTypeName = converter.GetType().FullName;
             ChangeRequiresRestart = changeRequiresRestart;
         }

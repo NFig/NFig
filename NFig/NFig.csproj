@@ -1,123 +1,13 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Release</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{5D38ADC2-7BB7-4AB0-83FD-0CC56A01BCB4}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>NFig</RootNamespace>
-    <AssemblyName>NFig</AssemblyName>
-    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <TargetFrameworkProfile />
+    <TargetFramework>netstandard1.4</TargetFramework>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <DocumentationFile>bin\Debug\NFig.XML</DocumentationFile>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <DocumentationFile>bin\Release\NFig.XML</DocumentationFile>
-  </PropertyGroup>
+
   <ItemGroup>
-    <Reference Include="JetBrains.Annotations, Version=10.1.5.0, Culture=neutral, PublicKeyToken=1010a0d8d6380325, processorArchitecture=MSIL">
-      <HintPath>..\packages\JetBrains.Annotations.10.1.5\lib\net\JetBrains.Annotations.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Xml" />
+    <PackageReference Include="JetBrains.Annotations" Version="10.4.0" />
+    <PackageReference Include="System.Reflection.Emit.Lightweight" Version="4.3.0" />
+    <PackageReference Include="System.Reflection.TypeExtensions" Version="4.4.0-preview1-25305-02" />
   </ItemGroup>
-  <ItemGroup>
-    <Compile Include="BySetting.cs" />
-    <Compile Include="BySettingBase.cs" />
-    <Compile Include="BySettingBase.KeyCollection.cs">
-      <DependentUpon>BySettingBase.cs</DependentUpon>
-    </Compile>
-    <Compile Include="BySettingBase.KeyValueEnumerator.cs">
-      <DependentUpon>BySettingBase.cs</DependentUpon>
-    </Compile>
-    <Compile Include="BySettingBase.KeyValueListEnumerator.cs">
-      <DependentUpon>BySettingBase.cs</DependentUpon>
-    </Compile>
-    <Compile Include="BySettingBase.ValueCollection.cs">
-      <DependentUpon>BySettingBase.cs</DependentUpon>
-    </Compile>
-    <Compile Include="BySettingBase.ValueList.cs">
-      <DependentUpon>BySettingBase.cs</DependentUpon>
-    </Compile>
-    <Compile Include="BySettingBase.ValueListCollection.cs">
-      <DependentUpon>BySettingBase.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Compare.cs" />
-    <Compile Include="Converters\BooleanSettingConverter.cs" />
-    <Compile Include="Converters\ByteSettingConverter.cs" />
-    <Compile Include="Converters\CharSettingConverter.cs" />
-    <Compile Include="Converters\DecimalSettingConverter.cs" />
-    <Compile Include="Converters\DoubleSettingConverter.cs" />
-    <Compile Include="Converters\FloatSettingConverter.cs" />
-    <Compile Include="Converters\IntSettingConverter.cs" />
-    <Compile Include="Converters\ISettingConverter.cs" />
-    <Compile Include="Converters\LongSettingConverter.cs" />
-    <Compile Include="Converters\ShortSettingConverter.cs" />
-    <Compile Include="Converters\StringSettingConverter.cs" />
-    <Compile Include="Converters\UIntSettingConverter.cs" />
-    <Compile Include="Converters\ULongSettingConverter.cs" />
-    <Compile Include="Converters\UShortSettingConverter.cs" />
-    <Compile Include="DefaultValue.cs" />
-    <Compile Include="Attributes\DefaultValueAttribute.cs" />
-    <Compile Include="Attributes\DoNotInlineValuesAttribute.cs" />
-    <Compile Include="Attributes\EncryptedSettingAttribute.cs" />
-    <Compile Include="Encryption\SymmetricSettingEncryptor.cs" />
-    <Compile Include="Encryption\PassThroughSettingEncryptor.cs" />
-    <Compile Include="Encryption\RsaSettingEncryptor.cs" />
-    <Compile Include="EnumConverters.cs" />
-    <Compile Include="Exceptions.cs" />
-    <Compile Include="IBySettingDictionaryItem.cs" />
-    <Compile Include="INFigSettings.cs" />
-    <Compile Include="ISettingValue.cs" />
-    <Compile Include="ListBySetting.cs" />
-    <Compile Include="NFigAdminClient.cs" />
-    <Compile Include="NFigAppClient.cs" />
-    <Compile Include="NFigStore.cs" />
-    <Compile Include="OverridesSnapshot.cs" />
-    <Compile Include="Encryption\ISettingEncryptor.cs" />
-    <Compile Include="NFigSettingsBase.cs" />
-    <Compile Include="OverrideValue.cs" />
-    <Compile Include="Attributes\ChangeRequiresRestartAttribute.cs" />
-    <Compile Include="Attributes\SettingAttribute.cs" />
-    <Compile Include="SettingMetadata.cs" />
-    <Compile Include="Attributes\SettingsGroupAttribute.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Attributes\SettingConverterAttribute.cs" />
-    <Compile Include="SubAppInfo.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="packages.config" />
-  </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
+
 </Project>

@@ -196,7 +196,7 @@ namespace NFig
 
         static int CompareValues(Entry a, Entry b)
         {
-            return string.Compare(a.Key, b.Key, StringComparison.InvariantCulture);
+            return string.Compare(a.Key, b.Key, StringComparison.Ordinal);
         }
     }
 }

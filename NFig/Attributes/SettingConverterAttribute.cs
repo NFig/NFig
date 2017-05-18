@@ -1,4 +1,5 @@
 using System;
+using System.Reflection;
 using JetBrains.Annotations;
 using NFig.Converters;
 
@@ -54,7 +55,7 @@ namespace NFig
 
             foreach (var iface in converterType.GetInterfaces())
             {
-                if (iface.IsGenericType && iface.GetGenericTypeDefinition() == genericType)
+                if (iface.IsGenericType() && iface.GetGenericTypeDefinition() == genericType)
                 {
                     return iface.GenericTypeArguments[0];
                 }
