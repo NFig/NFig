@@ -1,4 +1,3 @@
-using System;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -10,19 +9,17 @@ namespace NFig
     public class BySetting<TValue> : BySettingBase<TValue>, IReadOnlyDictionary<string, TValue>
         where TValue : IBySettingDictionaryItem
     {
-        IEnumerable<string> IReadOnlyDictionary<string, TValue>.Keys => Keys;
-        IEnumerable<TValue> IReadOnlyDictionary<string, TValue>.Values => Values;
-
-
         /// <summary>
         /// Enumerates the setting names (keys) in alphabetical order.
         /// </summary>
         public KeyCollection Keys => new KeyCollection(this);
-
         /// <summary>
         /// Enumerates the values in alphabetical order by setting name (key).
         /// </summary>
         public ValueCollection Values => new ValueCollection(this);
+
+        IEnumerable<string> IReadOnlyDictionary<string, TValue>.Keys => Keys;
+        IEnumerable<TValue> IReadOnlyDictionary<string, TValue>.Values => Values;
 
         /// <summary>
         /// Gets a <typeparamref name="TValue"/> by setting name, or throws an exception if not found.
@@ -49,7 +46,7 @@ namespace NFig
         /// Gets a key/value enumerator for <see cref="BySetting{TValue}"/>.
         /// </summary>
         public KeyValueEnumerator GetEnumerator() => new KeyValueEnumerator(this);
-        IEnumerator<KeyValuePair<string, TValue>> IEnumerable<KeyValuePair<String, TValue>>.GetEnumerator() => GetEnumerator();
+        IEnumerator<KeyValuePair<string, TValue>> IEnumerable<KeyValuePair<string, TValue>>.GetEnumerator() => GetEnumerator();
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
         /// <summary>
