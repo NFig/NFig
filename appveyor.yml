@@ -4,12 +4,12 @@
 #      general configuration      #
 #---------------------------------#
 
-environment:
-  NUGET_RELEASE_VERSION: 3.0.0-alpha
-  NUGET_FILE: NFig\NFig.nuspec
-  ASSEMBLY_FILE: NFig\Properties\AssemblyInfo.cs
+# environment:
+#   NUGET_RELEASE_VERSION: 3.0.0-alpha
+#   NUGET_FILE: NFig\NFig.nuspec
+#   ASSEMBLY_FILE: NFig\Properties\AssemblyInfo.cs
 
-version: $(NUGET_RELEASE_VERSION).{build}
+# version: $(NUGET_RELEASE_VERSION).{build}
 
 #---------------------------------#
 #    environment configuration    #
@@ -32,8 +32,7 @@ os: Visual Studio 2017
 #---------------------------------#
 
 build_script:
-  - msbuild NFig.sln /p:Configuration=Release /t:restore /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
-  - msbuild NFig.sln /p:Configuration=Release /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
+  - ps: .\build.ps1 -pack
 
 #---------------------------------#
 #       tests configuration       #
@@ -47,7 +46,8 @@ build_script:
 #      artifacts configuration    #
 #---------------------------------#
 
-
+artifacts:
+  - path: artifacts/*
 
 #---------------------------------#
 #     deployment configuration    #
