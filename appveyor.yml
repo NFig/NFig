@@ -1,31 +1,10 @@
 # See http://www.appveyor.com/docs/appveyor-yml for reference
 
 #---------------------------------#
-#      general configuration      #
-#---------------------------------#
-
-# environment:
-#   NUGET_RELEASE_VERSION: 3.0.0-alpha
-#   NUGET_FILE: NFig\NFig.nuspec
-#   ASSEMBLY_FILE: NFig\Properties\AssemblyInfo.cs
-
-# version: $(NUGET_RELEASE_VERSION).{build}
-
-#---------------------------------#
 #    environment configuration    #
 #---------------------------------#
 
 os: Visual Studio 2017
-
-#assembly_info:
-#  patch: true
-#  file: $(ASSEMBLY_FILE)
-#  assembly_version: $(MAJOR_VERSION)
-#  assembly_file_version: $(appveyor_build_version)
-#  assembly_informational_version: $(NUGET_VERSION)
-
-#install:
-#  - ps: Scripts\SetNugetVersion.ps1
 
 #---------------------------------#
 #       build configuration       #
@@ -33,14 +12,6 @@ os: Visual Studio 2017
 
 build_script:
   - ps: .\build.ps1 -pack
-
-#---------------------------------#
-#       tests configuration       #
-#---------------------------------#
-
-#test:
-#  assemblies:
-#    - '**\*.Tests.dll'
 
 #---------------------------------#
 #      artifacts configuration    #
