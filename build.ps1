@@ -93,29 +93,29 @@ function GetMsBuildExe()
 
 function ExecuteMsBuild([string] $msbuildExe, [string] $project, [string] $target, [string] $version)
 {
-    [string[]] $args = "`"$project`"", "/p:Configuration=$Configuration"
+    [string[]] $msBuildArgs = "`"$project`"", "/p:Configuration=$Configuration"
 
     if ($target -ne "")
     {
-        $args += "/t:$target"
+        $msBuildArgs += "/t:$target"
 
         if ($target -eq 'pack')
         {
-            $args += "/p:IncludeSymbols=true"
-            $args += "/p:PackageVersion=$version"
-            $args += "/p:PackageOutputPath=`"$(Join-Path $PSScriptRoot 'artifacts')`""
+            $msBuildArgs += "/p:IncludeSymbols=true"
+            $msBuildArgs += "/p:PackageVersion=$version"
+            $msBuildArgs += "/p:PackageOutputPath=`"$(Join-Path $PSScriptRoot 'artifacts')`""
         }
     }
 
     if ($AppVeyor)
     {
-        $args += "/logger:`"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll`""
+        $msBuildArgs += "/logger:`"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll`""
     }
 
-    $args += "/verbosity:$Verbosity"
+    $msBuildArgs += "/verbosity:$Verbosity"
 
-    Write-Host -ForegroundColor "Cyan" "'$msbuildExe' $args"
-    & $msbuildExe $args
+    Write-Host -ForegroundColor "Cyan" "'$msbuildExe' $msBuildArgs"
+    & $msbuildExe $msBuildArgs
     
     if ($LASTEXITCODE -ne 0)
     {
