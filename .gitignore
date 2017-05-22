@@ -158,11 +158,6 @@ $RECYCLE.BIN/
 # Node.js
 node_modules
 
-# auto-gen static files
-/src/Kirjato/wwwroot/js
-/src/Kirjato/wwwroot/css
-/src/Kirjato/wwwroot/fonts
-
 # Roslyn Temporary Solution Files
 *.sln.ide/
 
