@@ -57,7 +57,7 @@ namespace NFig
     /// <summary>
     /// Used to indicate when a value cannot be assigned to a setting.
     /// </summary>
-    public class InvalidSettingValueException : NFigException
+    public class InvalidDefaultValueException : NFigException
     {
         /// <summary>
         /// The name of the setting which the value was attempting to be assigned to.
@@ -68,31 +68,28 @@ namespace NFig
         /// </summary>
         public object Value { get; }
         /// <summary>
-        /// True if this was a default value (not an override).
+        /// The sub-app, if applicable.
         /// </summary>
-        public bool IsDefault { get; }
+        public int? SubAppId { get; }
         /// <summary>
-        /// True if this was an override value (not a default).
+        /// The string representation of the data center.
         /// </summary>
-        public bool IsOverride => !IsDefault;
+        public string DataCenter { get; }
 
         [SuppressMessage("ReSharper", "VirtualMemberCallInConstructor")]
-        internal InvalidSettingValueException(
+        internal InvalidDefaultValueException(
             string message,
             string settingName,
             object value,
-            bool isDefault,
-            string subApp,
+            int? subAppId,
             string dataCenter,
             Exception innerException = null)
             : base(message, innerException)
         {
             Data["SettingName"] = SettingName = settingName;
             Data["Value"] = Value = value;
-            Data["IsDefault"] = IsDefault = isDefault;
-            Data["IsOverride"] = !isDefault;
-            Data["SubApp"] = subApp;
-            Data["DataCenter"] = dataCenter;
+            Data["SubAppId"] = SubAppId = subAppId;
+            Data["DataCenter"] = DataCenter = dataCenter;
         }
     }
 
@@ -106,15 +103,15 @@ namespace NFig
         /// <summary>
         /// A list of nested exceptions. The number of exceptions in this list will be the same as the number of overrides which were unable to be applied.
         /// </summary>
-        public IList<InvalidSettingValueException> Exceptions { get; }
+        public IList<InvalidDefaultValueException> Exceptions { get; }
 
-        internal InvalidSettingOverridesException(IList<InvalidSettingValueException> exceptions, string stackTrace) : base(GetMessage(exceptions))
+        internal InvalidSettingOverridesException(IList<InvalidDefaultValueException> exceptions, string stackTrace) : base(GetMessage(exceptions))
         {
             Exceptions = exceptions;
             UnthrownStackTrace = stackTrace;
         }
 
-        static string GetMessage(IList<InvalidSettingValueException> exceptions)
+        static string GetMessage(IList<InvalidDefaultValueException> exceptions)
         {
             return $"{exceptions.Count} invalid setting overrides were not applied ({string.Join(", ", exceptions.Select(e => e.SettingName))}). You should edit or clear these overrides.";
         }
