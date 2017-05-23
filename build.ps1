@@ -22,7 +22,7 @@ function Main()
     # project config
     $buildProject = 'NFig.sln'
     $nugetProject = 'NFig\NFig.csproj'
-    # $testProject = 'NFig\NFig.Tests.csproj'
+    $testProject = 'NFig.Tests\NFig.Tests.csproj'
 
     # build script config
     if ($PsDebug)
@@ -50,13 +50,13 @@ function Main()
     Write-Host
     Write-Host -BackgroundColor "Cyan" -ForegroundColor "Black" "Building $buildProject"
     ExecuteMsBuild $msbuildExe $buildProject
-    
+
     # Test
     if ($testProject -and $SkipTests -ne $true)
     {
-        # Write-Host
-        # Write-Host -BackgroundColor "Cyan" -ForegroundColor "Black" "Running Tests"
-        # todo: test
+         Write-Host
+         Write-Host -BackgroundColor "Cyan" -ForegroundColor "Black" "Running Tests"
+         ExecuteMsBuild $msbuildExe $testProject 'Tests'
     }
 
     # Nuget Pack
@@ -116,7 +116,7 @@ function ExecuteMsBuild([string] $msbuildExe, [string] $project, [string] $targe
 
     Write-Host -ForegroundColor "Cyan" "'$msbuildExe' $msBuildArgs"
     & $msbuildExe $msBuildArgs
-    
+
     if ($LASTEXITCODE -ne 0)
     {
         Write-Host
@@ -193,7 +193,7 @@ function GeneratePrereleaseVersion ([System.Text.RegularExpressions.GroupCollect
         $version += "$patch-unStable"
     }
 
-	$version += "-$buildNum"
+    $version += "-$buildNum"
 
     Write-Output -NoEnumerate $version
 }
