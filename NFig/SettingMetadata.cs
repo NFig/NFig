@@ -6,7 +6,7 @@ namespace NFig
     /// <summary>
     /// Describes all information about an individual setting, except for its values.
     /// </summary>
-    public class SettingMetadata : IBySettingDictionaryItem
+    public class SettingMetadata : IBySettingItem
     {
         /// <summary>
         /// The name of the setting. Dots in the name represent nesting levels.

@@ -23,7 +23,7 @@ namespace NFig
      /// <summary>
      /// This is the base class for <see cref="BySetting{TValue}"/> and <see cref="ListBySetting{TValue}"/>. It is not usable on its own.
      /// </summary>
-    public abstract partial class BySettingBase<TValue> where TValue : IBySettingDictionaryItem
+    public abstract partial class BySettingBase<TValue> where TValue : IBySettingItem
     {
         struct Entry
         {

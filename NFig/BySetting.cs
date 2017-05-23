@@ -7,7 +7,7 @@ namespace NFig
     /// An immutable dictionary where they keys are a setting name, and the values are <typeparamref name="TValue"/>.
     /// </summary>
     public class BySetting<TValue> : BySettingBase<TValue>, IReadOnlyDictionary<string, TValue>
-        where TValue : IBySettingDictionaryItem
+        where TValue : IBySettingItem
     {
         /// <summary>
         /// Enumerates the setting names (keys) in alphabetical order.

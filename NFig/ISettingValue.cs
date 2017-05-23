@@ -8,7 +8,7 @@ namespace NFig
     /// The common inferface for defaults and overrides. However, typically you'll want to use one of the concrete types
     /// <see cref="DefaultValue{TTier,TDataCenter}"/> or <see cref="OverrideValue{TTier,TDataCenter}"/>.
     /// </summary>
-    public interface ISettingValue<TTier, TDataCenter> : IBySettingDictionaryItem
+    public interface ISettingValue<TTier, TDataCenter> : IBySettingItem
         where TTier : struct
         where TDataCenter : struct
     {
