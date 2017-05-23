@@ -25,6 +25,9 @@ namespace NFig
         /// <param name="tier">The deployment tier which the store exists on.</param>
         protected NFigStore(TTier tier)
         {
+            AssertIsValidEnumType(typeof(TTier), nameof(TTier));
+            AssertIsValidEnumType(typeof(TDataCenter), nameof(TDataCenter));
+
             Tier = tier;
         }
 
@@ -130,6 +133,24 @@ namespace NFig
                 _infoByApp[appName] = info;
                 return info;
             }
+        }
+
+        static void AssertIsValidEnumType(Type type, string name)
+        {
+            if (!type.IsEnum())
+                throw new NFigException(name + " must be an enum type.");
+
+            if (type == typeof(byte)
+                || type == typeof(sbyte)
+                || type == typeof(short)
+                || type == typeof(ushort)
+                || type == typeof(int)
+                || type == typeof(uint))
+            {
+                return;
+            }
+
+            throw new NFigException($"The backing type for {name} must be a 32-bit, or smaller, integer.");
         }
     }
 }
