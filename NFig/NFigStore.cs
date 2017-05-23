@@ -12,7 +12,7 @@ namespace NFig
         where TTier : struct
         where TDataCenter : struct
     {
-        readonly Dictionary<string, ISettingEncryptor> _encryptorByApp = new Dictionary<string, ISettingEncryptor>();
+        readonly Dictionary<string, AppInternalInfo> _infoByApp = new Dictionary<string, AppInternalInfo>();
 
         /// <summary>
         /// The deployment tier of the store.
@@ -42,16 +42,17 @@ namespace NFig
             if (encryptor == null)
                 throw new ArgumentNullException(nameof(encryptor));
 
-            lock (_encryptorByApp)
+            var info = GetAppInfo(appName);
+
+            lock (_infoByApp)
             {
                 // For now, we're not going to allow replacing an encryptor which has already been set. It's unclear why you would ever want to do that.
                 // However, I do think we do need to provide a way for a user to tell whether an encryptor has already been set for a particular app.
                 // todo: provide a way to check whether an app already has an encryptor set
-
-                if (_encryptorByApp.ContainsKey(appName))
+                if (info.Encryptor != null)
                     throw new NFigException($"Cannot set encryptor for app \"{appName}\". It already has an encryptor.");
 
-                _encryptorByApp[appName] = encryptor;
+                info.Encryptor = encryptor;
             }
         }
 
@@ -93,6 +94,42 @@ namespace NFig
         public Task<IEnumerable<string>> GetAppNamesAsync() // todo: use a concrete type instead of IEnumerable
         {
             throw new NotImplementedException();
+        }
+
+        internal AppInternalInfo GetAppInfo(string appName, Type settingsType = null)
+        {
+            if (appName == null)
+                throw new ArgumentNullException(nameof(appName));
+
+            lock (_infoByApp)
+            {
+                AppInternalInfo info;
+                if (_infoByApp.TryGetValue(appName, out info))
+                {
+                    if (settingsType != null) // called from an AppClient
+                    {
+                        if (info.SettingsType == null)
+                        {
+                            // This is the first time an app client has been setup for this particular app. We'll just blindly trust that they picked the right TSettings.
+                            info.SettingsType = settingsType;
+                        }
+                        else if (settingsType != info.SettingsType)
+                        {
+                            // there is a mismatch between 
+                            var ex = new NFigException($"The TSettings of app \"{appName}\" does not match the TSettings used when the first NFigAppClient was initialized for the app");
+                            ex.Data["OriginalTSettings"] = info.SettingsType.FullName;
+                            ex.Data["NewTSettings"] = settingsType.FullName;
+                            throw ex;
+                        }
+                    }
+
+                    return info;
+                }
+
+                info = new AppInternalInfo(appName, settingsType);
+                _infoByApp[appName] = info;
+                return info;
+            }
         }
     }
 }
