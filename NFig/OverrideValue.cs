@@ -1,4 +1,6 @@
-﻿namespace NFig
+﻿using System;
+
+namespace NFig
 {
     /// <summary>
     /// An override is a value defined at runtime which takes precendence over default values.
@@ -23,6 +25,10 @@
         /// The data center that this value applies to. DataCenter=Any means that the value can be applied to any data center.
         /// </summary>
         public TDataCenter DataCenter { get; }
+        /// <summary>
+        /// Indicated when the override is set to automatically expire, if applicable.
+        /// </summary>
+        public DateTimeOffset? ExpirationTime { get; }
 
         TTier ISettingValue<TTier, TDataCenter>.Tier => default(TTier);
         bool ISettingValue<TTier, TDataCenter>.IsDefault => false;
@@ -31,12 +37,13 @@
         /// <summary>
         /// Instantiates a new override. Note: overrides always apply to the currently active tier.
         /// </summary>
-        public OverrideValue(string name, string value, int? subAppId, TDataCenter dataCenter)
+        public OverrideValue(string name, string value, int? subAppId, TDataCenter dataCenter, DateTimeOffset? expirationtime)
         {
             Name = name;
             Value = value;
             SubAppId = subAppId;
             DataCenter = dataCenter;
+            ExpirationTime = expirationtime;
         }
     }
 }
