@@ -96,7 +96,7 @@ namespace NFig
             throw new NotImplementedException();
         }
 
-        internal AppInternalInfo GetAppInfo(string appName, Type settingsType = null)
+        AppInternalInfo GetAppInfo(string appName, Type settingsType = null)
         {
             if (appName == null)
                 throw new ArgumentNullException(nameof(appName));
