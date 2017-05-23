@@ -36,7 +36,18 @@
         bool ISettingValue<TTier, TDataCenter>.IsDefault => true;
         bool ISettingValue<TTier, TDataCenter>.IsOverride => false;
 
-        internal DefaultValue(string name, string value, int? subAppId, TTier tier, TDataCenter dataCenter, bool allowsOverrides)
+        /// <summary>
+        /// Instantiates a new default value for a setting. This should only be called from <see cref="DefaultValueBaseAttribute"/>.
+        /// </summary>
+        /// <param name="name">The name of the setting which this value applies to.</param>
+        /// <param name="value">A string-representation of the value. If the setting is encrypted, then this property will be the encrypted string.</param>
+        /// <param name="subAppId">
+        /// The ID of the sub-app that this value applies to. Null means that the default is applicable to the top-level application, as well as all sub-apps.
+        /// </param>
+        /// <param name="tier">The tier that this value applies to. Tier=Any means that the value can be applied to any tier.</param>
+        /// <param name="dataCenter">The data center that this value applies to. DataCenter=Any means that the value can be applied to any data center.</param>
+        /// <param name="allowsOverrides">Indicates whether overrides are allowed when this default value is active.</param>
+        public DefaultValue(string name, string value, int? subAppId, TTier tier, TDataCenter dataCenter, bool allowsOverrides)
         {
             Name = name;
             Value = value;
