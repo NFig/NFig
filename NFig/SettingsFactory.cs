@@ -203,24 +203,32 @@ namespace NFig
             }
         }
 
-        Setting PropertyToSetting<TValue>(PropertyInfo pi, SettingAttribute sa, SettingsGroup group)
+        Setting PropertyToSetting<TValue>(PropertyInfo pi, SettingAttribute settingAttr, SettingsGroup group)
         {
             var name = group.Prefix + pi.Name;
 
-            var isEncrypted = sa.IsEncrypted;
+            var isEncrypted = settingAttr.IsEncrypted;
             if (isEncrypted)
-                AssertValidEncryptedSettingAttribute(name, sa);
+                AssertValidEncryptedSettingAttribute(name, settingAttr);
 
             var converter = GetConverterForProperty<TValue>(name, pi, group, out var isDefaultConverter);
 
-            // meta
             var description = pi.GetCustomAttribute<DescriptionAttribute>()?.Description ?? "";
             var changeRequiresRestart = pi.GetCustomAttribute<ChangeRequiresRestartAttribute>() != null;
-            var noInline = pi.GetCustomAttribute<DoNotInlineValuesAttribute>() != null;
+            var allowInline = pi.GetCustomAttribute<DoNotInlineValuesAttribute>() == null;
 
-            // todo
+            var meta = new SettingMetadata(name, description, pi.PropertyType, isEncrypted, converter, isDefaultConverter, changeRequiresRestart);
 
-            throw new NotImplementedException();
+            // get the root default value
+            var rootValue = isEncrypted ? default(TValue) : settingAttr.DefaultValue;
+            var rootStringValue = GetStringFromDefaultAndValidate(name, rootValue, null, default(TDataCenter), converter, isEncrypted);
+            var rootDefault = new DefaultValue<TTier, TDataCenter>(name, rootStringValue, null, default(TTier), default(TDataCenter), true);
+
+            // Additional default values will come from these DefaultValueBase attributes, but we'll extract the actual values later.
+            var defaultAttributes = pi.GetCustomAttributes<DefaultValueBaseAttribute>().ToArray();
+
+            // create the setting
+            return new Setting<TValue>(meta, group, rootDefault, defaultAttributes, allowInline);
         }
 
         void AssertValidEncryptedSettingAttribute(string name, SettingAttribute sa)
@@ -274,6 +282,66 @@ namespace NFig
             }
 
             return converter;
+        }
+
+        string GetStringFromDefaultAndValidate<TValue>(
+            string name,
+            object value,
+            int? subAppId,
+            TDataCenter dataCenter,
+            ISettingConverter<TValue> converter,
+            bool isEncrypted)
+        {
+            string stringValue;
+
+            if (value is string && (isEncrypted || typeof(TValue) != typeof(string)))
+            {
+                // Don't need to convert to a string if value is already a string and TValue is not.
+                // We expect that the human essentially already did the conversion.
+                // Also, if setting is encrypted, then we always expect the string representation to be encrypted.
+                stringValue = (string)value;
+            }
+            else
+            {
+                try
+                {
+                    // try convert the real value into its string representation
+                    var tval = value is TValue ? (TValue)value : (TValue)Convert.ChangeType(value, typeof(TValue));
+                    stringValue = converter.GetString(tval);
+
+                    if (isEncrypted)
+                        stringValue = AppInfo.Encrypt(stringValue);
+                }
+                catch (Exception ex)
+                {
+                    throw new InvalidDefaultValueException(
+                        $"Invalid default for setting \"{name}\". Cannot convert to a string representation.",
+                        name,
+                        value,
+                        subAppId,
+                        dataCenter.ToString(),
+                        ex);
+                }
+            }
+
+            // now make sure we can also convert the string value back into a real value
+            try
+            {
+                var decrypted = isEncrypted ? AppInfo.Decrypt(stringValue) : stringValue;
+                converter.GetValue(decrypted);
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidDefaultValueException(
+                    $"Invalid default value for setting \"{name}\". Cannot convert string representation back into a real value.",
+                    name,
+                    value,
+                    subAppId,
+                    dataCenter.ToString(),
+                    ex);
+            }
+
+            return stringValue;
         }
 
         /******************************************************************************************************************************************************
@@ -344,7 +412,40 @@ namespace NFig
 
         abstract class Setting : IBySettingItem
         {
-            public string Name { get; protected set; }
+            public string Name { get; }
+            public SettingMetadata Metadata { get; }
+            public SettingsGroup Group { get; }
+            public DefaultValue<TTier, TDataCenter> RootDefault { get; }
+            public DefaultValueBaseAttribute[] DefaultValueAttributes { get; }
+            public bool AllowInline { get; }
+
+            protected Setting(
+                SettingMetadata metadata,
+                SettingsGroup group,
+                DefaultValue<TTier, TDataCenter> rootDefault,
+                DefaultValueBaseAttribute[] defaultValueAttributes,
+                bool allowInline)
+            {
+                Name = metadata.Name;
+                Metadata = metadata;
+                Group = group;
+                RootDefault = rootDefault;
+                DefaultValueAttributes = defaultValueAttributes;
+                AllowInline = allowInline;
+            }
+        }
+
+        class Setting<TValue> : Setting
+        {
+            internal Setting(
+                SettingMetadata metadata,
+                SettingsGroup group,
+                DefaultValue<TTier, TDataCenter> rootDefault,
+                DefaultValueBaseAttribute[] defaultValueAttributes,
+                bool allowInline)
+                : base(metadata, group, rootDefault, defaultValueAttributes, allowInline)
+            {
+            }
         }
     }
 }
