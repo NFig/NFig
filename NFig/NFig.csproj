@@ -18,6 +18,14 @@
     <PackageTags>config settings tier</PackageTags>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DocumentationFile>bin\Debug\netstandard1.4\NFig.xml</DocumentationFile>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <DocumentationFile>bin\Release\netstandard1.4\NFig.xml</DocumentationFile>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="JetBrains.Annotations" Version="10.4.0" PrivateAssets="All" />
     <PackageReference Include="System.Reflection.Emit.Lightweight" Version="4.3.0" />
