@@ -21,6 +21,13 @@ artifacts:
   - path: artifacts/*
 
 #---------------------------------#
+#       tests configuration       #
+#---------------------------------#
+
+# we run tests explicitly as part of the build script
+test: off
+
+#---------------------------------#
 #     deployment configuration    #
 #---------------------------------#
 
