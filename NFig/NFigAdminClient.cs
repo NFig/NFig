@@ -88,6 +88,7 @@ namespace NFig
         /// <param name="user">The user who is setting the override (used for logging purposes). This can be null if you don't care about logging.</param>
         /// <param name="subAppId">(optional) The sub-app which the override should apply to.</param>
         /// <param name="commit">(optional) If non-null, the override will only be applied if this is the current commit ID.</param>
+        /// <param name="expirationTime">(optional) The time when the override should be automatically cleared.</param>
         /// <returns>
         /// A snapshot of the state immediately after the override is applied. If the override is not applied because the current commit didn't match the
         /// commit parameter, the return value will be null.
@@ -98,7 +99,8 @@ namespace NFig
             string value,
             string user,
             int? subAppId = null,
-            string commit = null)
+            string commit = null,
+            DateTimeOffset? expirationTime = null)
         {
             throw new NotImplementedException();
         }
@@ -113,6 +115,7 @@ namespace NFig
         /// <param name="user">The user who is setting the override (used for logging purposes). This can be null if you don't care about logging.</param>
         /// <param name="subAppId">(optional) The sub-app which the override should apply to.</param>
         /// <param name="commit">(optional) If non-null, the override will only be applied if this is the current commit ID.</param>
+        /// <param name="expirationTime">(optional) The time when the override should be automatically cleared.</param>
         /// <returns>
         /// A snapshot of the state immediately after the override is applied. If the override is not applied because the current commit didn't match the
         /// commit parameter, the return value will be null.
@@ -123,7 +126,8 @@ namespace NFig
             string value,
             string user,
             int? subAppId = null,
-            string commit = null)
+            string commit = null,
+            DateTimeOffset? expirationTime = null)
         {
             throw new NotImplementedException();
         }
