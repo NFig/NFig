@@ -31,22 +31,17 @@ namespace NFig
         }
 
         static readonly Dictionary<Type, ISettingConverter> s_converters = new Dictionary<Type, ISettingConverter>();
-        static readonly object s_lock = new object();
 
-        public static ISettingConverter GetConverter<TEnum>()
+        public static ISettingConverter GetConverter(Type enumType)
         {
-            var enumType = typeof(TEnum);
-
-            ISettingConverter converter;
-            if (s_converters.TryGetValue(enumType, out converter))
-                return converter;
-
-            lock (s_lock)
+            lock (s_converters)
             {
+                ISettingConverter converter;
                 if (s_converters.TryGetValue(enumType, out converter))
                     return converter;
 
-                converter = CreateConverter<TEnum>();
+                var createConverter = typeof(EnumConverters).GetMethod(nameof(CreateConverter), BindingFlags.NonPublic | BindingFlags.Static).MakeGenericMethod(enumType);
+                converter = (ISettingConverter)createConverter.Invoke(null, Array.Empty<object>());
                 s_converters[enumType] = converter;
                 return converter;
             }

@@ -24,9 +24,23 @@ namespace NFig.Converters
         };
 
         [CanBeNull]
-        static ISettingConverter Get(Type settingType)
+        internal static ISettingConverter Get(Type settingType)
         {
-            return s_defaultConverters.TryGetValue(settingType, out var converter) ? converter : null;
+            lock (s_defaultConverters)
+            {
+                ISettingConverter converter;
+                if (s_defaultConverters.TryGetValue(settingType, out converter))
+                    return converter;
+
+                if (settingType.IsEnum())
+                {
+                    converter = EnumConverters.GetConverter(settingType);
+                    s_defaultConverters[settingType] = converter;
+                    return converter;
+                }
+
+                return null;
+            }
         }
     }
 }
