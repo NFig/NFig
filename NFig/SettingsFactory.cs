@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -211,6 +212,11 @@ namespace NFig
                 AssertValidEncryptedSettingAttribute(name, sa);
 
             var converter = GetConverterForProperty<TValue>(name, pi, group, out var isDefaultConverter);
+
+            // meta
+            var description = pi.GetCustomAttribute<DescriptionAttribute>()?.Description ?? "";
+            var changeRequiresRestart = pi.GetCustomAttribute<ChangeRequiresRestartAttribute>() != null;
+            var noInline = pi.GetCustomAttribute<DoNotInlineValuesAttribute>() != null;
 
             // todo
 
