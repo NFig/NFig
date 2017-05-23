@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26403.3
+VisualStudioVersion = 15.0.26403.7
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NFig.Tests", "NFig.Tests\NFig.Tests.csproj", "{2E719396-26CD-4356-BD4A-1FF129C06A2E}"
 EndProject
@@ -12,7 +12,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		appveyor.yml = appveyor.yml
 		LICENSE.MIT = LICENSE.MIT
 		README.md = README.md
-		Scripts\SetNugetVersion.ps1 = Scripts\SetNugetVersion.ps1
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NFig", "NFig\NFig.csproj", "{71904777-53DA-4C9E-BFD8-0337F7ABF8F6}"
