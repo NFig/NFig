@@ -12,6 +12,8 @@ namespace NFig
         where TTier : struct
         where TDataCenter : struct
     {
+        readonly Dictionary<string, ISettingEncryptor> _encryptorByApp = new Dictionary<string, ISettingEncryptor>();
+
         /// <summary>
         /// The deployment tier of the store.
         /// </summary>
@@ -34,7 +36,23 @@ namespace NFig
         /// <param name="encryptor">The encryptor. If used for app clients, it must support decryption.</param>
         public void SetEncryptor(string appName, ISettingEncryptor encryptor)
         {
-            throw new NotImplementedException();
+            if (appName == null)
+                throw new ArgumentNullException(nameof(appName));
+
+            if (encryptor == null)
+                throw new ArgumentNullException(nameof(encryptor));
+
+            lock (_encryptorByApp)
+            {
+                // For now, we're not going to allow replacing an encryptor which has already been set. It's unclear why you would ever want to do that.
+                // However, I do think we do need to provide a way for a user to tell whether an encryptor has already been set for a particular app.
+                // todo: provide a way to check whether an app already has an encryptor set
+
+                if (_encryptorByApp.ContainsKey(appName))
+                    throw new NFigException($"Cannot set encryptor for app \"{appName}\". It already has an encryptor.");
+
+                _encryptorByApp[appName] = encryptor;
+            }
         }
 
         /// <summary>
