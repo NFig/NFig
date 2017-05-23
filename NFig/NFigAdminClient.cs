@@ -58,7 +58,13 @@ namespace NFig
             throw new NotImplementedException();
         }
 
-        // todo: do we need any async version of GetSubApps?
+        /// <summary>
+        /// Gets the name and ID of every sub-app that has been added to this application.
+        /// </summary>
+        public Task<IEnumerable<SubAppInfo>> GetSubAppsAsync() // todo: use a concrete type rather than IEnumerable
+        {
+            throw new NotImplementedException();
+        }
 
         // todo: GetMetadata
 
