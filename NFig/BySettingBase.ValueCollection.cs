@@ -10,14 +10,14 @@ namespace NFig
         /// </summary>
         public struct ValueCollection : IReadOnlyCollection<TValue>
         {
-            readonly BySetting<TValue> _dictionary;
+            readonly BySettingBase<TValue> _dictionary;
 
             /// <summary>
             /// The number of values in the collection.
             /// </summary>
             public int Count => _dictionary._entries.Length;
 
-            internal ValueCollection(BySetting<TValue> dictionary)
+            internal ValueCollection(BySettingBase<TValue> dictionary)
             {
                 _dictionary = dictionary;
             }
@@ -43,7 +43,7 @@ namespace NFig
                 public TValue Current { get; private set; }
                 object IEnumerator.Current => Current;
 
-                internal Enumerator(BySetting<TValue> dictionary)
+                internal Enumerator(BySettingBase<TValue> dictionary)
                 {
                     _entries = dictionary._entries;
                     _entryIndex = -1;

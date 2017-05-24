@@ -49,6 +49,11 @@ namespace NFig
         }
 
         /// <summary>
+        /// Gets an enumeration of all <typeparamref name="TValue"/> items in all lists, as if it were a single collection.
+        /// </summary>
+        public ValueCollection GetAllValues() => new ValueCollection(this);
+
+        /// <summary>
         /// Gets a key/value enumerator for <see cref="ListBySetting{TValue}"/>.
         /// </summary>
         public KeyValueListEnumerator GetEnumerator() => new KeyValueListEnumerator(this);
