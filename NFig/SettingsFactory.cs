@@ -100,7 +100,17 @@ namespace NFig
                     if (cache.Defaults == null)
                         cache.Defaults = CollectDefaultsForSubApp(subAppId, subAppName);
 
-                    cache.Initializer = CreateInitializer(subAppId, cache.Defaults);
+                    // check if we can reuse the root app's initializer
+                    if (subAppId != null && cache.Defaults == _rootCache.Defaults)
+                    {
+                        // there are no sub-app specific defaults for this sub-app, so we don't need to create a unique initializer
+                        var root = GetSubAppCache(null, null);
+                        cache.Initializer = root.Initializer;
+                    }
+                    else
+                    {
+                        cache.Initializer = CreateInitializer(subAppId, cache.Defaults);
+                    }
 
                     Interlocked.MemoryBarrier(); // ensure IsInitialized doesn't get set to true before all the other properties have been updated
                     cache.IsInitialized = true;
