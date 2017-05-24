@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using JetBrains.Annotations;
 
 namespace NFig
 {
@@ -38,7 +39,12 @@ namespace NFig
         /// <summary>
         /// Initializes a new ListBySetting dictionary. Values with identical setting names will be grouped into lists as the values of the dictionary.
         /// </summary>
-        public ListBySetting(IReadOnlyCollection<TValue> values) : base(values, true)
+        /// <param name="values">A collection of values to populate the dictionary with.</param>
+        /// <param name="additionalValues">
+        /// (optional) an additional collection of values to combine with the first argument when populating the dictionary.
+        /// </param>
+        public ListBySetting([NotNull] IReadOnlyCollection<TValue> values, IReadOnlyCollection<TValue> additionalValues = null)
+            : base(values, additionalValues, false)
         {
         }
 

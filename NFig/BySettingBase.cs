@@ -61,9 +61,12 @@ namespace NFig
         /// </summary>
         public int Count { get; }
 
-        internal BySettingBase(IReadOnlyCollection<TValue> values, bool allowDuplicates)
+        internal BySettingBase(IReadOnlyCollection<TValue> values, IReadOnlyCollection<TValue> additionalValues, bool allowDuplicates)
         {
-            _entries = GetEntries(values);
+            if (values == null)
+                throw new ArgumentNullException(nameof(values));
+
+            _entries = GetEntries(values, additionalValues);
             _buckets = GetBuckets(_entries, allowDuplicates, out var keyCount);
             Count = keyCount;
         }
@@ -137,20 +140,30 @@ namespace NFig
             return -1;
         }
 
-        static Entry[] GetEntries(IReadOnlyCollection<TValue> values)
+        static Entry[] GetEntries(IReadOnlyCollection<TValue> values1, IReadOnlyCollection<TValue> values2)
         {
-            var entries = new Entry[values.Count];
+            var count = values1.Count;
+
+            if (values2 != null)
+                count += values2.Count;
+
+            var entries = new Entry[values1.Count];
 
             var i = 0;
-            foreach (var v in values)
+            do
             {
-                var name = v.Name;
+                var values = i == 0 ? values1 : values2;
+                foreach (var v in values) // this actually won't be null because of the while condition, even though it looks like maybe it can be
+                {
+                    var name = v.Name;
 
-                entries[i].Key = name;
-                entries[i].Value = v;
-                entries[i].HashCode = name.GetHashCode() & LOW_31_BITS;
-                i++;
-            }
+                    entries[i].Key = name;
+                    entries[i].Value = v;
+                    entries[i].HashCode = name.GetHashCode() & LOW_31_BITS;
+                    i++;
+                }
+
+            } while (i < count);
 
             // sort alphabetically
             Array.Sort(entries, CompareValues);
