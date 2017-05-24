@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Threading;
 using JetBrains.Annotations;
 using NFig.Converters;
 using NFig.Encryption;
@@ -15,11 +16,16 @@ namespace NFig
         where TTier : struct
         where TDataCenter : struct
     {
+        readonly SettingsGroup _tree;
+        readonly List<Setting> _settings = new List<Setting>();
+        readonly BySetting<Setting> _settingsByName;
         readonly Type _settingsType;
         readonly Type _tierType;
         readonly Type _dataCenterType;
         readonly ISettingEncryptor _encryptor;
         readonly ReflectionCache _reflectionCache;
+        readonly SubAppCache _rootCache = new SubAppCache();
+        Dictionary<int, SubAppCache> _cacheBySubAppId;
 
         internal AppInternalInfo AppInfo { get; }
         internal TTier Tier { get; }
@@ -40,10 +46,150 @@ namespace NFig
 
             _reflectionCache = CreateReflectionCache();
 
-            var tree = GetSettingsTree();
-            // todo: build initializer(s)
+            _tree = GetSettingsTree();
+            _settingsByName = new BySetting<Setting>(_settings);
+            _rootCache.Defaults = CollectDefaultsForSubApp(null, null);
+        }
 
-            _reflectionCache = null;
+        internal TSettings GetSettings(int? subAppId, string subAppName, OverridesSnapshot<TTier, TDataCenter> snapshot)
+        {
+            // todo: make sure this isn't called before a sub-app has been declared. Can probably be enforced by the app client, rather than here
+
+            var initializer = GetSubAppCache(subAppId, subAppName).Initializer;
+            var settings = initializer();
+            settings.SetBasicInformation(AppInfo.AppName, snapshot.Commit, subAppId, subAppName, Tier, DataCenter);
+
+            // todo: apply overrides
+
+            return settings;
+        }
+        
+        SubAppCache GetSubAppCache(int? subAppId, string subAppName)
+        {
+            SubAppCache cache;
+            lock (_rootCache)
+            {
+                if (subAppId.HasValue)
+                {
+                    if (_cacheBySubAppId == null)
+                        _cacheBySubAppId = new Dictionary<int, SubAppCache>();
+
+                    if (!_cacheBySubAppId.TryGetValue(subAppId.Value, out cache))
+                    {
+                        cache = new SubAppCache();
+                        _cacheBySubAppId[subAppId.Value] = cache;
+                    }
+                }
+                else
+                {
+                    cache = _rootCache;
+                }
+            }
+
+            if (cache.IsInitialized)
+                return cache;
+
+            lock (cache)
+            {
+                if (!cache.IsInitialized)
+                {
+                    cache.SubAppId = subAppId;
+                    cache.SubAppName = subAppName;
+                    
+                    // the defaults might already be set if this is the root app
+                    if (cache.Defaults == null)
+                        cache.Defaults = CollectDefaultsForSubApp(subAppId, subAppName);
+
+                    cache.Initializer = CreateInitializer(subAppId, cache.Defaults);
+                    
+                    Interlocked.MemoryBarrier(); // ensure IsInitialized doesn't get set to true before all the other properties have been updated
+                    cache.IsInitialized = true;
+                }
+
+                return cache;
+            }
+        }
+
+        ListBySetting<DefaultValue<TTier, TDataCenter>> CollectDefaultsForSubApp(int? subAppId, string subAppName)
+        {
+            var isRoot = subAppId == null;
+            var allDefaults = new List<DefaultValue<TTier, TDataCenter>>();
+            var defaults = new List<DefaultValue<TTier, TDataCenter>>();
+
+            foreach (var setting in _settings)
+            {
+                if (isRoot)
+                    allDefaults.Add(setting.RootDefault);
+
+                if (setting.DefaultValueAttributes == null || setting.DefaultValueAttributes.Length == 0)
+                    continue;
+
+                foreach (var attr in setting.DefaultValueAttributes)
+                {
+                    foreach (var obj in attr.GetDefaults(AppInfo.AppName, setting.Name, setting.Type, Tier, subAppId, subAppName))
+                    {
+                        if (obj == null)
+                            throw new NFigException($"{attr.GetType().Name} on setting {setting.Name} returned a null DefaultValue from GetDefaults()");
+
+                        // make sure the object is actually a default value
+                        var defaultValue = obj as DefaultValue<TTier, TDataCenter>;
+                        if (defaultValue == null)
+                        {
+                            throw new NFigException(
+                                $"Object returned from {attr.GetType().Name}.GetSettings() was not a DefaultValue<{_tierType.Name},{_dataCenterType.Name}> on setting {setting.Name}");
+                        }
+
+                        if (defaultValue.Name != setting.Name)
+                        {
+                            throw new NFigException(
+                                $"{attr.GetType().Name} on setting \"{setting.Name}\" tried to generate a default value for setting \"{defaultValue.Name}\" " +
+                                $"An attribute is only allowed to generate default values for the setting it is applied to.");
+                        }
+
+                        // check if we care about this default
+                        if (defaultValue.SubAppId != subAppId)
+                            continue;
+
+                        if (!Compare.IsDefault(defaultValue.Tier) && !Compare.AreEqual(defaultValue.Tier, Tier))
+                            continue;
+
+                        // If we've gotten to here, then this is a default we care about
+
+                        // make sure there isn't a conflicting default
+                        foreach (var existing in defaults)
+                        {
+                            if (existing.HasSameSubAppTierDataCenter(defaultValue))
+                            {
+                                var ex = new NFigException($"Multiple defaults were specified for the same environment on setting {setting.Name}");
+                                ex.Data["Tier"] = defaultValue.Tier;
+                                ex.Data["DataCenter"] = defaultValue.DataCenter;
+
+                                if (defaultValue.SubAppId.HasValue)
+                                    ex.Data["SubAppId"] = defaultValue.SubAppId;
+
+                                throw ex;
+                            }
+                        }
+
+                        defaults.Add(defaultValue);
+                        allDefaults.Add(defaultValue);
+                    }
+                }
+                
+                defaults.Clear();
+            }
+
+            if (isRoot)
+                return new ListBySetting<DefaultValue<TTier, TDataCenter>>(allDefaults);
+
+            // for sub-apps, we need to merge their defaults with the root defaults
+
+            if (allDefaults.Count == 0) // we can reuse the root defaults if there are no sub-app specific defaults
+                return _rootCache.Defaults;
+
+            // todo: merge defaults
+
+            throw new NotImplementedException();
         }
 
         void AssertEncryptorIsNullOrValid()
@@ -167,10 +313,7 @@ namespace NFig
                         var setting = toSetting(pi, settingAttr, group);
 
                         group.Settings.Add(setting);
-
-                        // todo
-//                        _settings.Add(setting);
-//                        _settingsByName.Add(setting.Name, setting);
+                        _settings.Add(setting);
                     }
                     catch (TargetInvocationException ex)
                     {
@@ -344,9 +487,31 @@ namespace NFig
             return stringValue;
         }
 
+        SettingsInitializer CreateInitializer(int? subAppId, ListBySetting<DefaultValue<TTier, TDataCenter>> defaults)
+        {
+            var dmName = $"TSettings_Instantiate+{subAppId}+{Tier}+{DataCenter}";
+            var dm = new DynamicMethod(dmName, _settingsType, new[] { _reflectionCache.ThisType }, restrictedSkipVisibility: true);
+            var il = dm.GetILGenerator();
+
+            //
+            il.Emit(OpCodes.Ret);
+
+            return (SettingsInitializer)dm.CreateDelegate(typeof(SettingsInitializer), this);
+        }
+
+        /// <summary>
+        /// Emits IL for each setting group object that needs to be initialized, and properly assigns them to properties on parent groups as applicable.
+        /// </summary>
+        static void EmitGroup(ILGenerator il, SettingsGroup group)
+        {
+            //
+        }
+
         /******************************************************************************************************************************************************
          * Helper Classes and Delegates
          *****************************************************************************************************************************************************/
+
+            delegate TSettings SettingsInitializer();
 
         delegate Setting PropertyToSettingDelegate(PropertyInfo pi, SettingAttribute sa, SettingsGroup group);
 
@@ -358,6 +523,15 @@ namespace NFig
 //            public MethodInfo GetSettingItemMethod;
             public MethodInfo PropertyToSettingMethod;
             public Dictionary<Type, PropertyToSettingDelegate> PropertyToSettingDelegates;
+        }
+
+        class SubAppCache
+        {
+            public int? SubAppId { get; set; }
+            public string SubAppName { get; set; }
+            public ListBySetting<DefaultValue<TTier, TDataCenter>> Defaults { get; set; }
+            public SettingsInitializer Initializer { get; set; }
+            public bool IsInitialized { get; set; }
         }
 
         class SettingsGroup
@@ -413,6 +587,7 @@ namespace NFig
         abstract class Setting : IBySettingItem
         {
             public string Name { get; }
+            public Type Type { get; }
             public SettingMetadata Metadata { get; }
             public SettingsGroup Group { get; }
             public DefaultValue<TTier, TDataCenter> RootDefault { get; }
@@ -420,6 +595,7 @@ namespace NFig
             public bool AllowInline { get; }
 
             protected Setting(
+                Type type,
                 SettingMetadata metadata,
                 SettingsGroup group,
                 DefaultValue<TTier, TDataCenter> rootDefault,
@@ -427,6 +603,7 @@ namespace NFig
                 bool allowInline)
             {
                 Name = metadata.Name;
+                Type = type;
                 Metadata = metadata;
                 Group = group;
                 RootDefault = rootDefault;
@@ -443,7 +620,7 @@ namespace NFig
                 DefaultValue<TTier, TDataCenter> rootDefault,
                 DefaultValueBaseAttribute[] defaultValueAttributes,
                 bool allowInline)
-                : base(metadata, group, rootDefault, defaultValueAttributes, allowInline)
+                : base(typeof(TValue), metadata, group, rootDefault, defaultValueAttributes, allowInline)
             {
             }
         }

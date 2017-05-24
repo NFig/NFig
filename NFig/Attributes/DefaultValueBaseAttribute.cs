@@ -17,7 +17,7 @@ namespace NFig
         /// called again each time a sub-app is declared.
         /// 
         /// The returned IEnumerable must be a non-null enumeration of <see cref="DefaultValue{TTier,TDataCenter}"/> where TTier and TDataCenter match the
-        /// types arguments used when creating the <see cref="NFigStore{TTier,TDataCenter}"/>.
+        /// types arguments used when creating the <see cref="NFigStore{TTier,TDataCenter}"/>. The values in the enumeration must not be null.
         /// 
         /// All defaults returned must match the setting name provided. You cannot use an attribute to generate default values for a setting other than the one
         /// it was applied to.
