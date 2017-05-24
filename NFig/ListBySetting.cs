@@ -40,11 +40,11 @@ namespace NFig
         /// Initializes a new ListBySetting dictionary. Values with identical setting names will be grouped into lists as the values of the dictionary.
         /// </summary>
         /// <param name="values">A collection of values to populate the dictionary with.</param>
-        /// <param name="additionalValues">
-        /// (optional) an additional collection of values to combine with the first argument when populating the dictionary.
+        /// <param name="mergeDictionary">
+        /// (optional) A dictionary whose values you want to merge with <paramref name="values"/> to create a new dictionary.
         /// </param>
-        public ListBySetting([NotNull] IReadOnlyCollection<TValue> values, IReadOnlyCollection<TValue> additionalValues = null)
-            : base(values, additionalValues, false)
+        public ListBySetting([NotNull] IReadOnlyCollection<TValue> values, BySettingBase<TValue> mergeDictionary = null)
+            : base(values, mergeDictionary, false)
         {
         }
 

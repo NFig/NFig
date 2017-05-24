@@ -61,12 +61,12 @@ namespace NFig
         /// </summary>
         public int Count { get; }
 
-        internal BySettingBase(IReadOnlyCollection<TValue> values, IReadOnlyCollection<TValue> additionalValues, bool allowDuplicates)
+        internal BySettingBase(IReadOnlyCollection<TValue> values, BySettingBase<TValue> mergeDictionary, bool allowDuplicates)
         {
             if (values == null)
                 throw new ArgumentNullException(nameof(values));
 
-            _entries = GetEntries(values, additionalValues);
+            _entries = GetEntries(values, mergeDictionary);
             _buckets = GetBuckets(_entries, allowDuplicates, out var keyCount);
             Count = keyCount;
         }
@@ -140,20 +140,29 @@ namespace NFig
             return -1;
         }
 
-        static Entry[] GetEntries(IReadOnlyCollection<TValue> values1, IReadOnlyCollection<TValue> values2)
+        static Entry[] GetEntries(IReadOnlyCollection<TValue> values, BySettingBase<TValue> mergeDictionary)
         {
-            var count = values1.Count;
+            var count = values.Count;
 
-            if (values2 != null)
-                count += values2.Count;
+            if (mergeDictionary != null)
+                count += mergeDictionary._entries.Length;
 
-            var entries = new Entry[values1.Count];
+            var entries = new Entry[count];
 
             var i = 0;
-            do
+            foreach (var v in values) // this actually won't be null because of the while condition, even though it looks like maybe it can be
             {
-                var values = i == 0 ? values1 : values2;
-                foreach (var v in values) // this actually won't be null because of the while condition, even though it looks like maybe it can be
+                var name = v.Name;
+
+                entries[i].Key = name;
+                entries[i].Value = v;
+                entries[i].HashCode = name.GetHashCode() & LOW_31_BITS;
+                i++;
+            }
+
+            if (mergeDictionary != null)
+            {
+                foreach (var v in new ValueCollection(mergeDictionary))
                 {
                     var name = v.Name;
 
@@ -162,8 +171,7 @@ namespace NFig
                     entries[i].HashCode = name.GetHashCode() & LOW_31_BITS;
                     i++;
                 }
-
-            } while (i < count);
+            }
 
             // sort alphabetically
             Array.Sort(entries, CompareValues);
