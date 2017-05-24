@@ -63,7 +63,7 @@ namespace NFig
 
             return settings;
         }
-        
+
         SubAppCache GetSubAppCache(int? subAppId, string subAppName)
         {
             SubAppCache cache;
@@ -95,13 +95,13 @@ namespace NFig
                 {
                     cache.SubAppId = subAppId;
                     cache.SubAppName = subAppName;
-                    
+
                     // the defaults might already be set if this is the root app
                     if (cache.Defaults == null)
                         cache.Defaults = CollectDefaultsForSubApp(subAppId, subAppName);
 
                     cache.Initializer = CreateInitializer(subAppId, cache.Defaults);
-                    
+
                     Interlocked.MemoryBarrier(); // ensure IsInitialized doesn't get set to true before all the other properties have been updated
                     cache.IsInitialized = true;
                 }
@@ -175,7 +175,7 @@ namespace NFig
                         allDefaults.Add(defaultValue);
                     }
                 }
-                
+
                 defaults.Clear();
             }
 
@@ -187,9 +187,7 @@ namespace NFig
             if (allDefaults.Count == 0) // we can reuse the root defaults if there are no sub-app specific defaults
                 return _rootCache.Defaults;
 
-            // todo: merge defaults
-
-            throw new NotImplementedException();
+            return new ListBySetting<DefaultValue<TTier, TDataCenter>>(allDefaults, _rootCache.Defaults);
         }
 
         void AssertEncryptorIsNullOrValid()
