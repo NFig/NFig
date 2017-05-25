@@ -131,7 +131,7 @@ namespace NFig
             foreach (var setting in _settings)
             {
                 if (isRoot)
-                    allDefaults.Add(setting.RootDefault);
+                    allDefaults.Add(setting.RootAnyAnyDefault);
 
                 if (setting.DefaultValueAttributes == null || setting.DefaultValueAttributes.Length == 0)
                     continue;
@@ -544,7 +544,7 @@ namespace NFig
 
             foreach (var setting in group.Settings)
             {
-                var defaultValue = GetBestDefaultFor(setting.Name, subAppId, defaults);
+                var defaultValue = GetBestDefaultFor(setting, subAppId, defaults);
                 var typeOfValue = setting.Type;
                 var strValue = setting.Metadata.IsEncrypted ? AppInfo.Decrypt(defaultValue.Value) : defaultValue.Value;
 
@@ -769,9 +769,24 @@ namespace NFig
             return InlineStrategy.Cache; // only other primitive types are IntPtr and UIntPtr (never actually going to happen)
         }
 
-        DefaultValue<TTier, TDataCenter> GetBestDefaultFor(string settingName, int? subAppId, ListBySetting<DefaultValue<TTier, TDataCenter>> defaults)
+        DefaultValue<TTier, TDataCenter> GetBestDefaultFor(Setting setting, int? subAppId, ListBySetting<DefaultValue<TTier, TDataCenter>> defaults)
         {
-            throw new NotImplementedException();
+            var bestDefault = setting.RootAnyAnyDefault;
+
+            if (defaults.TryGetValue(setting.Name, out var settingDefaults))
+            {
+                var tier = Tier;
+                var dc = DataCenter;
+                foreach (var def in settingDefaults)
+                {
+                    if (def.IsValidFor(subAppId, tier, dc) && def.IsMoreSpecificThan(bestDefault))
+                    {
+                        bestDefault = def;
+                    }
+                }
+            }
+
+            return bestDefault;
         }
 
         /******************************************************************************************************************************************************
@@ -858,7 +873,7 @@ namespace NFig
             public PropertyInfo PropertyInfo { get; }
             public SettingMetadata Metadata { get; }
             public SettingsGroup Group { get; }
-            public DefaultValue<TTier, TDataCenter> RootDefault { get; }
+            public DefaultValue<TTier, TDataCenter> RootAnyAnyDefault { get; } // the default provided via the [Setting] attribute
             public DefaultValueBaseAttribute[] DefaultValueAttributes { get; }
             public bool AllowInline { get; }
             public int Index { get; set; } // the index into _settings where this Setting lives
@@ -869,7 +884,7 @@ namespace NFig
                 PropertyInfo propertyInfo,
                 SettingMetadata metadata,
                 SettingsGroup group,
-                DefaultValue<TTier, TDataCenter> rootDefault,
+                DefaultValue<TTier, TDataCenter> rootAnyAnyDefault,
                 DefaultValueBaseAttribute[] defaultValueAttributes,
                 bool allowInline)
             {
@@ -878,7 +893,7 @@ namespace NFig
                 PropertyInfo = propertyInfo;
                 Metadata = metadata;
                 Group = group;
-                RootDefault = rootDefault;
+                RootAnyAnyDefault = rootAnyAnyDefault;
                 DefaultValueAttributes = defaultValueAttributes;
                 AllowInline = allowInline;
             }
@@ -895,10 +910,10 @@ namespace NFig
                 SettingMetadata metadata,
                 ISettingConverter<TValue> converter,
                 SettingsGroup group,
-                DefaultValue<TTier, TDataCenter> rootDefault,
+                DefaultValue<TTier, TDataCenter> rootAnyAnyDefault,
                 DefaultValueBaseAttribute[] defaultValueAttributes,
                 bool allowInline)
-                : base(typeof(TValue), propertyInfo, metadata, group, rootDefault, defaultValueAttributes, allowInline)
+                : base(typeof(TValue), propertyInfo, metadata, group, rootAnyAnyDefault, defaultValueAttributes, allowInline)
             {
                 Converter = converter;
             }
