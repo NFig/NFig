@@ -25,7 +25,7 @@ namespace NFig
         /// A list of overrides which existed at the time the snapshot was taken.
         /// </summary>
         [CanBeNull]
-        public IList<OverrideValue<TTier, TDataCenter>> Overrides { get; }
+        public ListBySetting<OverrideValue<TTier, TDataCenter>> Overrides { get; }
 
         /// <summary>
         /// Initializes a new snapshot object.
@@ -33,7 +33,7 @@ namespace NFig
         /// <param name="appName">The application name.</param>
         /// <param name="commit">The commit ID at the time of the snapshot.</param>
         /// <param name="overrides">A list of the overrides which exist at the time of the snapshot.</param>
-        public OverridesSnapshot([NotNull] string appName, [NotNull] string commit, IList<OverrideValue<TTier, TDataCenter>> overrides)
+        public OverridesSnapshot([NotNull] string appName, [NotNull] string commit, ListBySetting<OverrideValue<TTier, TDataCenter>> overrides)
         {
             AppName = appName ?? throw new ArgumentNullException(nameof(appName));
             Commit = commit ?? throw new ArgumentNullException(nameof(commit));

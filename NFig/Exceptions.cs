@@ -94,6 +94,45 @@ namespace NFig
     }
 
     /// <summary>
+    /// Used to indicate when a value cannot be assigned to a setting.
+    /// </summary>
+    public class InvalidOverrideValueException : NFigException
+    {
+        /// <summary>
+        /// The name of the setting which the value was attempting to be assigned to.
+        /// </summary>
+        public string SettingName { get; }
+        /// <summary>
+        /// The value which was attempting to be assigned.
+        /// </summary>
+        public object Value { get; }
+        /// <summary>
+        /// The sub-app, if applicable.
+        /// </summary>
+        public int? SubAppId { get; }
+        /// <summary>
+        /// The string representation of the data center.
+        /// </summary>
+        public string DataCenter { get; }
+
+        [SuppressMessage("ReSharper", "VirtualMemberCallInConstructor")]
+        internal InvalidOverrideValueException(
+            string message,
+            string settingName,
+            object value,
+            int? subAppId,
+            string dataCenter,
+            Exception innerException = null)
+            : base(message, innerException)
+        {
+            Data["SettingName"] = SettingName = settingName;
+            Data["Value"] = Value = value;
+            Data["SubAppId"] = SubAppId = subAppId;
+            Data["DataCenter"] = DataCenter = dataCenter;
+        }
+    }
+
+    /// <summary>
     /// This exception is used when one or more overrides (which already exist) cannot be applied to their settings. This could happen if the setting type or
     /// converter was changed since the override was set. This exception is never thrown. It is returned from TryGet methods on NFigStoreOld and passed as the
     /// first parameter to subscription callbacks.

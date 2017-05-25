@@ -60,9 +60,7 @@ namespace NFig
             var initializer = GetSubAppCache(subAppId, subAppName).Initializer;
             var settings = initializer();
             settings.SetBasicInformation(AppInfo.AppName, snapshot.Commit, subAppId, subAppName, Tier, DataCenter);
-
-            // todo: apply overrides
-
+            ApplyOverrides(settings, subAppId, snapshot.Overrides);
             return settings;
         }
 
@@ -793,13 +791,52 @@ namespace NFig
             return bestDefault;
         }
 
+        void ApplyOverrides(TSettings settingsObj, int? subAppId, ListBySetting<OverrideValue<TTier, TDataCenter>> overrides)
+        {
+            if (overrides == null)
+                return;
+
+            foreach (var kvp in overrides)
+            {
+                Setting setting;
+                if (!_settingsByName.TryGetValue(kvp.Key, out setting))
+                    continue; // there is no setting by that name
+
+                var bestOverride = GetBestOverrideFor(subAppId, kvp.Value);
+
+                if (bestOverride == null)
+                    continue;
+
+                // todo: apply the override
+            }
+        }
+
+        [CanBeNull]
+        OverrideValue<TTier, TDataCenter> GetBestOverrideFor(int? subAppId, ListBySetting<OverrideValue<TTier, TDataCenter>>.ValueList overrides)
+        {
+            OverrideValue<TTier, TDataCenter> bestOverride = null;
+            var tier = Tier;
+            var dataCenter = DataCenter;
+
+            foreach (var ov in overrides)
+            {
+                if (ov.IsValidFor(subAppId, tier, dataCenter) && (bestOverride == null || ov.IsMoreSpecificThan(bestOverride)))
+                {
+                    bestOverride = ov;
+                }
+            }
+
+            return bestOverride;
+        }
+
         /******************************************************************************************************************************************************
          * Helper Classes and Delegates
          *****************************************************************************************************************************************************/
 
         delegate TSettings SettingsInitializer();
-
         delegate Setting PropertyToSettingDelegate(PropertyInfo pi, SettingAttribute sa, SettingsGroup group);
+        delegate void SettingSetterDelegate<TValue>(TSettings settings, TValue value);
+        delegate TValue SettingGetterDelegate<TValue>(TSettings settings);
 
         class ReflectionCache
         {
@@ -902,11 +939,19 @@ namespace NFig
                 AllowInline = allowInline;
             }
 
+
+            public abstract object GetValueAsObject(TSettings settings);
+            public abstract InvalidOverrideValueException TryApplyOverride(TSettings settings, OverrideValue<TTier, TDataCenter> over, string strValue);
             public abstract object GetValueFromString(string str);
+            public abstract bool TryGetValueFromString(string str, out object value);
+            public abstract bool TryGetStringFromValue(object value, out string str);
         }
 
         class Setting<TValue> : Setting
         {
+            SettingGetterDelegate<TValue> _getter;
+            SettingSetterDelegate<TValue> _setter;
+
             public ISettingConverter<TValue> Converter { get; }
 
             internal Setting(
@@ -922,9 +967,124 @@ namespace NFig
                 Converter = converter;
             }
 
+            public TValue GetValue(TSettings settings)
+            {
+                if (_getter == null)
+                    _getter = CreateGetterMethod();
+
+                return _getter(settings);
+            }
+
+            public override object GetValueAsObject(TSettings settings)
+            {
+                return GetValue(settings);
+            }
+
+            public override InvalidOverrideValueException TryApplyOverride(TSettings settings, OverrideValue<TTier, TDataCenter> over, string strValue)
+            {
+//                TValue value;
+//
+//                try
+//                {
+//                    value = Converter.GetValue(strValue);
+//                }
+//                catch (Exception ex)
+//                {
+//                    var invalidEx = new InvalidSettingValueException(
+//                        $"Invalid override value for setting \"{Name}\". Cannot convert the string override to a real value.",
+//                        Name,
+//                        over.Value, // intentionally using over.Value here instead of strValue since strValue could be a decrypted value that people don't want in their logs
+//                        false,
+//                        over.SubApp.ToString(),
+//                        over.DataCenter.ToString(),
+//                        ex);
+//
+//                    invalidEx.UnthrownStackTrace = new StackTrace(true).ToString();
+//
+//                    return invalidEx;
+//                }
+//
+//                if (_setter == null)
+//                    _setter = CreateSetterMethod();
+//
+//                _setter(settings, value);
+//                return null;
+
+                // todo
+                throw new NotImplementedException();
+            }
+
             public override object GetValueFromString(string str)
             {
                 return Converter.GetValue(str);
+            }
+
+            public override bool TryGetValueFromString(string str, out object value)
+            {
+                value = null;
+                try
+                {
+                    value = Converter.GetValue(str);
+                }
+                catch (Exception)
+                {
+                    return false;
+                }
+
+                return true;
+            }
+
+            public override bool TryGetStringFromValue(object value, out string str)
+            {
+                str = null;
+                try
+                {
+                    str = Converter.GetString((TValue)value);
+                }
+                catch (Exception)
+                {
+                    return false;
+                }
+
+                return true;
+            }
+
+            SettingSetterDelegate<TValue> CreateSetterMethod()
+            {
+                var dm = new DynamicMethod("AssignSetting_" + Name, null, new[] { typeof(TSettings), Type }, restrictedSkipVisibility: true);
+                var il = dm.GetILGenerator();
+
+                // arg 0 = TSettings settings
+                // arg 1 = TValue value
+
+                il.Emit(OpCodes.Ldarg_0);                          // [settings]
+                EmitLoadGroup(il, Group);                          // [group]
+                il.Emit(OpCodes.Ldarg_1);                          // [group] [value]
+                EmitSetProperty(il, PropertyInfo);                 // empty
+                il.Emit(OpCodes.Ret);
+
+                return (SettingSetterDelegate<TValue>)dm.CreateDelegate(typeof(SettingSetterDelegate<TValue>));
+            }
+
+            SettingGetterDelegate<TValue> CreateGetterMethod()
+            {
+                var dm = new DynamicMethod("RetrieveSetting_" + Name, typeof(TValue), new[] { typeof(TSettings) }, restrictedSkipVisibility: true);
+                var il = dm.GetILGenerator();
+
+                // arg 0 = TSettings settings
+
+                il.Emit(OpCodes.Ldarg_0);                          // [settings]
+                EmitLoadGroup(il, Group);                          // [group]
+                il.Emit(OpCodes.Callvirt, PropertyInfo.GetMethod); // [value]
+                il.Emit(OpCodes.Ret);
+
+                return (SettingGetterDelegate<TValue>)dm.CreateDelegate(typeof(SettingGetterDelegate<TValue>));
+            }
+
+            static void EmitLoadGroup(ILGenerator il, SettingsGroup group)
+            {
+                // todo
+                throw new NotImplementedException();
             }
         }
     }
