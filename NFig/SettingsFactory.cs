@@ -544,7 +544,7 @@ namespace NFig
 
             foreach (var setting in group.Settings)
             {
-                var defaultValue = GetBestDefaultFor(setting, subAppId, defaults);
+                var defaultValue = GetBestDefaultFor(setting.Name, subAppId, defaults);
                 var typeOfValue = setting.Type;
                 var strValue = setting.Metadata.IsEncrypted ? AppInfo.Decrypt(defaultValue.Value) : defaultValue.Value;
 
@@ -769,21 +769,25 @@ namespace NFig
             return InlineStrategy.Cache; // only other primitive types are IntPtr and UIntPtr (never actually going to happen)
         }
 
-        DefaultValue<TTier, TDataCenter> GetBestDefaultFor(Setting setting, int? subAppId, ListBySetting<DefaultValue<TTier, TDataCenter>> defaults)
+        DefaultValue<TTier, TDataCenter> GetBestDefaultFor(string settingName, int? subAppId, ListBySetting<DefaultValue<TTier, TDataCenter>> defaults)
         {
-            var bestDefault = setting.RootAnyAnyDefault;
+            DefaultValue<TTier, TDataCenter> bestDefault = null;
+            var tier = Tier;
+            var dataCenter = DataCenter;
 
-            if (defaults.TryGetValue(setting.Name, out var settingDefaults))
+            foreach (var def in defaults[settingName])
             {
-                var tier = Tier;
-                var dc = DataCenter;
-                foreach (var def in settingDefaults)
+                if (def.IsValidFor(subAppId, tier, dataCenter) && (bestDefault == null || def.IsMoreSpecificThan(bestDefault)))
                 {
-                    if (def.IsValidFor(subAppId, tier, dc) && def.IsMoreSpecificThan(bestDefault))
-                    {
-                        bestDefault = def;
-                    }
+                    bestDefault = def;
                 }
+            }
+
+            if (bestDefault == null)
+            {
+                throw new NFigException(
+                    $"Bug in NFig: Could not locate best default for setting {settingName}. " +
+                    $"SubApp = {subAppId}, Tier = {tier}, DC = {dataCenter}");
             }
 
             return bestDefault;
