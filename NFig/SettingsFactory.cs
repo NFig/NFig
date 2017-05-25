@@ -26,6 +26,8 @@ namespace NFig
         readonly ReflectionCache _reflectionCache;
         readonly SubAppCache _rootCache = new SubAppCache();
         Dictionary<int, SubAppCache> _cacheBySubAppId;
+        object[] _valueCache;
+        int _valueCacheCount;
 
         internal AppInternalInfo AppInfo { get; }
         internal TTier Tier { get; }
@@ -242,9 +244,9 @@ namespace NFig
             var thisType = GetType();
 
             cache.ThisType = thisType;
-//            cache.SettingsField = thisType.GetField(nameof(_settings), BindingFlags.NonPublic | BindingFlags.Instance);
-//            cache.ValueCacheField = thisType.GetField(nameof(_valueCache), BindingFlags.NonPublic | BindingFlags.Instance);
-//            cache.GetSettingItemMethod = _settings.GetType().GetProperty("Item").GetMethod;
+            cache.SettingsField = thisType.GetField(nameof(_settings), BindingFlags.NonPublic | BindingFlags.Instance);
+            cache.GetSettingItemMethod = _settings.GetType().GetProperty("Item").GetMethod;
+            cache.ValueCacheField = thisType.GetField(nameof(_valueCache), BindingFlags.NonPublic | BindingFlags.Instance);
             cache.PropertyToSettingMethod = thisType.GetMethod(nameof(PropertyToSetting), BindingFlags.NonPublic | BindingFlags.Instance);
             cache.PropertyToSettingDelegates = new Dictionary<Type, PropertyToSettingDelegate>();
 
@@ -321,6 +323,7 @@ namespace NFig
                         var setting = toSetting(pi, settingAttr, group);
 
                         group.Settings.Add(setting);
+                        setting.Index = _settings.Count;
                         _settings.Add(setting);
                     }
                     catch (TargetInvocationException ex)
@@ -379,7 +382,7 @@ namespace NFig
             var defaultAttributes = pi.GetCustomAttributes<DefaultValueBaseAttribute>().ToArray();
 
             // create the setting
-            return new Setting<TValue>(meta, group, rootDefault, defaultAttributes, allowInline);
+            return new Setting<TValue>(pi, meta, converter, group, rootDefault, defaultAttributes, allowInline);
         }
 
         void AssertValidEncryptedSettingAttribute(string name, SettingAttribute sa)
@@ -501,34 +504,290 @@ namespace NFig
             var dm = new DynamicMethod(dmName, _settingsType, new[] { _reflectionCache.ThisType }, restrictedSkipVisibility: true);
             var il = dm.GetILGenerator();
 
-            //
+            EmitSettingsGroup(il, _tree, subAppId, defaults); // [TSettings s]
             il.Emit(OpCodes.Ret);
 
             return (SettingsInitializer)dm.CreateDelegate(typeof(SettingsInitializer), this);
         }
 
         /// <summary>
-        /// Emits IL for each setting group object that needs to be initialized, and properly assigns them to properties on parent groups as applicable.
+        /// Emits IL for initializing TSettings and child objects. It calls EmitDefaults for each group.
         /// </summary>
-        static void EmitGroup(ILGenerator il, SettingsGroup group)
+        void EmitSettingsGroup(ILGenerator il, SettingsGroup group, int? subAppId, ListBySetting<DefaultValue<TTier, TDataCenter>> defaults)
         {
-            //
+            // Initial stack: ...
+            // End stack:     ... [group]
+
+            // Create a new instance of the group's class.
+            var ctor = group.Type.GetConstructor(Type.EmptyTypes);
+            if (ctor == null)
+                throw new NFigException($"Cannot use type {group.Type.Name} for settings groups. It does not have a parameterless constructor.");
+
+            il.Emit(OpCodes.Newobj, ctor);               // [group]
+            EmitDefaults(il, group, subAppId, defaults); // [group]
+
+            foreach (var childGroup in group.SettingGroups)
+            {
+                il.Emit(OpCodes.Dup);                                  // [group] [group]
+                EmitSettingsGroup(il, childGroup, subAppId, defaults); // [group] [group] [childGroup]
+                EmitSetProperty(il, childGroup.PropertyInfo);          // [group]
+            }
+        }
+
+        /// <summary>
+        /// Emits IL to assign the correct default values to all Setting properties in a group.
+        /// </summary>
+        void EmitDefaults(ILGenerator il, SettingsGroup group, int? subAppId, ListBySetting<DefaultValue<TTier, TDataCenter>> defaults)
+        {
+            // Initial stack: ... [group]
+            // End stack:     ... [group]
+
+            foreach (var setting in group.Settings)
+            {
+                var defaultValue = GetBestDefaultFor(setting.Name, subAppId, defaults);
+                var typeOfValue = setting.Type;
+                var strValue = setting.Metadata.IsEncrypted ? AppInfo.Decrypt(defaultValue.Value) : defaultValue.Value;
+
+                il.Emit(OpCodes.Dup); // [group] [group]
+
+                if (setting.AllowInline)
+                {
+                    var objValue = GetInlineValue(setting, defaultValue, strValue, out var strategy, out var cacheIndex);
+
+                    switch (strategy)
+                    {
+                        case InlineStrategy.Null:
+                            il.Emit(OpCodes.Ldnull); // [group] [group] [null]
+                            break;
+                        case InlineStrategy.Cache:
+                            if (cacheIndex == null)
+                                throw new NFigException($"Bug in NFig: cacheIndex not set");
+
+                            var cacheField = _reflectionCache.ValueCacheField;
+                            il.Emit(OpCodes.Ldarg_0);                    // [group] [group] [factory this]
+                            il.Emit(OpCodes.Ldfld, cacheField);          // [group] [group] [_valueCache]
+                            il.Emit(OpCodes.Ldc_I4, cacheIndex.Value);   // [group] [group] [_valueCache] [index]
+                            il.Emit(OpCodes.Ldelem_Ref);                 // [group] [group] [valueToSet]
+                            if (typeOfValue.IsValueType())
+                                il.Emit(OpCodes.Unbox_Any, typeOfValue); // [group] [group] [unboxed valueToSet]
+                            break;
+                        case InlineStrategy.String:
+                            il.Emit(OpCodes.Ldstr, (string)objValue); // [group] [group] [valueToSet]
+                            break;
+                        case InlineStrategy.Int32:
+                            il.Emit(OpCodes.Ldc_I4, Convert.ToInt32(objValue)); // [group] [group] [valueToSet]
+                            break;
+                        case InlineStrategy.Int64:
+                            il.Emit(OpCodes.Ldc_I8, Convert.ToInt64(objValue)); // [group] [group] [valueToSet]
+                            break;
+                        case InlineStrategy.Float32:
+                            il.Emit(OpCodes.Ldc_R4, Convert.ToSingle(objValue)); // [group] [group] [valueToSet]
+                            break;
+                        case InlineStrategy.Float64:
+                            il.Emit(OpCodes.Ldc_R8, Convert.ToDouble(objValue)); // [group] [group] [valueToSet]
+                            break;
+                        case InlineStrategy.Char:
+                            il.Emit(OpCodes.Ldc_I4, Convert.ToInt32(objValue)); // [group] [group] [valueToSet]
+                            break;
+                        default:
+                            throw new NFigException($"Bug in NFig: InlineStrategy.{strategy} has not been implemented");
+                    }
+                }
+                else
+                {
+                    // Inlining is disabled. We have to call the converter every time.
+                    var converterType = typeof(ISettingConverter<>).MakeGenericType(typeOfValue);
+                    var getValue = converterType.GetMethod(nameof(ISettingConverter<bool>.GetValue)); // the <bool> here really doesn't matter - any type would work
+
+                    var settingType = typeof(Setting<>).MakeGenericType(typeOfValue);
+                    var converterProp = settingType.GetProperty(nameof(Setting<bool>.Converter)); // the <bool> here really doesn't matter - any type would work
+
+                    var settingsField = _reflectionCache.SettingsField;
+                    var getSettingItem = _reflectionCache.GetSettingItemMethod;
+
+                    var index = setting.Index;
+                    if (index >= _settings.Count || _settings[index] != setting)
+                        throw new NFigException("NFig Bug: Internal setting index is wrong");
+
+                    il.Emit(OpCodes.Ldarg_0);                           // [group] [group] [factory this]
+                    il.Emit(OpCodes.Ldfld, settingsField);              // [group] [group] [_settings]
+                    il.Emit(OpCodes.Ldc_I4, index);                     // [group] [group] [_settings] [index]
+                    il.Emit(OpCodes.Callvirt, getSettingItem);          // [group] [group] [setting]
+                    il.Emit(OpCodes.Callvirt, converterProp.GetMethod); // [group] [group] [Converter]
+                    il.Emit(OpCodes.Ldstr, strValue);                   // [group] [group] [Converter] [strValue]
+                    il.Emit(OpCodes.Callvirt, getValue);                // [group] [group] [valueToSet]
+                }
+
+                // stack should be: [group] [group] [valueToSet]
+                EmitSetProperty(il, setting.PropertyInfo); // [group]
+            }
+        }
+
+        /// <summary>
+        /// Assigns a property by either calling the setting, or by directly setting a backing field when no setter exists.
+        /// Top of stack should be [obj] [value] before calling this method. Both are popped from the stack before returning.
+        /// </summary>
+        static void EmitSetProperty(ILGenerator il, PropertyInfo property)
+        {
+            if (property.SetMethod == null)
+            {
+                // possible a getter-only property
+                var backingField = property.DeclaringType.GetField("<" + property.Name + ">k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic);
+                if (backingField == null)
+                {
+                    throw new NFigException($"Property {property.Name} does not have a setter.");
+                }
+
+                il.Emit(OpCodes.Stfld, backingField);
+            }
+            else
+            {
+                il.Emit(OpCodes.Callvirt, property.SetMethod);
+            }
+        }
+
+        object GetInlineValue(Setting setting, DefaultValue<TTier, TDataCenter> defaultValue, string strValue, out InlineStrategy strategy, out int? cacheIndex)
+        {
+            strategy = GetInlineStrategyForType(setting.Type);
+
+            if (strategy == InlineStrategy.String || strategy == InlineStrategy.Cache)
+            {
+                if (setting.Metadata.IsEncrypted) // I don't think we want encrypted strings being interned
+                    strategy = InlineStrategy.Cache;
+
+                var defaultIsForRootApp = defaultValue.SubAppId == null;
+
+                // check if we already have a cached value we can use
+                if (defaultIsForRootApp && setting.RootDefaultCacheIndex.HasValue)
+                {
+                    if (setting.RootDefaultCacheIndex == -1) // -1 indicates a "cached" null value
+                    {
+                        cacheIndex = null;
+                        return null;
+                    }
+
+                    cacheIndex = setting.RootDefaultCacheIndex;
+                    return _valueCache[cacheIndex.Value];
+                }
+
+                // we need to cache this value
+                var obj = setting.GetValueFromString(strValue);
+
+                if (obj == null)
+                {
+                    cacheIndex = null;
+                    strategy = InlineStrategy.Null;
+
+                    if (defaultIsForRootApp)
+                        setting.RootDefaultCacheIndex = -1; // mark this as a "cached" null value
+
+                    return null;
+                }
+
+                // todo: when we move to .NET Standard 2.0 we should call "obj = string.Intern((string)obj)" here if the strategy == String.
+                cacheIndex = AddToValueCache(obj);
+
+                if (defaultIsForRootApp)
+                    setting.RootDefaultCacheIndex = cacheIndex;
+
+                return obj;
+            }
+
+            // primitive values are simple, and never cached
+            cacheIndex = null;
+            return setting.GetValueFromString(strValue);
+        }
+
+        int AddToValueCache(object value)
+        {
+            var cache = _valueCache;
+            var count = _valueCacheCount;
+
+            if (cache == null)
+            {
+                _valueCache = cache = new object[16];
+            }
+            else if (count == cache.Length)
+            {
+                var oldCache = _valueCache;
+                var newCache = new object[oldCache.Length * 2];
+                Array.Copy(oldCache, newCache, count);
+                _valueCache = cache = newCache;
+            }
+
+            cache[count] = value;
+            _valueCacheCount = count + 1;
+            return count;
+        }
+
+        enum InlineStrategy
+        {
+            Null,
+            Cache,
+            String,
+            Int32,
+            Int64,
+            Float32,
+            Float64,
+            Char,
+        }
+
+        static InlineStrategy GetInlineStrategyForType(Type type)
+        {
+            if (type == typeof(string))
+                return InlineStrategy.String;
+
+            if (type.IsEnum())
+                type = type.GetEnumUnderlyingType();
+
+            if (!type.IsPrimitive())
+                return InlineStrategy.Cache;
+
+            if (type == typeof(bool)
+                || type == typeof(byte)
+                || type == typeof(sbyte)
+                || type == typeof(short)
+                || type == typeof(ushort)
+                || type == typeof(int)
+                || type == typeof(uint))
+            {
+                return InlineStrategy.Int32;
+            }
+
+            if (type == typeof(long) || type == typeof(ulong))
+                return InlineStrategy.Int64;
+
+            if (type == typeof(double))
+                return InlineStrategy.Float64;
+
+            if (type == typeof(float))
+                return InlineStrategy.Float32;
+
+            if (type == typeof(char))
+                return InlineStrategy.Char;
+
+            return InlineStrategy.Cache; // only other primitive types are IntPtr and UIntPtr (never actually going to happen)
+        }
+
+        DefaultValue<TTier, TDataCenter> GetBestDefaultFor(string settingName, int? subAppId, ListBySetting<DefaultValue<TTier, TDataCenter>> defaults)
+        {
+            throw new NotImplementedException();
         }
 
         /******************************************************************************************************************************************************
          * Helper Classes and Delegates
          *****************************************************************************************************************************************************/
 
-            delegate TSettings SettingsInitializer();
+        delegate TSettings SettingsInitializer();
 
         delegate Setting PropertyToSettingDelegate(PropertyInfo pi, SettingAttribute sa, SettingsGroup group);
 
         class ReflectionCache
         {
             public Type ThisType;
-//            public FieldInfo SettingsField;
-//            public FieldInfo ValueCacheField;
-//            public MethodInfo GetSettingItemMethod;
+            public FieldInfo SettingsField;
+            public MethodInfo GetSettingItemMethod;
+            public FieldInfo ValueCacheField;
             public MethodInfo PropertyToSettingMethod;
             public Dictionary<Type, PropertyToSettingDelegate> PropertyToSettingDelegates;
         }
@@ -596,14 +855,18 @@ namespace NFig
         {
             public string Name { get; }
             public Type Type { get; }
+            public PropertyInfo PropertyInfo { get; }
             public SettingMetadata Metadata { get; }
             public SettingsGroup Group { get; }
             public DefaultValue<TTier, TDataCenter> RootDefault { get; }
             public DefaultValueBaseAttribute[] DefaultValueAttributes { get; }
             public bool AllowInline { get; }
+            public int Index { get; set; } // the index into _settings where this Setting lives
+            public int? RootDefaultCacheIndex { get; set; } // index into _valueCache where the root default is cached (if applicable)
 
             protected Setting(
                 Type type,
+                PropertyInfo propertyInfo,
                 SettingMetadata metadata,
                 SettingsGroup group,
                 DefaultValue<TTier, TDataCenter> rootDefault,
@@ -612,24 +875,37 @@ namespace NFig
             {
                 Name = metadata.Name;
                 Type = type;
+                PropertyInfo = propertyInfo;
                 Metadata = metadata;
                 Group = group;
                 RootDefault = rootDefault;
                 DefaultValueAttributes = defaultValueAttributes;
                 AllowInline = allowInline;
             }
+
+            public abstract object GetValueFromString(string str);
         }
 
         class Setting<TValue> : Setting
         {
+            public ISettingConverter<TValue> Converter { get; }
+
             internal Setting(
+                PropertyInfo propertyInfo,
                 SettingMetadata metadata,
+                ISettingConverter<TValue> converter,
                 SettingsGroup group,
                 DefaultValue<TTier, TDataCenter> rootDefault,
                 DefaultValueBaseAttribute[] defaultValueAttributes,
                 bool allowInline)
-                : base(typeof(TValue), metadata, group, rootDefault, defaultValueAttributes, allowInline)
+                : base(typeof(TValue), propertyInfo, metadata, group, rootDefault, defaultValueAttributes, allowInline)
             {
+                Converter = converter;
+            }
+
+            public override object GetValueFromString(string str)
+            {
+                return Converter.GetValue(str);
             }
         }
     }
