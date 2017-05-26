@@ -45,8 +45,9 @@ deploy:
 
  # MyGet
  - provider: NuGet
-   server: https://www.myget.org/F/bretcope
-   symbol_server: https://www.myget.org/F/bretcope/symbols
+   name: MyGet
+   server: https://www.myget.org/F/bretcope/api/v2/package
+   symbol_server: https://www.myget.org/F/bretcope/symbols/api/v2/package
    api_key:
      secure: 4OhfGM3pJQHTs5OYskc448dwXt8DqPec7vdyK+G+AS5v0m8pSxyP30UoZyTanDcz
    artifact: /artifacts/.*\.nupkg/
