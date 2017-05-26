@@ -1,21 +1,16 @@
 ﻿namespace NFig
 {
     /// <summary>
-    /// Represents a default value for an NFig setting. Defaults are defined at compile-time using attributes. They cannot be instantiated by consumers at
-    /// runtime.
+    /// This class is used by <see cref="DefaultValueBaseAttribute"/> to transmit default values to NFig.
     /// </summary>
-    public class DefaultValue<TTier, TDataCenter> : ISettingValue<TTier, TDataCenter>
+    public class DefaultCreationInfo<TTier, TDataCenter>
         where TTier : struct
         where TDataCenter : struct
     {
         /// <summary>
-        /// The name of the setting which this value applies to.
+        /// The actual value, or string representation, of the default.
         /// </summary>
-        public string Name { get; }
-        /// <summary>
-        /// A string-representation of the value. If the setting is encrypted, then this property will be the encrypted string.
-        /// </summary>
-        public string Value { get; }
+        public object Value { get; }
         /// <summary>
         /// The ID of the sub-app that this value applies to. Null means that the default is applicable to the top-level application, as well as all sub-apps.
         /// </summary>
@@ -33,12 +28,8 @@
         /// </summary>
         public bool AllowsOverrides { get; }
 
-        bool ISettingValue<TTier, TDataCenter>.IsDefault => true;
-        bool ISettingValue<TTier, TDataCenter>.IsOverride => false;
-
-        internal DefaultValue(string name, string value, int? subAppId, TTier tier, TDataCenter dataCenter, bool allowsOverrides)
+        internal DefaultCreationInfo(object value, int? subAppId, TTier tier, TDataCenter dataCenter, bool allowsOverrides)
         {
-            Name = name;
             Value = value;
             SubAppId = subAppId;
             Tier = tier;

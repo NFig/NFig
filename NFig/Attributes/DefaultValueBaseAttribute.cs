@@ -16,11 +16,10 @@ namespace NFig
         /// once when an NFigAppClient initializes. <paramref name="subAppId"/> and <paramref name="subAppName"/> will be null for this first call. It will be
         /// called again each time a sub-app is declared.
         /// 
-        /// The returned IEnumerable must be a non-null enumeration of <see cref="DefaultValue{TTier,TDataCenter}"/> where TTier and TDataCenter match the
-        /// types arguments used when creating the <see cref="NFigStore{TTier,TDataCenter}"/>. The values in the enumeration must not be null.
+        /// Use the protected method <see cref="CreateDefault{TTier,TDataCenter}"/> to generate the items in the IEnumerable.
         /// 
-        /// All defaults returned must match the setting name provided. You cannot use an attribute to generate default values for a setting other than the one
-        /// it was applied to.
+        /// The returned IEnumerable must be a non-null enumeration of <see cref="DefaultCreationInfo{TTier,TDataCenter}"/> where TTier and TDataCenter match
+        /// the types arguments used when creating the <see cref="NFigStore{TTier,TDataCenter}"/>. The values in the enumeration must not be null.
         /// 
         /// Some returned default values may be ignored by NFig. They will be ignored if:
         /// 
@@ -38,5 +37,37 @@ namespace NFig
         /// <param name="subAppId">The sub-app to get defaults for, or null if getting defaults for the top-level app.</param>
         /// <param name="subAppName">The name of the sub-app to get defaults for, or null for the top-level app.</param>
         public abstract IEnumerable GetDefaults(string appName, string settingName, Type settingType, object tier, int? subAppId, string subAppName);
+
+        /// <summary>
+        /// Creates an object which tells NFig how to create a default value.
+        /// </summary>
+        /// <typeparam name="TTier">The Tier type used when creating the <see cref="NFigStore{TTier,TDataCenter}"/>.</typeparam>
+        /// <typeparam name="TDataCenter">The DataCenter type used when creating the <see cref="NFigStore{TTier,TDataCenter}"/>.</typeparam>
+        /// <param name="value">
+        /// The actual value, or string representation, of the default.
+        /// </param>
+        /// <param name="subAppId">
+        /// The ID of the sub-app that this value applies to. Null means that the default is applicable to the top-level application, as well as all sub-apps.
+        /// </param>
+        /// <param name="tier">
+        /// The tier that this value applies to. Tier=Any means that the value can be applied to any tier.
+        /// </param>
+        /// <param name="dataCenter">
+        /// The data center that this value applies to. DataCenter=Any means that the value can be applied to any data center.
+        /// </param>
+        /// <param name="allowsOverrides">
+        /// Indicates whether overrides are allowed when this default value is active.
+        /// </param>
+        protected DefaultCreationInfo<TTier, TDataCenter> CreateDefault<TTier, TDataCenter>(
+            object value,
+            int? subAppId,
+            TTier tier,
+            TDataCenter dataCenter,
+            bool allowsOverrides)
+            where TTier : struct
+            where TDataCenter : struct
+        {
+            return new DefaultCreationInfo<TTier, TDataCenter>(value, subAppId, tier, dataCenter, allowsOverrides);
+        }
     }
 }

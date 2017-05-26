@@ -143,31 +143,25 @@ namespace NFig
                     foreach (var obj in attr.GetDefaults(AppInfo.AppName, setting.Name, setting.Type, Tier, subAppId, subAppName))
                     {
                         if (obj == null)
-                            throw new NFigException($"{attr.GetType().Name} on setting {setting.Name} returned a null DefaultValue from GetDefaults()");
+                            throw new NFigException($"{attr.GetType().Name} on setting {setting.Name} returned a null reference from GetDefaults()");
 
                         // make sure the object is actually a default value
-                        var defaultValue = obj as DefaultValue<TTier, TDataCenter>;
-                        if (defaultValue == null)
+                        var creationInfo = obj as DefaultCreationInfo<TTier, TDataCenter>;
+                        if (creationInfo == null)
                         {
                             throw new NFigException(
                                 $"Object returned from {attr.GetType().Name}.GetSettings() was not a DefaultValue<{_tierType.Name},{_dataCenterType.Name}> on setting {setting.Name}");
                         }
 
-                        if (defaultValue.Name != setting.Name)
-                        {
-                            throw new NFigException(
-                                $"{attr.GetType().Name} on setting \"{setting.Name}\" tried to generate a default value for setting \"{defaultValue.Name}\" " +
-                                "An attribute is only allowed to generate default values for the setting it is applied to.");
-                        }
-
                         // check if we care about this default
-                        if (defaultValue.SubAppId != subAppId)
+                        if (creationInfo.SubAppId != subAppId)
                             continue;
 
-                        if (!Compare.IsDefault(defaultValue.Tier) && !Compare.AreEqual(defaultValue.Tier, Tier))
+                        if (!Compare.IsDefault(creationInfo.Tier) && !Compare.AreEqual(creationInfo.Tier, Tier))
                             continue;
 
-                        // If we've gotten to here, then this is a default we care about
+                        // If we've gotten to here, then this is a default we care about. We need to create a DefaultValue object.
+                        var defaultValue = setting.CreateDefaultValueFromCreationInfo(this, creationInfo);
 
                         // make sure there isn't a conflicting default
                         foreach (var existing in defaults)
@@ -397,7 +391,7 @@ namespace NFig
                                         "This error is probably due to a class inheriting from SettingAttribute without obeying this rule.");
         }
 
-        ISettingConverter<TValue> GetConverterForProperty<TValue>(string name, PropertyInfo pi, SettingsGroup group, out bool isDefault)
+        static ISettingConverter<TValue> GetConverterForProperty<TValue>(string name, PropertyInfo pi, SettingsGroup group, out bool isDefault)
         {
             ISettingConverter convObj;
             var tValueType = typeof(TValue);
@@ -964,6 +958,10 @@ namespace NFig
             public abstract object GetValueFromString(string str);
             public abstract bool TryGetValueFromString(string str, out object value);
             public abstract bool TryGetStringFromValue(object value, out string str);
+
+            public abstract DefaultValue<TTier, TDataCenter> CreateDefaultValueFromCreationInfo(
+                SettingsFactory<TSettings, TTier, TDataCenter> factory,
+                DefaultCreationInfo<TTier, TDataCenter> info);
         }
 
         class Setting<TValue> : Setting
@@ -1061,6 +1059,14 @@ namespace NFig
                 }
 
                 return true;
+            }
+
+            public override DefaultValue<TTier, TDataCenter> CreateDefaultValueFromCreationInfo(
+                SettingsFactory<TSettings, TTier, TDataCenter> factory,
+                DefaultCreationInfo<TTier, TDataCenter> info)
+            {
+                var strValue = factory.GetStringFromDefaultAndValidate(Name, info.Value, info.SubAppId, info.DataCenter, Converter, Metadata.IsEncrypted);
+                return new DefaultValue<TTier, TDataCenter>(Name, strValue, info.SubAppId, info.Tier, info.DataCenter, info.AllowsOverrides);
             }
 
             SettingSetterDelegate<TValue> CreateSetterMethod()
