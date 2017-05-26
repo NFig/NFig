@@ -29,10 +29,6 @@ namespace NFig
         /// </summary>
         TDataCenter DataCenter { get; }
         /// <summary>
-        /// True if the value is a default (not an override).
-        /// </summary>
-        bool IsDefault { get; }
-        /// <summary>
         /// True if the value is an override (not a default).
         /// </summary>
         bool IsOverride { get; }

@@ -31,7 +31,6 @@ namespace NFig
         public DateTimeOffset? ExpirationTime { get; }
 
         TTier ISettingValue<TTier, TDataCenter>.Tier => default(TTier);
-        bool ISettingValue<TTier, TDataCenter>.IsDefault => false;
         bool ISettingValue<TTier, TDataCenter>.IsOverride => true;
 
         /// <summary>
