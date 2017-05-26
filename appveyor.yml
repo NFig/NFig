@@ -54,16 +54,7 @@ deploy:
    on:
      branch: master
 
- # for pre-release versions
- - provider: NuGet
-   api_key:
-     secure: NiH62CvEa6ztPGnR9glvKexCL5sJStB62JcJ/8CcVJJAj7rkCzZvfN87E5xPpNd0
-   artifact: /artifacts/.*\.nupkg/
-   skip_symbols: false
-   on:
-     branch: master
-
- # for release versions
+ # NuGet.org
  - provider: NuGet
    api_key:
      secure: NiH62CvEa6ztPGnR9glvKexCL5sJStB62JcJ/8CcVJJAj7rkCzZvfN87E5xPpNd0
