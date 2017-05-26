@@ -32,7 +32,10 @@
         /// Indicates whether overrides are allowed when this default value is active.
         /// </summary>
         public bool AllowsOverrides { get; }
-        bool ISettingValue<TTier, TDataCenter>.IsOverride => false;
+        /// <summary>
+        /// True if the value is an override (not a default).
+        /// </summary>
+        public bool IsOverride => false;
 
         internal DefaultValue(string name, string value, int? subAppId, TTier tier, TDataCenter dataCenter, bool allowsOverrides)
         {

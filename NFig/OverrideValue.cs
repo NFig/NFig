@@ -31,7 +31,10 @@ namespace NFig
         public DateTimeOffset? ExpirationTime { get; }
 
         TTier ISettingValue<TTier, TDataCenter>.Tier => default(TTier);
-        bool ISettingValue<TTier, TDataCenter>.IsOverride => true;
+        /// <summary>
+        /// True if the value is an override (not a default).
+        /// </summary>
+        public bool IsOverride => true;
 
         /// <summary>
         /// Instantiates a new override. Note: overrides always apply to the currently active tier.
