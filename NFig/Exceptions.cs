@@ -142,7 +142,7 @@ namespace NFig
         /// <summary>
         /// A list of nested exceptions. The number of exceptions in this list will be the same as the number of overrides which were unable to be applied.
         /// </summary>
-        public IList<InvalidDefaultValueException> Exceptions { get; }
+        public IList<InvalidOverrideValueException> Exceptions { get; }
 
         internal InvalidOverridesException(IList<InvalidOverrideValueException> exceptions, string stackTrace) : base(GetMessage(exceptions))
         {
@@ -150,7 +150,7 @@ namespace NFig
             UnthrownStackTrace = stackTrace;
         }
 
-        static string GetMessage(IList<InvalidDefaultValueException> exceptions)
+        static string GetMessage(IList<InvalidOverrideValueException> exceptions)
         {
             return $"{exceptions.Count} invalid setting overrides were not applied ({string.Join(", ", exceptions.Select(e => e.SettingName))}). You should edit or clear these overrides.";
         }
