@@ -153,7 +153,7 @@ namespace NFig
                         {
                             throw new NFigException(
                                 $"{attr.GetType().Name} on setting \"{setting.Name}\" tried to generate a default value for setting \"{defaultValue.Name}\" " +
-                                $"An attribute is only allowed to generate default values for the setting it is applied to.");
+                                "An attribute is only allowed to generate default values for the setting it is applied to.");
                         }
 
                         // check if we care about this default
@@ -290,7 +290,7 @@ namespace NFig
         // A SettingsGroup is a property on a settings class which is marked with the [SettingsGroup] attribute. This means that the property is not a single
         // setting, but rather the parent container of child settings (and/or child groups).
         //
-        // This method learns everything about the setting group. It detects any custom converters applied to it, and 
+        // This method learns everything about the setting group. It detects any custom converters applied to it, and learns about the group's child settings.
         void PopulateSettingsGroup(SettingsGroup group)
         {
             // We could enforce that people must put converters on either the property or the class, but I'd rather people didn't have to remember which one
@@ -390,7 +390,7 @@ namespace NFig
 
             if (sa.DefaultValue != null)
                 throw new NFigException($"The SettingAttribute for {name} assigns a default value and is marked as encrypted. It cannot have both. " +
-                                        $"This error is probably due to a class inheriting from SettingAttribute without obeying this rule.");
+                                        "This error is probably due to a class inheriting from SettingAttribute without obeying this rule.");
         }
 
         ISettingConverter<TValue> GetConverterForProperty<TValue>(string name, PropertyInfo pi, SettingsGroup group, out bool isDefault)
@@ -559,7 +559,7 @@ namespace NFig
                             break;
                         case InlineStrategy.Cache:
                             if (cacheIndex == null)
-                                throw new NFigException($"Bug in NFig: cacheIndex not set");
+                                throw new NFigException("Bug in NFig: cacheIndex not set");
 
                             var cacheField = _reflectionCache.ValueCacheField;
                             il.Emit(OpCodes.Ldarg_0);                    // [group] [group] [factory this]
