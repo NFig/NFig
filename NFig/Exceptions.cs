@@ -137,14 +137,14 @@ namespace NFig
     /// converter was changed since the override was set. This exception is never thrown. It is returned from TryGet methods on NFigStoreOld and passed as the
     /// first parameter to subscription callbacks.
     /// </summary>
-    public class InvalidSettingOverridesException : NFigException
+    public class InvalidOverridesException : NFigException
     {
         /// <summary>
         /// A list of nested exceptions. The number of exceptions in this list will be the same as the number of overrides which were unable to be applied.
         /// </summary>
         public IList<InvalidDefaultValueException> Exceptions { get; }
 
-        internal InvalidSettingOverridesException(IList<InvalidDefaultValueException> exceptions, string stackTrace) : base(GetMessage(exceptions))
+        internal InvalidOverridesException(IList<InvalidOverrideValueException> exceptions, string stackTrace) : base(GetMessage(exceptions))
         {
             Exceptions = exceptions;
             UnthrownStackTrace = stackTrace;
