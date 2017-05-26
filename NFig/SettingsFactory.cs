@@ -446,12 +446,12 @@ namespace NFig
         {
             string stringValue;
 
-            if (value is string && (isEncrypted || typeof(TValue) != typeof(string)))
+            if (value is string s && (isEncrypted || typeof(TValue) != typeof(string)))
             {
                 // Don't need to convert to a string if value is already a string and TValue is not.
                 // We expect that the human essentially already did the conversion.
                 // Also, if setting is encrypted, then we always expect the string representation to be encrypted.
-                stringValue = (string)value;
+                stringValue = s;
             }
             else
             {
