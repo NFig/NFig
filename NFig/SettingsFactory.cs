@@ -451,6 +451,15 @@ namespace NFig
                 // Also, if setting is encrypted, then we always expect the string representation to be encrypted.
                 stringValue = s;
             }
+            else if (isEncrypted)
+            {
+                throw new InvalidDefaultValueException(
+                    $"Invalid default for setting \"{name}\". Defaults for encrypted settings must be in the form of an encrypted string.",
+                    name,
+                    value,
+                    subAppId,
+                    dataCenter.ToString());
+            }
             else
             {
                 try
@@ -458,9 +467,6 @@ namespace NFig
                     // try convert the real value into its string representation
                     var tval = value is TValue ? (TValue)value : (TValue)Convert.ChangeType(value, typeof(TValue));
                     stringValue = converter.GetString(tval);
-
-                    if (isEncrypted)
-                        stringValue = AppInfo.Encrypt(stringValue);
                 }
                 catch (Exception ex)
                 {
