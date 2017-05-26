@@ -43,14 +43,16 @@ deploy:
    on:
      appveyor_repo_tag: true
 
- - provider: MyGet
+ # MyGet
+ - provider: NuGet
+   server: https://www.myget.org/F/bretcope
+   symbol_server: https://www.myget.org/F/bretcope/symbols
    api_key:
      secure: 4OhfGM3pJQHTs5OYskc448dwXt8DqPec7vdyK+G+AS5v0m8pSxyP30UoZyTanDcz
    artifact: /artifacts/.*\.nupkg/
    skip_symbols: false
    on:
      branch: master
-     appveyor_repo_tag: true
 
  # for pre-release versions
  - provider: NuGet
