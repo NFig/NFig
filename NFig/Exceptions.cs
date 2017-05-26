@@ -17,25 +17,6 @@ namespace NFig
         protected internal NFigException (string message, Exception innerException = null) : base(message, innerException)
         {
         }
-
-        internal string UnthrownStackTrace { get; set; }
-
-        /// <summary>
-        /// The stack trace from where the exception was created or thrown.
-        /// </summary>
-        public override string StackTrace
-        {
-            get
-            {
-                if (string.IsNullOrEmpty(UnthrownStackTrace))
-                    return base.StackTrace;
-
-                if (string.IsNullOrEmpty(base.StackTrace))
-                    return UnthrownStackTrace;
-
-                return "--- Original Stack Trace ---\r\n" + UnthrownStackTrace + "\r\n\r\n--- Thrown From ---\r\n" + base.StackTrace;
-            }
-        }
     }
 
     /// <summary>
@@ -144,10 +125,9 @@ namespace NFig
         /// </summary>
         public IList<InvalidOverrideValueException> Exceptions { get; }
 
-        internal InvalidOverridesException(IList<InvalidOverrideValueException> exceptions, string stackTrace) : base(GetMessage(exceptions))
+        internal InvalidOverridesException(IList<InvalidOverrideValueException> exceptions) : base(GetMessage(exceptions))
         {
             Exceptions = exceptions;
-            UnthrownStackTrace = stackTrace;
         }
 
         static string GetMessage(IList<InvalidOverrideValueException> exceptions)
