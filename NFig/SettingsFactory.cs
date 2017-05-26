@@ -60,7 +60,7 @@ namespace NFig
             var initializer = GetSubAppCache(subAppId, subAppName).Initializer;
             var settings = initializer();
             settings.SetBasicInformation(AppInfo.AppName, snapshot.Commit, subAppId, subAppName, Tier, DataCenter);
-            ApplyOverrides(settings, subAppId, snapshot.Overrides);
+            TryApplyOverrides(settings, subAppId, snapshot.Overrides);
             return settings;
         }
 
@@ -791,11 +791,13 @@ namespace NFig
             return bestDefault;
         }
 
-        void ApplyOverrides(TSettings settingsObj, int? subAppId, ListBySetting<OverrideValue<TTier, TDataCenter>> overrides)
+        [CanBeNull]
+        InvalidOverridesException TryApplyOverrides(TSettings settingsObj, int? subAppId, ListBySetting<OverrideValue<TTier, TDataCenter>> overrides)
         {
             if (overrides == null)
-                return;
+                return null;
 
+            List<InvalidOverrideValueException> exceptions = null;
             foreach (var kvp in overrides)
             {
                 Setting setting;
@@ -807,8 +809,21 @@ namespace NFig
                 if (bestOverride == null)
                     continue;
 
-                // todo: apply the override
+                var ex = setting.TryApplyOverride(settingsObj, bestOverride, AppInfo);
+
+                if (ex != null)
+                {
+                    if (exceptions == null)
+                        exceptions = new List<InvalidOverrideValueException>();
+
+                    exceptions.Add(ex);
+                }
             }
+
+            if (exceptions != null)
+                return new InvalidOverridesException(exceptions);
+
+            return null;
         }
 
         [CanBeNull]
@@ -941,7 +956,7 @@ namespace NFig
 
 
             public abstract object GetValueAsObject(TSettings settings);
-            public abstract InvalidOverrideValueException TryApplyOverride(TSettings settings, OverrideValue<TTier, TDataCenter> over, string strValue);
+            public abstract InvalidOverrideValueException TryApplyOverride(TSettings settings, OverrideValue<TTier, TDataCenter> over, AppInternalInfo appInfo);
             public abstract object GetValueFromString(string str);
             public abstract bool TryGetValueFromString(string str, out object value);
             public abstract bool TryGetStringFromValue(object value, out string str);
@@ -980,38 +995,33 @@ namespace NFig
                 return GetValue(settings);
             }
 
-            public override InvalidOverrideValueException TryApplyOverride(TSettings settings, OverrideValue<TTier, TDataCenter> over, string strValue)
+            public override InvalidOverrideValueException TryApplyOverride(TSettings settings, OverrideValue<TTier, TDataCenter> over, AppInternalInfo appInfo)
             {
-//                TValue value;
-//
-//                try
-//                {
-//                    value = Converter.GetValue(strValue);
-//                }
-//                catch (Exception ex)
-//                {
-//                    var invalidEx = new InvalidSettingValueException(
-//                        $"Invalid override value for setting \"{Name}\". Cannot convert the string override to a real value.",
-//                        Name,
-//                        over.Value, // intentionally using over.Value here instead of strValue since strValue could be a decrypted value that people don't want in their logs
-//                        false,
-//                        over.SubApp.ToString(),
-//                        over.DataCenter.ToString(),
-//                        ex);
-//
-//                    invalidEx.UnthrownStackTrace = new StackTrace(true).ToString();
-//
-//                    return invalidEx;
-//                }
-//
-//                if (_setter == null)
-//                    _setter = CreateSetterMethod();
-//
-//                _setter(settings, value);
-//                return null;
+                TValue value;
 
-                // todo
-                throw new NotImplementedException();
+                try
+                {
+                    var strValue = Metadata.IsEncrypted ? appInfo.Decrypt(over.Value) : over.Value;
+                    value = Converter.GetValue(strValue);
+                }
+                catch (Exception ex)
+                {
+                    var invalidEx = new InvalidOverrideValueException(
+                        $"Invalid override value for setting \"{Name}\". Cannot convert the string override to a real value.",
+                        Name,
+                        over.Value, // intentionally using over.Value here instead of strValue since strValue could be a decrypted value that people don't want in their logs
+                        over.SubAppId,
+                        over.DataCenter.ToString(),
+                        ex);
+
+                    return invalidEx;
+                }
+
+                if (_setter == null)
+                    _setter = CreateSetterMethod();
+
+                _setter(settings, value);
+                return null;
             }
 
             public override object GetValueFromString(string str)
@@ -1083,8 +1093,35 @@ namespace NFig
 
             static void EmitLoadGroup(ILGenerator il, SettingsGroup group)
             {
-                // todo
-                throw new NotImplementedException();
+                // initial stack: [settings]
+                // end stack:     [group]
+
+                if (group.Parent == null) // there is no parent, so the TSettings object is actually the group object we want, which is on the stack already
+                    return;
+
+                if (group.Parent.Parent == null)
+                {
+                    // The group we want is only one level below TSettings. This is the most common pattern, so we're providing a special case for it to improve
+                    // performance and reduce allocations.
+                    il.Emit(OpCodes.Callvirt, group.PropertyInfo.GetMethod); // [group]
+                    return;
+                }
+
+                // The group we want is more than one level deep. We need to create a list of methods to call.
+                var methodList = new List<MethodInfo>();
+                var g = group;
+                do
+                {
+                    methodList.Add(g.PropertyInfo.GetMethod);
+                    g = g.Parent;
+
+                } while (g != null);
+
+                // the list was built bottom up, but we need to emit top down, so we go in reverse
+                for (var i = methodList.Count - 1; i >= 0; i--)
+                {
+                    il.Emit(OpCodes.Callvirt, methodList[i]); // [group]
+                }
             }
         }
     }
