@@ -53,15 +53,19 @@ namespace NFig
             _rootCache.Defaults = CollectDefaultsForSubApp(null, null);
         }
 
-        internal TSettings GetSettings(int? subAppId, string subAppName, OverridesSnapshot<TTier, TDataCenter> snapshot)
+        internal InvalidOverridesException TryGetSettings(
+            int? subAppId,
+            string subAppName,
+            OverridesSnapshot<TTier, TDataCenter> snapshot,
+            out TSettings settings)
         {
             // todo: make sure this isn't called before a sub-app has been declared. Can probably be enforced by the app client, rather than here
 
             var initializer = GetSubAppCache(subAppId, subAppName).Initializer;
-            var settings = initializer();
+            settings = initializer();
             settings.SetBasicInformation(AppInfo.AppName, snapshot.Commit, subAppId, subAppName, Tier, DataCenter);
-            TryApplyOverrides(settings, subAppId, snapshot.Overrides);
-            return settings;
+
+            return TryApplyOverrides(settings, subAppId, snapshot.Overrides);
         }
 
         SubAppCache GetSubAppCache(int? subAppId, string subAppName)
