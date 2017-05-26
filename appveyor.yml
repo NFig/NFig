@@ -45,7 +45,6 @@ deploy:
 
  # MyGet
  - provider: NuGet
-   name: MyGet
    server: https://www.myget.org/F/bretcope/api/v2/package
    symbol_server: https://www.myget.org/F/bretcope/symbols/api/v2/package
    api_key:
