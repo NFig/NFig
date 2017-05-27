@@ -50,6 +50,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="FactoryTests\PrimitiveTests.cs" />
     <Compile Include="Common\Attributes.cs" />
     <Compile Include="Common\Enums.cs" />
     <Compile Include="Common\SettingsBase.cs" />
