@@ -34,6 +34,8 @@ namespace NFig
             Dictionary<int, TSettings> settingsBySubAppId,
             NFigAppClient<TSettings, TTier, TDataCenter> client);
 
+        readonly SettingsFactory<TSettings, TTier, TDataCenter> _factory;
+
         /// <summary>
         /// The backing store for NFig overrides and metadata.
         /// </summary>
@@ -54,12 +56,14 @@ namespace NFig
         /// <summary>
         /// Initializes the app client.
         /// </summary>
-        protected internal NFigAppClient(NFigStore<TTier, TDataCenter> store, string appName, TTier tier, TDataCenter dataCenter)
+        internal NFigAppClient(NFigStore<TTier, TDataCenter> store, AppInternalInfo appInfo)
         {
             Store = store;
-            AppName = appName;
-            Tier = tier;
-            DataCenter = dataCenter;
+            AppName = appInfo.AppName;
+            Tier = store.Tier;
+            DataCenter = store.DataCenter;
+
+            _factory = new SettingsFactory<TSettings, TTier, TDataCenter>(appInfo, Tier, DataCenter);
         }
 
         /// <summary>

@@ -15,6 +15,8 @@ namespace NFig
         internal Dictionary<Type, ISettingConverter> Converters { get; set; }
         [CanBeNull]
         internal ISettingEncryptor Encryptor { get; set; } // todo: eventually make this private
+        internal object AppClient { get; set; }
+        internal object AdminClient { get; set; }
 
         internal bool CanEncrypt => Encryptor != null;
         internal bool CanDecrypt => Encryptor?.CanDecrypt ?? false;

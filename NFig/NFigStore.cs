@@ -18,17 +18,23 @@ namespace NFig
         /// The deployment tier of the store.
         /// </summary>
         public TTier Tier { get; }
+        /// <summary>
+        /// The data center of the current app or admin panel.
+        /// </summary>
+        public TDataCenter DataCenter { get; }
 
         /// <summary>
         /// Instantiates the base Store class.
         /// </summary>
         /// <param name="tier">The deployment tier which the store exists on.</param>
-        protected NFigStore(TTier tier)
+        /// <param name="dataCenter">The data center of the current app or admin panel.</param>
+        protected NFigStore(TTier tier, TDataCenter dataCenter)
         {
             AssertIsValidEnumType(typeof(TTier), nameof(TTier));
             AssertIsValidEnumType(typeof(TDataCenter), nameof(TDataCenter));
 
             Tier = tier;
+            DataCenter = dataCenter;
         }
 
         /// <summary>
@@ -60,18 +66,30 @@ namespace NFig
         }
 
         /// <summary>
-        /// Gets a client for consuming NFig settings within an application.
+        /// Gets a client for consuming NFig settings within an application. This method is idempotent and will return the exact same client instance every time
+        /// it is called with the same app name.
         /// </summary>
         /// <typeparam name="TSettings">
         /// The class which represents your settings. It must inherit from <see cref="INFigSettings{TTier,TDataCenter}"/> or
         /// <see cref="NFigSettingsBase{TTier,TDataCenter}"/>.
         /// </typeparam>
         /// <param name="appName">The name of your application. Overrides are keyed off of this name.</param>
-        /// <param name="dataCenter">The data center where your application resides.</param>
-        public NFigAppClient<TSettings, TTier, TDataCenter> GetAppClient<TSettings>(string appName, TDataCenter dataCenter)
+        public NFigAppClient<TSettings, TTier, TDataCenter> GetAppClient<TSettings>(string appName)
             where TSettings : class, INFigSettings<TTier, TDataCenter>, new()
         {
-            throw new NotImplementedException();
+            var appInfo = GetAppInfo(appName, typeof(TSettings));
+            var client = (NFigAppClient<TSettings, TTier, TDataCenter>)appInfo.AppClient;
+
+            if (client == null)
+            {
+                lock (appInfo)
+                {
+                    client = new NFigAppClient<TSettings, TTier, TDataCenter>(this, appInfo);
+                    appInfo.AppClient = client;
+                }
+            }
+
+            return client;
         }
 
         /// <summary>
