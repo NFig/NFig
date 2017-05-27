@@ -9,8 +9,8 @@ param (
     [switch] $SkipTests,
     # Creates nuget packages.
     [switch] $Pack,
-    # The MSBuild verbosity level. Options: quiet, minimal, normal, detailed, or diagnostic. Defaults to normal.
-    [string] $Verbosity = "normal",
+    # The MSBuild verbosity level. Options: quiet, minimal, normal, detailed, or diagnostic. Defaults to minimal.
+    [string] $Verbosity = "minimal",
     # Enables Powershell debugging output
     [switch] $PsDebug
 )
