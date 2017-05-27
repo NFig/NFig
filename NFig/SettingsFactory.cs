@@ -293,7 +293,9 @@ namespace NFig
         {
             // We could enforce that people must put converters on either the property or the class, but I'd rather people didn't have to remember which one
             // was correct. So we're going to look in both places.
-            ApplyConverterAttributesToGroup(group, group.PropertyInfo.GetCustomAttributes<SettingConverterAttribute>());
+            if (group.PropertyInfo != null)
+                ApplyConverterAttributesToGroup(group, group.PropertyInfo.GetCustomAttributes<SettingConverterAttribute>());
+
             ApplyConverterAttributesToGroup(group, group.Type.GetTypeInfo().GetCustomAttributes<SettingConverterAttribute>());
 
             foreach (var pi in group.Type.GetProperties())
@@ -1131,7 +1133,7 @@ namespace NFig
                     methodList.Add(g.PropertyInfo.GetMethod);
                     g = g.Parent;
 
-                } while (g != null);
+                } while (g?.PropertyInfo != null);
 
                 // the list was built bottom up, but we need to emit top down, so we go in reverse
                 for (var i = methodList.Count - 1; i >= 0; i--)
