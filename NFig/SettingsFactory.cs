@@ -260,7 +260,13 @@ namespace NFig
 
             // I'd prefer to use Delegate.CreateDelegate(), but that isn't supported on all platforms at the moment.
             var methodArgTypes = new[] {thisType, typeof(PropertyInfo), typeof(SettingAttribute), typeof(SettingsGroup)};
-            var dm = new DynamicMethod($"PropertyToSetting<{type.FullName}>+Delegate", typeof(Setting), methodArgTypes, restrictedSkipVisibility: true);
+            var dm = new DynamicMethod(
+                $"PropertyToSetting<{type.FullName}>+Delegate",
+                typeof(Setting),
+                methodArgTypes,
+                _reflectionCache.ThisType.Module(),
+                true);
+
             var il = dm.GetILGenerator();
 
             il.Emit(OpCodes.Ldarg_0);           // [this]
@@ -505,7 +511,7 @@ namespace NFig
         SettingsInitializer CreateInitializer(int? subAppId, ListBySetting<DefaultValue<TTier, TDataCenter>> defaults)
         {
             var dmName = $"TSettings_Instantiate+{subAppId}+{Tier}+{DataCenter}";
-            var dm = new DynamicMethod(dmName, _settingsType, new[] { _reflectionCache.ThisType }, restrictedSkipVisibility: true);
+            var dm = new DynamicMethod(dmName, _settingsType, new[] { _reflectionCache.ThisType }, _reflectionCache.ThisType.Module(), true);
             var il = dm.GetILGenerator();
 
             EmitSettingsGroup(il, _tree, subAppId, defaults); // [TSettings s]
@@ -1079,7 +1085,7 @@ namespace NFig
 
             SettingSetterDelegate<TValue> CreateSetterMethod()
             {
-                var dm = new DynamicMethod("AssignSetting_" + Name, null, new[] { typeof(TSettings), Type }, restrictedSkipVisibility: true);
+                var dm = new DynamicMethod("AssignSetting_" + Name, null, new[] { typeof(TSettings), Type }, GetType().Module(), true);
                 var il = dm.GetILGenerator();
 
                 // arg 0 = TSettings settings
@@ -1096,7 +1102,7 @@ namespace NFig
 
             SettingGetterDelegate<TValue> CreateGetterMethod()
             {
-                var dm = new DynamicMethod("RetrieveSetting_" + Name, typeof(TValue), new[] { typeof(TSettings) }, restrictedSkipVisibility: true);
+                var dm = new DynamicMethod("RetrieveSetting_" + Name, typeof(TValue), new[] { typeof(TSettings) }, GetType().Module(), true);
                 var il = dm.GetILGenerator();
 
                 // arg 0 = TSettings settings
