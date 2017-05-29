@@ -27,8 +27,8 @@ namespace NFig.Tests.FactoryTests
             Assert.AreEqual(2, s.NestedOne.OffByOne);
             Assert.AreEqual(3, s.NestedOne.OffByTwo);
 
-            Assert.AreEqual(3, s.NestedOne.OffByOne);
-            Assert.AreEqual(4, s.NestedOne.OffByTwo);
+            Assert.AreEqual(3, s.NestedTwo.OffByOne);
+            Assert.AreEqual(4, s.NestedTwo.OffByTwo);
         }
 
         [Test]
