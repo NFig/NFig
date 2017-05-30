@@ -29,6 +29,24 @@ namespace NFig.Tests.FactoryTests
 
             Assert.AreEqual(3, s.NestedTwo.OffByOne);
             Assert.AreEqual(4, s.NestedTwo.OffByTwo);
+
+            Assert.AreEqual(4, s.NestedTwo.NestedThree.OffByOne);
+            Assert.AreEqual(5, s.NestedTwo.NestedThree.OffByTwo);
+        }
+
+        [Test]
+        public void TopLevelConverterTest()
+        {
+            var factory = Utils.CreateFactory<TopLevelConvertersSettings>();
+            var s = factory.GetSettings();
+
+            Assert.True(s.Ints != null, "Ints should not be null");
+            Assert.True(s.Ints.Length == 3, "Ints should have length of 3, but is length " + s.Ints.Length);
+            Assert.AreEqual(5, s.Ints[0]);
+            Assert.AreEqual(6, s.Ints[1]);
+            Assert.AreEqual(7, s.Ints[2]);
+            
+            Assert.AreEqual(2, s.OffByOne);
         }
 
         [Test]
@@ -76,6 +94,19 @@ namespace NFig.Tests.FactoryTests
 
                 [Setting("2")]
                 public int OffByTwo { get; }
+
+                [SettingsGroup]
+                public NestedThreeSettings NestedThree { get; }
+
+                public class NestedThreeSettings
+                {
+                    [Setting("3")]
+                    public int OffByTwo { get; }
+
+                    [Setting("3")]
+                    [SettingConverter(typeof(OffByOneConverter))]
+                    public int OffByOne { get; }
+                }
             }
         }
 
@@ -85,6 +116,9 @@ namespace NFig.Tests.FactoryTests
         {
             [Setting("5,6,7")]
             public int[] Ints { get; }
+
+            [Setting("1")]
+            public int OffByOne { get; }
         }
 
         class MissingConverterSettings : SettingsBase
