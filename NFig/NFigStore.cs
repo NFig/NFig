@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using NFig.Encryption;
 
@@ -115,6 +116,231 @@ namespace NFig
         public Task<IEnumerable<string>> GetAppNamesAsync() // todo: use a concrete type instead of IEnumerable
         {
             throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Gets the name and ID of every sub-app that has been added to this application.
+        /// </summary>
+        protected abstract IEnumerable<SubAppInfo> GetSubApps(string appName); // todo: use a concrete type rather than IEnumerable
+
+        /// <summary>
+        /// Gets the name and ID of every sub-app that has been added to this application.
+        /// </summary>
+        protected abstract Task<IEnumerable<SubAppInfo>> GetSubAppsAsync(string appName); // todo: use a concrete type rather than IEnumerable
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal IEnumerable<SubAppInfo> GetSubAppsInternal(string appName) => GetSubApps(appName);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal Task<IEnumerable<SubAppInfo>> GetSubAppsAsyncInternal(string appName) => GetSubAppsAsync(appName);
+
+        /// <summary>
+        /// Gets the current snapshot of overrides for the app, including all of its sub-apps.
+        /// </summary>
+        protected abstract OverridesSnapshot<TTier, TDataCenter> GetSnapshot(string appName);
+
+        /// <summary>
+        /// Gets the current snapshot of overrides for the app, including all of its sub-apps.
+        /// </summary>
+        protected abstract Task<OverridesSnapshot<TTier, TDataCenter>> GetSnapshotAsync(string appName);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal OverridesSnapshot<TTier, TDataCenter> GetSnapshotInternal(string appName) => GetSnapshot(appName);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal Task<OverridesSnapshot<TTier, TDataCenter>> GetSnapshotAsyncInternal(string appName) => GetSnapshotAsync(appName);
+
+        /// <summary>
+        /// Restores all overrides to a previous state. Returns a snapshot of the new current state (after restoring).
+        /// 
+        /// Implementations are responsible for logging the restore.
+        /// </summary>
+        /// <param name="appName">The name of the root application.</param>
+        /// <param name="snapshot">The snapshot to restore.</param>
+        /// <param name="user">The user performing the restore (for logging purposes).</param>
+        /// <returns>A snapshot of the new current state (after restoring).</returns>
+        protected abstract OverridesSnapshot<TTier, TDataCenter> RestoreSnapshot(string appName, OverridesSnapshot<TTier, TDataCenter> snapshot, string user);
+
+        /// <summary>
+        /// Restores all overrides to a previous state. Returns a snapshot of the new current state (after restoring).
+        /// 
+        /// Implementations are responsible for logging the restore.
+        /// </summary>
+        /// <param name="appName">The name of the root application.</param>
+        /// <param name="snapshot">The snapshot to restore.</param>
+        /// <param name="user">The user performing the restore (for logging purposes).</param>
+        protected abstract Task<OverridesSnapshot<TTier, TDataCenter>> RestoreSnapshotAsync(
+            string appName,
+            OverridesSnapshot<TTier, TDataCenter> snapshot,
+            string user);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal OverridesSnapshot<TTier, TDataCenter> RestoreSnapshotInternal(string appName, OverridesSnapshot<TTier, TDataCenter> snapshot, string user)
+        {
+            return RestoreSnapshot(appName, snapshot, user);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal Task<OverridesSnapshot<TTier, TDataCenter>> RestoreSnapshotAsyncInternal(
+            string appName,
+            OverridesSnapshot<TTier, TDataCenter> snapshot,
+            string user)
+        {
+            return RestoreSnapshotAsync(appName, snapshot, user);
+        }
+
+        /// <summary>
+        /// Sets an override for the specified setting name and data center combination. If an existing override shares that exact combination, it will be
+        /// replaced.
+        /// 
+        /// Returns a snapshot of the state immediately after the override is applied. If the override is not applied because the current commit didn't match
+        /// the commit parameter, the return value must be null.
+        /// 
+        /// Implementations of this method do not need to perform any validation of the override. It will be validated by the admin client prior to calling.
+        /// 
+        /// Implementations are responsible for logging the change.
+        /// </summary>
+        /// <param name="appName">The name of the root application.</param>
+        /// <param name="settingName">Name of the setting.</param>
+        /// <param name="dataCenter">Data center which the override should be applicable to.</param>
+        /// <param name="value">The string-value of the setting. If the setting is an encrypted setting, this value must be pre-encrypted.</param>
+        /// <param name="user">The user who is setting the override (used for logging purposes). This can be null if you don't care about logging.</param>
+        /// <param name="subAppId">The sub-app which the override should apply to.</param>
+        /// <param name="commit">If non-null, the override will only be applied if this is the current commit ID.</param>
+        /// <param name="expirationTime">The time when the override should be automatically cleared.</param>
+        protected abstract OverridesSnapshot<TTier, TDataCenter> SetOverride(
+            string appName,
+            string settingName,
+            TDataCenter dataCenter,
+            string value,
+            string user,
+            int? subAppId,
+            string commit,
+            DateTimeOffset? expirationTime);
+
+        /// <summary>
+        /// Sets an override for the specified setting name and data center combination. If an existing override shares that exact combination, it will be
+        /// replaced.
+        /// 
+        /// Returns a snapshot of the state immediately after the override is applied. If the override is not applied because the current commit didn't match
+        /// the commit parameter, the return value must be null.
+        /// 
+        /// Implementations of this method do not need to perform any validation of the override. It will be validated by the admin client prior to calling.
+        /// 
+        /// Implementations are responsible for logging the change.
+        /// </summary>
+        /// <param name="appName">The name of the root application.</param>
+        /// <param name="settingName">Name of the setting.</param>
+        /// <param name="dataCenter">Data center which the override should be applicable to.</param>
+        /// <param name="value">The string-value of the setting. If the setting is an encrypted setting, this value must be pre-encrypted.</param>
+        /// <param name="user">The user who is setting the override (used for logging purposes). This can be null if you don't care about logging.</param>
+        /// <param name="subAppId">The sub-app which the override should apply to.</param>
+        /// <param name="commit">If non-null, the override will only be applied if this is the current commit ID.</param>
+        /// <param name="expirationTime">The time when the override should be automatically cleared.</param>
+        protected abstract Task<OverridesSnapshot<TTier, TDataCenter>> SetOverrideAsync(
+            string appName,
+            string settingName,
+            TDataCenter dataCenter,
+            string value,
+            string user,
+            int? subAppId,
+            string commit,
+            DateTimeOffset? expirationTime);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal OverridesSnapshot<TTier, TDataCenter> SetOverrideInternal(
+            string appName,
+            string settingName,
+            TDataCenter dataCenter,
+            string value,
+            string user,
+            int? subAppId,
+            string commit,
+            DateTimeOffset? expirationTime)
+        {
+            return SetOverride(appName, settingName, dataCenter, value, user, subAppId, commit, expirationTime);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal Task<OverridesSnapshot<TTier, TDataCenter>> SetOverrideAsyncInternal(
+            string appName,
+            string settingName,
+            TDataCenter dataCenter,
+            string value,
+            string user,
+            int? subAppId,
+            string commit,
+            DateTimeOffset? expirationTime)
+        {
+            return SetOverrideAsync(appName, settingName, dataCenter, value, user, subAppId, commit, expirationTime);
+        }
+
+        /// <summary>
+        /// Clears an override with the specified setting name and data center combination. Even if the override does not exist, this operation may result in a
+        /// change of the current commit, depending on the store's implementation.
+        /// 
+        /// A snapshot of the state immediately after the override is cleared. If the override is not applied, either because it didn't exist, or because the
+        /// current commit didn't match the commit parameter, the return value will be null.
+        /// 
+        /// Implementations are responsible for logging any changes.
+        /// </summary>
+        /// <param name="appName">Name of the root application.</param>
+        /// <param name="settingName">Name of the setting.</param>
+        /// <param name="dataCenter">Data center which the override is applied to.</param>
+        /// <param name="user">The user who is clearing the override (used for logging purposes). This can be null if you don't care about logging.</param>
+        /// <param name="subAppId">The sub-app which the override is applied to.</param>
+        /// <param name="commit">(optional) If non-null, the override will only be cleared if this is the current commit ID.</param>
+        protected abstract OverridesSnapshot<TTier, TDataCenter> ClearOverride(
+            string appName,
+            string settingName,
+            TDataCenter dataCenter,
+            string user,
+            int? subAppId,
+            string commit);
+
+        /// <summary>
+        /// Clears an override with the specified setting name and data center combination. Even if the override does not exist, this operation may result in a
+        /// change of the current commit, depending on the store's implementation.
+        /// 
+        /// A snapshot of the state immediately after the override is cleared. If the override is not applied, either because it didn't exist, or because the
+        /// current commit didn't match the commit parameter, the return value will be null.
+        /// 
+        /// Implementations are responsible for logging any changes.
+        /// </summary>
+        /// <param name="appName">Name of the root application.</param>
+        /// <param name="settingName">Name of the setting.</param>
+        /// <param name="dataCenter">Data center which the override is applied to.</param>
+        /// <param name="user">The user who is clearing the override (used for logging purposes). This can be null if you don't care about logging.</param>
+        /// <param name="subAppId">The sub-app which the override is applied to.</param>
+        /// <param name="commit">(optional) If non-null, the override will only be cleared if this is the current commit ID.</param>
+        protected abstract Task<OverridesSnapshot<TTier, TDataCenter>> ClearOverrideAsync(
+            string appName,
+            string settingName,
+            TDataCenter dataCenter,
+            string user,
+            int? subAppId,
+            string commit);
+
+        internal OverridesSnapshot<TTier, TDataCenter> ClearOverrideInternal(
+            string appName,
+            string settingName,
+            TDataCenter dataCenter,
+            string user,
+            int? subAppId,
+            string commit)
+        {
+            return ClearOverride(appName, settingName, dataCenter, user, subAppId, commit);
+        }
+
+        internal Task<OverridesSnapshot<TTier, TDataCenter>> ClearOverrideAsyncInternal(
+            string appName,
+            string settingName,
+            TDataCenter dataCenter,
+            string user,
+            int? subAppId,
+            string commit)
+        {
+            return ClearOverrideAsync(appName, settingName, dataCenter, user, subAppId, commit);
         }
 
         AppInternalInfo GetAppInfo(string appName, Type settingsType = null)
