@@ -44,7 +44,7 @@ namespace NFig
         /// (optional) A dictionary whose values you want to merge with <paramref name="values"/> to create a new dictionary.
         /// </param>
         public ListBySetting([NotNull] IReadOnlyCollection<TValue> values, BySettingBase<TValue> mergeDictionary = null)
-            : base(values, mergeDictionary, false)
+            : base(values, mergeDictionary, true)
         {
         }
 
