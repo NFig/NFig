@@ -59,6 +59,7 @@
     <Compile Include="Common\Attributes.cs" />
     <Compile Include="Common\Enums.cs" />
     <Compile Include="Common\SettingsBase.cs" />
+    <Compile Include="FactoryTests\SubAppTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

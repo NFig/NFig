@@ -22,7 +22,7 @@ namespace NFig.Tests.FactoryTests
                 });
 
             var snapshot = Utils.CreateSnapshot(overrides: overrides);
-            var s = factory.GetSettings(snapshot);
+            var s = factory.GetSettings(snapshot: snapshot);
 
             Assert.AreEqual(s.A, 10);
             Assert.AreEqual(s.B, 11);
