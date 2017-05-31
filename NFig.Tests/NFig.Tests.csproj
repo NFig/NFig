@@ -54,6 +54,7 @@
     <Compile Include="FactoryTests\CustomConverterTests.cs" />
     <Compile Include="FactoryTests\EnumTests.cs" />
     <Compile Include="FactoryTests\NestedSettingsTests.cs" />
+    <Compile Include="FactoryTests\OverrideTests.cs" />
     <Compile Include="FactoryTests\PrimitiveTests.cs" />
     <Compile Include="Common\Attributes.cs" />
     <Compile Include="Common\Enums.cs" />
