@@ -1,7 +1,4 @@
-﻿using System;
-using NFig.Converters;
-
-namespace NFig
+﻿namespace NFig
 {
     /// <summary>
     /// Describes all information about an individual setting, except for its values.
@@ -46,18 +43,19 @@ namespace NFig
         internal SettingMetadata(
             string name,
             string description,
-            Type type,
+            string typeName,
             bool isEncrypted,
-            ISettingConverter converter,
+            bool isEnum,
+            string converterTypeName,
             bool isDefaultConverter,
             bool changeRequiresRestart)
         {
             Name = name;
             Description = description;
-            TypeName = type.FullName;
+            TypeName = typeName;
             IsEncrypted = isEncrypted;
-            IsEnum = type.IsEnum();
-            ConverterTypeName = converter.GetType().FullName;
+            IsEnum = isEnum;
+            ConverterTypeName = converterTypeName;
             IsDefaultConverter = isDefaultConverter;
             ChangeRequiresRestart = changeRequiresRestart;
         }

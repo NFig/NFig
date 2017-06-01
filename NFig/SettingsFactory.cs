@@ -375,7 +375,10 @@ namespace NFig
             var changeRequiresRestart = pi.GetCustomAttribute<ChangeRequiresRestartAttribute>() != null;
             var allowInline = pi.GetCustomAttribute<DoNotInlineValuesAttribute>() == null;
 
-            var meta = new SettingMetadata(name, description, pi.PropertyType, isEncrypted, converter, isDefaultConverter, changeRequiresRestart);
+            var typeName = pi.PropertyType.FullName;
+            var isEnum = pi.PropertyType.IsEnum();
+            var converterTypeName = converter.GetType().FullName;
+            var meta = new SettingMetadata(name, description, typeName, isEncrypted, isEnum, converterTypeName, isDefaultConverter, changeRequiresRestart);
 
             // get the root default value
             var rootValue = isEncrypted ? default(TValue) : settingAttr.DefaultValue;
