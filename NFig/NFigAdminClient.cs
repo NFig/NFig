@@ -55,7 +55,7 @@ namespace NFig
         /// </summary>
         public IEnumerable<SubAppInfo> GetSubApps() // todo: use a concrete type rather than IEnumerable
         {
-            throw new NotImplementedException();
+            return Store.GetSubAppsInternal(AppName);
         }
 
         /// <summary>
@@ -63,7 +63,7 @@ namespace NFig
         /// </summary>
         public Task<IEnumerable<SubAppInfo>> GetSubAppsAsync() // todo: use a concrete type rather than IEnumerable
         {
-            throw new NotImplementedException();
+            return Store.GetSubAppsAsyncInternal(AppName);
         }
 
         // todo: GetMetadata
@@ -73,15 +73,17 @@ namespace NFig
         /// </summary>
         public string GetCurrentCommit()
         {
-            throw new NotImplementedException();
+            var snapshot = Store.GetSnapshotInternal(AppName);
+            return snapshot.Commit;
         }
 
         /// <summary>
         /// Asynchronously gets the current commit ID of the application. This changes every time overrides are updated.
         /// </summary>
-        public Task<string> GetCurrentCommitAsync()
+        public async Task<string> GetCurrentCommitAsync()
         {
-            throw new NotImplementedException();
+            var snapshot = await Store.GetSnapshotAsyncInternal(AppName);
+            return snapshot.Commit;
         }
 
         /// <summary>
@@ -108,7 +110,9 @@ namespace NFig
             string commit = null,
             DateTimeOffset? expirationTime = null)
         {
-            throw new NotImplementedException();
+            // todo: validate, if possible
+
+            return Store.SetOverrideInternal(AppName, settingName, dataCenter, value, user, subAppId, commit, expirationTime);
         }
 
         /// <summary>
@@ -135,7 +139,9 @@ namespace NFig
             string commit = null,
             DateTimeOffset? expirationTime = null)
         {
-            throw new NotImplementedException();
+            // todo: validate, if possible
+
+            return Store.SetOverrideAsyncInternal(AppName, settingName, dataCenter, value, user, subAppId, commit, expirationTime);
         }
 
         /// <summary>
@@ -158,7 +164,9 @@ namespace NFig
             int? subAppId = null,
             string commit = null)
         {
-            throw new NotImplementedException();
+            // todo: validate setting name
+
+            return Store.ClearOverrideInternal(AppName, settingName, dataCenter, user, subAppId, commit);
         }
 
         /// <summary>
@@ -181,7 +189,9 @@ namespace NFig
             int? subAppId = null,
             string commit = null)
         {
-            throw new NotImplementedException();
+            // todo: validate setting name
+
+            return Store.ClearOverrideAsyncInternal(AppName, settingName, dataCenter, user, subAppId, commit);
         }
 
         /// <summary>
@@ -207,18 +217,12 @@ namespace NFig
         /// <summary>
         /// Returns a snapshot of all current overrides which can be used to restore the current state at a later date.
         /// </summary>
-        public OverridesSnapshot<TTier, TDataCenter> GetSnapshot()
-        {
-            throw new NotImplementedException();
-        }
+        public OverridesSnapshot<TTier, TDataCenter> GetSnapshot() => Store.GetSnapshotInternal(AppName);
 
         /// <summary>
         /// Returns a snapshot of all current overrides which can be used to restore the current state at a later date.
         /// </summary>
-        public Task<OverridesSnapshot<TTier, TDataCenter>> GetSnapshotAsync()
-        {
-            throw new NotImplementedException();
-        }
+        public Task<OverridesSnapshot<TTier, TDataCenter>> GetSnapshotAsync() => Store.GetSnapshotAsyncInternal(AppName);
 
         /// <summary>
         /// Restores all overrides to a previous state.
@@ -228,7 +232,7 @@ namespace NFig
         /// <returns>A snapshot of the new current state (after restoring).</returns>
         public OverridesSnapshot<TTier, TDataCenter> RestoreSnapshot(OverridesSnapshot<TTier, TDataCenter> snapshot, string user)
         {
-            throw new NotImplementedException();
+            return Store.RestoreSnapshotInternal(AppName, snapshot, user);
         }
 
         /// <summary>
@@ -239,7 +243,7 @@ namespace NFig
         /// <returns>A snapshot of the new current state (after restoring).</returns>
         public Task<OverridesSnapshot<TTier, TDataCenter>> RestoreSnapshotAsync(OverridesSnapshot<TTier, TDataCenter> snapshot, string user)
         {
-            throw new NotImplementedException();
+            return Store.RestoreSnapshotAsyncInternal(AppName, snapshot, user);
         }
 
         /// <summary>
