@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using NFig.Encryption;
@@ -14,6 +15,28 @@ namespace NFig
         where TDataCenter : struct
     {
         readonly Dictionary<string, AppInternalInfo> _infoByApp = new Dictionary<string, AppInternalInfo>();
+
+        /// <summary>
+        /// The Commit value which should be used when no overrides have ever been set for the application.
+        /// </summary>
+        public const string INITIAL_COMMIT = "00000000-0000-0000-0000-000000000000";
+
+        /// <summary>
+        /// Casts a tier to its integer value.
+        /// </summary>
+        protected Func<TTier, int> TierToInt { get; }
+        /// <summary>
+        /// Casts a data center to its integer value.
+        /// </summary>
+        protected Func<TDataCenter, int> DataCenterToInt { get; }
+        /// <summary>
+        /// Casts an integer as a tier.
+        /// </summary>
+        protected Func<int, TTier> IntToTier { get; }
+        /// <summary>
+        /// Casts an integer as a data center.
+        /// </summary>
+        protected Func<int, TDataCenter> IntToDataCenter { get; }
 
         /// <summary>
         /// The deployment tier of the store.
@@ -33,6 +56,11 @@ namespace NFig
         {
             AssertIsValidEnumType(typeof(TTier), nameof(TTier));
             AssertIsValidEnumType(typeof(TDataCenter), nameof(TDataCenter));
+
+            TierToInt = CreateEnumToIntConverter<TTier>();
+            DataCenterToInt = CreateEnumToIntConverter<TDataCenter>();
+            IntToTier = CreateIntToEnumConverter<TTier>();
+            IntToDataCenter = CreateIntToEnumConverter<TDataCenter>();
 
             Tier = tier;
             DataCenter = dataCenter;
@@ -343,6 +371,102 @@ namespace NFig
             return ClearOverrideAsync(appName, settingName, dataCenter, user, subAppId, commit);
         }
 
+        /// <summary>
+        /// Sends metadata to the backing store.
+        /// </summary>
+        protected abstract void SetMetadata(string appName, BySetting<SettingMetadata> metadata);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void SetMetadataInternal(string appName, BySetting<SettingMetadata> metadata) => SetMetadata(appName, metadata);
+
+        /// <summary>
+        /// Sends information about a sub-app (name, ID, defaults) to the backing store. This may also be called with the default values for the root app.
+        /// </summary>
+        /// <param name="appName">The root application name.</param>
+        /// <param name="subAppId">The ID of the sub-app, or null for the root application.</param>
+        /// <param name="subAppName">The name of the sub-app. This is ignored for the root app.</param>
+        /// <param name="defaults">The default values which are applicable to the sub-app.</param>
+        protected abstract void SetSubApp(string appName, int? subAppId, string subAppName, ListBySetting<DefaultValue<TTier, TDataCenter>> defaults);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void SetSubAppInternal(string appName, int? subAppId, string subAppName, ListBySetting<DefaultValue<TTier, TDataCenter>> defaults)
+        {
+            SetSubApp(appName, subAppId, subAppName, defaults);
+        }
+
+        /// <summary>
+        /// Serializes an override into a key/value pair useful for saving into a backing store.
+        /// </summary>
+        protected void SerializeOverride(OverrideValue<TTier, TDataCenter> ov, out string key, out string value)
+        {
+            // Key format: DataCenter,SubAppId;SettingName
+            // Value format: ExpirationTime;Value
+
+            key = DataCenterToInt(ov.DataCenter) + "," + (ov.SubAppId?.ToString() ?? "") + ";" + ov.Name;
+            value = (ov.ExpirationTime?.ToString("O") ?? "") + ";" + ov.Value;
+        }
+
+        /// <summary>
+        /// Parses a key/value pair into an override value.
+        /// </summary>
+        protected OverrideValue<TTier, TDataCenter> ParseOverride(string key, string value)
+        {
+            var ki = 0;
+            var dataCenterInt = ParseInt(key, ref ki);
+            if (dataCenterInt == null || ki >= key.Length || key[ki] != ',')
+                goto BAD_OVERRIDE;
+
+            var dataCenter = IntToDataCenter(dataCenterInt.Value);
+
+            var subAppId = ParseInt(key, ref ki);
+            if (ki + 1 >= key.Length || key[ki] != ';')
+                goto BAD_OVERRIDE;
+
+            var settingName = key.Substring(ki + 1);
+            if (settingName.Length == 0)
+                goto BAD_OVERRIDE;
+
+            var vi = value.IndexOf(';');
+            if (vi == -1 || vi + 1 >= value.Length)
+                goto BAD_OVERRIDE;
+
+            if (vi > 0)
+            {
+                // todo: parse expiration time
+            }
+
+//            var realValue = value.Substring()
+
+            return null;
+
+            BAD_OVERRIDE:
+            var ex = new NFigException($"Unable to parse saved override");
+            ex.Data["Key"] = key;
+            ex.Data["Value"] = value;
+            throw ex;
+        }
+
+        static int? ParseInt(string s, ref int index)
+        {
+            if (index >= s.Length)
+                return null;
+            
+            var c = s[index];
+            if (c < '0' || c > '9')
+                return null;
+
+            var value = c - '0';
+            index++;
+            while (index < s.Length && c >= '0' && c <= '9')
+            {
+                var digit = c - '0';
+                value = value * 10 + digit;
+                index++;
+            }
+
+            return value;
+        }
+
         AppInternalInfo GetAppInfo(string appName, Type settingsType = null)
         {
             if (appName == null)
@@ -395,6 +519,30 @@ namespace NFig
             }
 
             throw new NFigException($"The backing type for {name} must be a 32-bit, or smaller, integer.");
+        }
+
+        static Func<int, T> CreateIntToEnumConverter<T>()
+        {
+            var tType = typeof(T);
+            var dm = new DynamicMethod($"Dynamic:IntToEnumConverter<{tType.Name}>", tType, new[] { typeof(int) });
+            var il = dm.GetILGenerator();
+
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Ret);
+
+            return (Func<int, T>)dm.CreateDelegate(typeof(Func<int, T>));
+        }
+
+        static Func<T, int> CreateEnumToIntConverter<T>()
+        {
+            var tType = typeof(T);
+            var dm = new DynamicMethod($"Dynamic:EnumToIntConverter<{tType.Name}>", typeof(int), new[] { tType });
+            var il = dm.GetILGenerator();
+
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Ret);
+
+            return (Func<T, int>)dm.CreateDelegate(typeof(Func<T, int>));
         }
     }
 }

@@ -40,12 +40,28 @@ namespace NFig
 
         protected override OverridesSnapshot<TTier, TDataCenter> GetSnapshot(string appName)
         {
-            throw new System.NotImplementedException();
+            var app = GetApp(appName);
+            lock (app)
+            {
+                if (app.SnapshotCache != null && app.SnapshotCache.Commit == app.Commit)
+                    return app.SnapshotCache;
+
+                var overridesList = new List<OverrideValue<TTier, TDataCenter>>();
+                foreach (var kvp in app.Overrides)
+                {
+                    //
+                }
+
+                var overrides = new ListBySetting<OverrideValue<TTier, TDataCenter>>(overridesList);
+                var snapshot = new OverridesSnapshot<TTier, TDataCenter>(appName, app.Commit, overrides);
+                app.SnapshotCache = snapshot;
+                return snapshot;
+            }
         }
 
         protected override Task<OverridesSnapshot<TTier, TDataCenter>> GetSnapshotAsync(string appName)
         {
-            throw new System.NotImplementedException();
+            return Task.FromResult(GetSnapshot(appName));
         }
 
         protected override OverridesSnapshot<TTier, TDataCenter> RestoreSnapshot(string appName, OverridesSnapshot<TTier, TDataCenter> snapshot, string user)
@@ -55,7 +71,7 @@ namespace NFig
 
         protected override Task<OverridesSnapshot<TTier, TDataCenter>> RestoreSnapshotAsync(string appName, OverridesSnapshot<TTier, TDataCenter> snapshot, string user)
         {
-            throw new NotImplementedException();
+            return Task.FromResult(RestoreSnapshot(appName, snapshot, user));
         }
 
         protected override OverridesSnapshot<TTier, TDataCenter> SetOverride(
@@ -94,7 +110,32 @@ namespace NFig
             throw new NotImplementedException();
         }
 
+        protected override void SetMetadata(string appName, BySetting<SettingMetadata> metadata)
+        {
+            throw new NotImplementedException();
+        }
+
+        protected override void SetSubApp(string appName, int? subAppId, string subAppName, ListBySetting<DefaultValue<TTier, TDataCenter>> defaults)
+        {
+            throw new NotImplementedException();
+        }
+
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
+
+        App GetApp(string appName)
+        {
+            lock (_apps)
+            {
+                App app;
+                if (_apps.TryGetValue(appName, out app))
+                    return app;
+
+                app = new App(appName);
+                _apps[appName] = app;
+
+                return app;
+            }
+        }
 
         // This class is essentially designed to mimic how NFig.Redis is intended to work. We could design an in-memory store which was a bit more effecient,
         // but it wouldn't be as good of a test platform. The most common use cases for this memory store are: testing, sample apps, and apps where the settings
@@ -103,7 +144,18 @@ namespace NFig
         {
             public string AppName { get; }
             public string Commit { get; set; }
+            public string Metadata { get; set; }
+            public Dictionary<int, string> SubApps { get; } = new Dictionary<int, string>();
+            public Dictionary<string, string> Defaults { get; } = new Dictionary<string, string>();
             public Dictionary<string, string> Overrides { get; } = new Dictionary<string, string>();
+
+            public OverridesSnapshot<TTier, TDataCenter> SnapshotCache { get; set; }
+
+            public App(string appName)
+            {
+                AppName = appName;
+                Commit = INITIAL_COMMIT;
+            }
         }
     }
 }
