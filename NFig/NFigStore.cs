@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
@@ -427,20 +428,25 @@ namespace NFig
                 goto BAD_OVERRIDE;
 
             var vi = value.IndexOf(';');
-            if (vi == -1 || vi + 1 >= value.Length)
+            if (vi == -1)
                 goto BAD_OVERRIDE;
 
+            DateTimeOffset? expirationTime = null;
             if (vi > 0)
             {
-                // todo: parse expiration time
+                var timeStr = value.Substring(0, vi);
+                if (DateTimeOffset.TryParseExact(timeStr, "O", null, DateTimeStyles.None, out var exp))
+                    expirationTime = exp;
+                else
+                    goto BAD_OVERRIDE;
             }
 
-//            var realValue = value.Substring()
+            var realValue = vi + 1 == value.Length ? "" : value.Substring(vi + 1);
 
-            return null;
+            return new OverrideValue<TTier, TDataCenter>(settingName, realValue, subAppId, dataCenter, expirationTime);
 
             BAD_OVERRIDE:
-            var ex = new NFigException($"Unable to parse saved override");
+            var ex = new NFigException("Unable to parse saved override");
             ex.Data["Key"] = key;
             ex.Data["Value"] = value;
             throw ex;
@@ -450,7 +456,7 @@ namespace NFig
         {
             if (index >= s.Length)
                 return null;
-            
+
             var c = s[index];
             if (c < '0' || c > '9')
                 return null;
