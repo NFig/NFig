@@ -46,14 +46,16 @@ namespace NFig
                 if (app.SnapshotCache != null && app.SnapshotCache.Commit == app.Commit)
                     return app.SnapshotCache;
 
-                var overridesList = new List<OverrideValue<TTier, TDataCenter>>();
+                var overrides = new OverrideValue<TTier, TDataCenter>[app.Overrides.Count];
+                var i = 0;
                 foreach (var kvp in app.Overrides)
                 {
-                    //
+                    overrides[i] = ParseOverride(kvp.Key, kvp.Value);
+                    i++;
                 }
 
-                var overrides = new ListBySetting<OverrideValue<TTier, TDataCenter>>(overridesList);
-                var snapshot = new OverridesSnapshot<TTier, TDataCenter>(appName, app.Commit, overrides);
+                var overridesDictionary = new ListBySetting<OverrideValue<TTier, TDataCenter>>(overrides);
+                var snapshot = new OverridesSnapshot<TTier, TDataCenter>(appName, app.Commit, overridesDictionary);
                 app.SnapshotCache = snapshot;
                 return snapshot;
             }

@@ -412,18 +412,22 @@ namespace NFig
         /// </summary>
         protected OverrideValue<TTier, TDataCenter> ParseOverride(string key, string value)
         {
+            string settingName = null;
+            int? subAppId = null;
+            var dataCenter = default(TDataCenter);
+
             var ki = 0;
             var dataCenterInt = ParseInt(key, ref ki);
             if (dataCenterInt == null || ki >= key.Length || key[ki] != ',')
                 goto BAD_OVERRIDE;
 
-            var dataCenter = IntToDataCenter(dataCenterInt.Value);
+            dataCenter = IntToDataCenter(dataCenterInt.Value);
 
-            var subAppId = ParseInt(key, ref ki);
+            subAppId = ParseInt(key, ref ki);
             if (ki + 1 >= key.Length || key[ki] != ';')
                 goto BAD_OVERRIDE;
 
-            var settingName = key.Substring(ki + 1);
+            settingName = key.Substring(ki + 1);
             if (settingName.Length == 0)
                 goto BAD_OVERRIDE;
 
@@ -442,13 +446,11 @@ namespace NFig
             }
 
             var realValue = vi + 1 == value.Length ? "" : value.Substring(vi + 1);
-
             return new OverrideValue<TTier, TDataCenter>(settingName, realValue, subAppId, dataCenter, expirationTime);
 
             BAD_OVERRIDE:
-            var ex = new NFigException("Unable to parse saved override");
+            var ex = new InvalidOverrideValueException("Unable to parse saved override", settingName, value, subAppId, dataCenter.ToString());
             ex.Data["Key"] = key;
-            ex.Data["Value"] = value;
             throw ex;
         }
 
