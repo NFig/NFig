@@ -88,40 +88,46 @@ namespace NFig
             return Task.FromResult(RestoreSnapshot(appName, snapshot, user));
         }
 
-        protected override OverridesSnapshot<TTier, TDataCenter> SetOverride(
-            string appName,
-            string settingName,
-            TDataCenter dataCenter,
-            string value,
-            string user,
-            int? subAppId,
-            string commit,
-            DateTimeOffset? expirationTime)
+        protected override OverridesSnapshot<TTier, TDataCenter> SetOverride(string appName, OverrideValue<TTier, TDataCenter> ov, string user, string commit)
         {
-            throw new NotImplementedException();
+            var app = GetApp(appName);
+            lock (app)
+            {
+                SerializeOverride(ov, out var key, out var value);
+                app.Overrides[key] = value;
+                app.Commit = NewCommit();
+
+                return GetSnapshot(appName);
+            }
         }
 
         protected override Task<OverridesSnapshot<TTier, TDataCenter>> SetOverrideAsync(
             string appName,
-            string settingName,
-            TDataCenter dataCenter,
-            string value,
+            OverrideValue<TTier, TDataCenter> ov,
             string user,
-            int? subAppId,
-            string commit,
-            DateTimeOffset? expirationTime)
+            string commit)
         {
-            throw new NotImplementedException();
+            return Task.FromResult(SetOverride(appName, ov, user, commit));
         }
 
         protected override OverridesSnapshot<TTier, TDataCenter> ClearOverride(string appName, string settingName, TDataCenter dataCenter, string user, int? subAppId, string commit)
         {
-            throw new NotImplementedException();
+            var app = GetApp(appName);
+            lock (app)
+            {
+                var key = CreateOverrideKey(settingName, subAppId, dataCenter);
+                var removed = app.Overrides.Remove(key);
+
+                if (removed)
+                    app.Commit = NewCommit();
+
+                return GetSnapshot(appName);
+            }
         }
 
         protected override Task<OverridesSnapshot<TTier, TDataCenter>> ClearOverrideAsync(string appName, string settingName, TDataCenter dataCenter, string user, int? subAppId, string commit)
         {
-            throw new NotImplementedException();
+            return Task.FromResult(ClearOverride(appName, settingName, dataCenter, user, subAppId, commit));
         }
 
         protected override void SetMetadata(string appName, BySetting<SettingMetadata> metadata)

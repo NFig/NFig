@@ -230,22 +230,10 @@ namespace NFig
         /// Implementations are responsible for logging the change.
         /// </summary>
         /// <param name="appName">The name of the root application.</param>
-        /// <param name="settingName">Name of the setting.</param>
-        /// <param name="dataCenter">Data center which the override should be applicable to.</param>
-        /// <param name="value">The string-value of the setting. If the setting is an encrypted setting, this value must be pre-encrypted.</param>
+        /// <param name="ov">The override to set.</param>
         /// <param name="user">The user who is setting the override (used for logging purposes). This can be null if you don't care about logging.</param>
-        /// <param name="subAppId">The sub-app which the override should apply to.</param>
         /// <param name="commit">If non-null, the override will only be applied if this is the current commit ID.</param>
-        /// <param name="expirationTime">The time when the override should be automatically cleared.</param>
-        protected abstract OverridesSnapshot<TTier, TDataCenter> SetOverride(
-            string appName,
-            string settingName,
-            TDataCenter dataCenter,
-            string value,
-            string user,
-            int? subAppId,
-            string commit,
-            DateTimeOffset? expirationTime);
+        protected abstract OverridesSnapshot<TTier, TDataCenter> SetOverride(string appName, OverrideValue<TTier, TDataCenter> ov, string user, string commit);
 
         /// <summary>
         /// Sets an override for the specified setting name and data center combination. If an existing override shares that exact combination, it will be
@@ -259,49 +247,33 @@ namespace NFig
         /// Implementations are responsible for logging the change.
         /// </summary>
         /// <param name="appName">The name of the root application.</param>
-        /// <param name="settingName">Name of the setting.</param>
-        /// <param name="dataCenter">Data center which the override should be applicable to.</param>
-        /// <param name="value">The string-value of the setting. If the setting is an encrypted setting, this value must be pre-encrypted.</param>
+        /// <param name="ov">The override to set.</param>
         /// <param name="user">The user who is setting the override (used for logging purposes). This can be null if you don't care about logging.</param>
-        /// <param name="subAppId">The sub-app which the override should apply to.</param>
         /// <param name="commit">If non-null, the override will only be applied if this is the current commit ID.</param>
-        /// <param name="expirationTime">The time when the override should be automatically cleared.</param>
         protected abstract Task<OverridesSnapshot<TTier, TDataCenter>> SetOverrideAsync(
             string appName,
-            string settingName,
-            TDataCenter dataCenter,
-            string value,
+            OverrideValue<TTier, TDataCenter> ov,
             string user,
-            int? subAppId,
-            string commit,
-            DateTimeOffset? expirationTime);
+            string commit);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal OverridesSnapshot<TTier, TDataCenter> SetOverrideInternal(
             string appName,
-            string settingName,
-            TDataCenter dataCenter,
-            string value,
+            OverrideValue<TTier, TDataCenter> ov,
             string user,
-            int? subAppId,
-            string commit,
-            DateTimeOffset? expirationTime)
+            string commit)
         {
-            return SetOverride(appName, settingName, dataCenter, value, user, subAppId, commit, expirationTime);
+            return SetOverride(appName, ov, user, commit);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal Task<OverridesSnapshot<TTier, TDataCenter>> SetOverrideAsyncInternal(
             string appName,
-            string settingName,
-            TDataCenter dataCenter,
-            string value,
+            OverrideValue<TTier, TDataCenter> ov,
             string user,
-            int? subAppId,
-            string commit,
-            DateTimeOffset? expirationTime)
+            string commit)
         {
-            return SetOverrideAsync(appName, settingName, dataCenter, value, user, subAppId, commit, expirationTime);
+            return SetOverrideAsync(appName, ov, user, commit);
         }
 
         /// <summary>
@@ -396,6 +368,14 @@ namespace NFig
         }
 
         /// <summary>
+        /// Returns a unique value which can be used as a snapshot commit.
+        /// </summary>
+        protected string NewCommit()
+        {
+            return Guid.NewGuid().ToString();
+        }
+
+        /// <summary>
         /// Serializes an override into a key/value pair useful for saving into a backing store.
         /// </summary>
         protected void SerializeOverride(OverrideValue<TTier, TDataCenter> ov, out string key, out string value)
@@ -403,8 +383,16 @@ namespace NFig
             // Key format: DataCenter,SubAppId;SettingName
             // Value format: ExpirationTime;Value
 
-            key = DataCenterToInt(ov.DataCenter) + "," + (ov.SubAppId?.ToString() ?? "") + ";" + ov.Name;
+            key = CreateOverrideKey(ov.Name, ov.SubAppId, ov.DataCenter);
             value = (ov.ExpirationTime?.ToString("O") ?? "") + ";" + ov.Value;
+        }
+
+        /// <summary>
+        /// Generates a hash key for an override.
+        /// </summary>
+        protected string CreateOverrideKey(string settingName, int? subAppId, TDataCenter dataCenter)
+        {
+            return DataCenterToInt(dataCenter) + "," + (subAppId?.ToString() ?? "") + ";" + settingName;
         }
 
         /// <summary>

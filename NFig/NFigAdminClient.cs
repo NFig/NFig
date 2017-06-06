@@ -112,7 +112,8 @@ namespace NFig
         {
             // todo: validate, if possible
 
-            return Store.SetOverrideInternal(AppName, settingName, dataCenter, value, user, subAppId, commit, expirationTime);
+            var ov = new OverrideValue<TTier, TDataCenter>(settingName, value, subAppId, dataCenter, expirationTime);
+            return Store.SetOverrideInternal(AppName, ov, user, commit);
         }
 
         /// <summary>
@@ -141,7 +142,8 @@ namespace NFig
         {
             // todo: validate, if possible
 
-            return Store.SetOverrideAsyncInternal(AppName, settingName, dataCenter, value, user, subAppId, commit, expirationTime);
+            var ov = new OverrideValue<TTier, TDataCenter>(settingName, value, subAppId, dataCenter, expirationTime);
+            return Store.SetOverrideAsyncInternal(AppName, ov, user, commit);
         }
 
         /// <summary>
