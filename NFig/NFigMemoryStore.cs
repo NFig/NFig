@@ -30,12 +30,24 @@ namespace NFig
 
         protected override IEnumerable<SubAppInfo> GetSubApps(string appName)
         {
-            throw new NotImplementedException();
+            var app = GetApp(appName);
+            lock (app)
+            {
+                var subApps = new SubAppInfo[app.SubApps.Count];
+                var i = 0;
+                foreach (var kvp in app.SubApps)
+                {
+                    subApps[i] = new SubAppInfo(kvp.Key, kvp.Value);
+                    i++;
+                }
+
+                return subApps;
+            }
         }
 
         protected override Task<IEnumerable<SubAppInfo>> GetSubAppsAsync(string appName)
         {
-            throw new NotImplementedException();
+            return Task.FromResult(GetSubApps(appName));
         }
 
         protected override OverridesSnapshot<TTier, TDataCenter> GetSnapshot(string appName)
