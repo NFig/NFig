@@ -75,7 +75,13 @@ namespace NFig
         /// </param>
         public TSettings GetSettings(int? subAppId = null)
         {
-            throw new NotImplementedException();
+            var snapshot = Store.GetSnapshotInternal(AppName);
+
+            var ex = _factory.TryGetSettings(subAppId, snapshot, out var settings);
+            if (ex != null)
+                throw ex;
+
+            return settings;
         }
 
         /// <summary>
@@ -85,9 +91,15 @@ namespace NFig
         /// The ID of a sub-app. This is only applicable in multi-tenancy environments. If not null, this sub-app must have been previously declared via one of
         /// the AddSubApp or AddSubApps methods, otherwise an exception is thrown.
         /// </param>
-        public Task<TSettings> GetSettingsAsync(int? subAppId = null)
+        public async Task<TSettings> GetSettingsAsync(int? subAppId = null)
         {
-            throw new NotImplementedException();
+            var snapshot = await Store.GetSnapshotAsyncInternal(AppName);
+
+            var ex = _factory.TryGetSettings(subAppId, snapshot, out var settings);
+            if (ex != null)
+                throw ex;
+
+            return settings;
         }
 
         /// <summary>
@@ -95,53 +107,96 @@ namespace NFig
         /// </summary>
         public bool IsCurrent(TSettings settings)
         {
-            throw new NotImplementedException();
+            if (settings.AppName != AppName)
+            {
+                var ex = new InvalidOperationException("AppName does not match between NFigAppClient and settings object");
+                ex.Data["settings.AppName"] = settings.AppName;
+                ex.Data["NFigAppClient.AppName"] = AppName;
+                throw ex;
+            }
+
+            return settings.Commit == GetCurrentCommit();
         }
 
         /// <summary>
         /// Asynchronously returns true if <paramref name="settings"/> is up-to-date.
         /// </summary>
-        public Task<bool> IsCurrentAsync(TSettings settings)
+        public async Task<bool> IsCurrentAsync(TSettings settings)
         {
-            throw new NotImplementedException();
+            if (settings.AppName != AppName)
+            {
+                var ex = new InvalidOperationException("AppName does not match between NFigAppClient and settings object");
+                ex.Data["settings.AppName"] = settings.AppName;
+                ex.Data["NFigAppClient.AppName"] = AppName;
+                throw ex;
+            }
+
+            var currentCommit = await GetCurrentCommitAsync();
+            return settings.Commit == currentCommit;
         }
 
         /// <summary>
-        /// Declares a sub-app. The sub-app will be added to the store's metadata and included when the callback to <see cref="SubscribeToSubApps"/> is called.
-        /// If a sub-app with the same ID already exists, the name is updated to match. If you need to add more than one sub-app at a time, use
-        /// <see cref="AddSubApps"/>.
+        /// Returns the current snapshot commit for the app.
+        /// </summary>
+        public string GetCurrentCommit() => Store.GetCurrentCommitInternal(AppName);
+
+        /// <summary>
+        /// Returns the current snapshot commit for the app.
+        /// </summary>
+        public Task<string> GetCurrentCommitAsync() => Store.GetCurrentCommitAsyncInternal(AppName);
+
+        /// <summary>
+        /// Registers a sub-app. The sub-app will be added to the store's metadata and included when the callback to <see cref="SubscribeToSubApps"/> is called.
+        /// If a sub-app with the same ID already exists, and the names DO NOT match, an exception is thrown. Registering a sub-app multiple times with the same
+        /// ID and name has no effect.
+        /// 
+        /// If you need to register more than one sub-app at a time, use <see cref="RegisterSubApps"/>.
+        /// 
+        /// Sub-app names are not required to be unique, but it is best practice for every unique sub-app to have a unique name.
         /// </summary>
         /// <param name="id">Unique ID of the sub-app.</param>
         /// <param name="name">Name of the sub-app.</param>
-        public void AddSubApp(int id, string name)
+        public void RegisterSubApp(int id, string name)
         {
-            AddSubApp(new SubAppInfo(id, name));
+            RegisterSubApp(new SubAppInfo(id, name));
         }
 
         /// <summary>
-        /// Declares a sub-app. The sub-app will be added to the store's metadata and included when the callback to <see cref="SubscribeToSubApps"/> is called.
-        /// If a sub-app with the same ID already exists, the name is updated to match. If you need to add more than one sub-app at a time, use
-        /// <see cref="AddSubApps"/>.
+        /// Registers a sub-app. The sub-app will be added to the store's metadata and included when the callback to <see cref="SubscribeToSubApps"/> is called.
+        /// If a sub-app with the same ID already exists, and the names DO NOT match, an exception is thrown. Registering a sub-app multiple times with the same
+        /// ID and name has no effect.
+        /// 
+        /// If you need to register more than one sub-app at a time, use <see cref="RegisterSubApps"/>.
+        /// 
+        /// Sub-app names are not required to be unique, but it is best practice for every unique sub-app to have a unique name.
         /// </summary>
-        public void AddSubApp(SubAppInfo info)
+        public void RegisterSubApp(SubAppInfo info)
         {
-            throw new NotImplementedException();
+            var defaults = _factory.RegisterSubApp(info.Id, info.Name);
+            Store.SetSubAppInternal(AppName, info.Id, info.Name, defaults);
         }
 
         /// <summary>
-        /// Declares multiple sub-apps at once. Each sub-app will be added to the store's metadata and included when the callback to
-        /// <see cref="SubscribeToSubApps"/> is called. If a sub-app with the same ID already exists, the name is updated to match.
+        /// Registers multiple sub-apps at once. Each sub-app will be added to the store's metadata and included when the callback to
+        /// <see cref="SubscribeToSubApps"/> is called. If a sub-app with the same ID already exists, and the names DO NOT match, an exception is thrown.
+        /// Registering a sub-app multiple times with the same ID and name has no effect.
+        /// 
+        /// Sub-app names are not required to be unique, but it is best practice for every unique sub-app to have a unique name.
         /// </summary>
         /// <param name="subAppInfos"></param>
-        public void AddSubApps(IEnumerable<SubAppInfo> subAppInfos)
+        public void RegisterSubApps(IEnumerable<SubAppInfo> subAppInfos)
         {
-            throw new NotImplementedException();
+            // todo: we should probably make this parallel
+            foreach (var info in subAppInfos)
+            {
+                RegisterSubApp(info);
+            }
         }
 
         /// <summary>
-        /// Gets the name and ID of every sub-app that has been added to this client.
+        /// Gets the name and ID of every sub-app that has been registered on this client.
         /// </summary>
-        public IEnumerable<SubAppInfo> GetSubApps() // todo: use a concrete type rather than IEnumerable, perhaps convert to property
+        public IEnumerable<SubAppInfo> GetRegisteredSubApps() // todo: use a concrete type rather than IEnumerable, perhaps convert to property
         {
             throw new NotImplementedException();
         }

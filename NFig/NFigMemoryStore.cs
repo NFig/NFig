@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 
 namespace NFig
 {
@@ -13,6 +14,8 @@ namespace NFig
         where TTier : struct
         where TDataCenter : struct
     {
+        const string ROOT_KEY = "$root";
+
         readonly Dictionary<string, App> _apps = new Dictionary<string, App>();
 
         /// <summary>
@@ -88,6 +91,16 @@ namespace NFig
             return Task.FromResult(RestoreSnapshot(appName, snapshot, user));
         }
 
+        protected override string GetCurrentCommit(string appName)
+        {
+            return GetApp(appName).Commit;
+        }
+
+        protected override Task<string> GetCurrentCommitAsync(string appName)
+        {
+            return Task.FromResult(GetCurrentCommit(appName));
+        }
+
         protected override OverridesSnapshot<TTier, TDataCenter> SetOverride(string appName, OverrideValue<TTier, TDataCenter> ov, string user, string commit)
         {
             var app = GetApp(appName);
@@ -132,12 +145,23 @@ namespace NFig
 
         protected override void SetMetadata(string appName, BySetting<SettingMetadata> metadata)
         {
-            throw new NotImplementedException();
+            var app = GetApp(appName);
+            app.Metadata = JsonConvert.SerializeObject(metadata);
         }
 
         protected override void SetSubApp(string appName, int? subAppId, string subAppName, ListBySetting<DefaultValue<TTier, TDataCenter>> defaults)
         {
-            throw new NotImplementedException();
+            var key = subAppId?.ToString() ?? ROOT_KEY;
+            var json = JsonConvert.SerializeObject(defaults);
+
+            var app = GetApp(appName);
+            lock (app)
+            {
+                if (subAppId.HasValue)
+                    app.SubApps[subAppId.Value] = subAppName;
+
+                app.Defaults[key] = json;
+            }
         }
 
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member

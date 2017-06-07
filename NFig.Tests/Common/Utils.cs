@@ -30,14 +30,13 @@ namespace NFig.Tests.Common
         public static TSettings GetSettings<TSettings>(
             this SettingsFactory<TSettings, Tier, DataCenter> factory,
             int? subAppId = null,
-            string subAppName = null,
             OverridesSnapshot<Tier, DataCenter> snapshot = null)
             where TSettings : class, INFigSettings<Tier, DataCenter>, new()
         {
             if (snapshot == null)
                 snapshot = CreateSnapshot(factory.AppInfo.AppName);
 
-            var ex = factory.TryGetSettings(subAppId, subAppName, snapshot, out var settings);
+            var ex = factory.TryGetSettings(subAppId, snapshot, out var settings);
             if (ex != null)
                 throw ex;
 

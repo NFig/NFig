@@ -36,6 +36,7 @@ namespace NFig
         /// </summary>
         public bool IsOverride => true;
 
+        // This constructor is used for deserialization. Make sure it includes all properties which need to be set.
         /// <summary>
         /// Instantiates a new override. Note: overrides always apply to the currently active tier.
         /// </summary>

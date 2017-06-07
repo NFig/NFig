@@ -55,72 +55,102 @@ namespace NFig
 
         internal InvalidOverridesException TryGetSettings(
             int? subAppId,
-            string subAppName,
             OverridesSnapshot<TTier, TDataCenter> snapshot,
             out TSettings settings)
         {
-            // todo: make sure this isn't called before a sub-app has been declared. Can probably be enforced by the app client, rather than here
+            var cache = GetSubAppCache(subAppId);
+            if (cache?.IsInitialized != true)
+                throw new NFigException($"Cannot get settings for sub-app {subAppId}. It has not been registered.");
 
-            var initializer = GetSubAppCache(subAppId, subAppName).Initializer;
+            var initializer = cache.Initializer;
             settings = initializer();
-            settings.SetBasicInformation(AppInfo.AppName, snapshot.Commit, subAppId, subAppName, Tier, DataCenter);
+            settings.SetBasicInformation(AppInfo.AppName, snapshot.Commit, subAppId, cache.SubAppName, Tier, DataCenter);
 
             return TryApplyOverrides(settings, subAppId, snapshot.Overrides);
         }
 
-        SubAppCache GetSubAppCache(int? subAppId, string subAppName)
+        internal ListBySetting<DefaultValue<TTier, TDataCenter>> RegisterSubApp(int subAppId, string subAppName)
         {
+            if (subAppName == null)
+                throw new ArgumentNullException(nameof(subAppName));
+
             SubAppCache cache;
+            lock (_rootCache)
+            {
+                cache = GetSubAppCache(subAppId);
+
+                if (cache == null)
+                {
+                    cache = new SubAppCache();
+                    cache.SubAppId = subAppId;
+
+                    if (_cacheBySubAppId == null)
+                        _cacheBySubAppId = new Dictionary<int, SubAppCache>();
+
+                    _cacheBySubAppId[subAppId] = cache;
+                }
+                else if (cache.SubAppName != subAppName)
+                {
+                    var ex = new NFigException($"A Sub-App with ID {subAppId} has already been registered with a different name");
+                    ex.Data["ExistingSubAppName"] = cache.SubAppName;
+                    ex.Data["NewSubAppName"] = subAppName;
+                    throw ex;
+                }
+            }
+
+            InitializeSubAppCache(cache, subAppName);
+            return cache.Defaults;
+        }
+
+        [CanBeNull]
+        SubAppCache GetSubAppCache(int? subAppId)
+        {
             lock (_rootCache)
             {
                 if (subAppId.HasValue)
                 {
                     if (_cacheBySubAppId == null)
-                        _cacheBySubAppId = new Dictionary<int, SubAppCache>();
+                        return null;
 
-                    if (!_cacheBySubAppId.TryGetValue(subAppId.Value, out cache))
-                    {
-                        cache = new SubAppCache();
-                        _cacheBySubAppId[subAppId.Value] = cache;
-                    }
+                    return _cacheBySubAppId.TryGetValue(subAppId.Value, out var cache) ? cache : null;
                 }
-                else
-                {
-                    cache = _rootCache;
-                }
+
+                InitializeSubAppCache(_rootCache, null);
+                return _rootCache;
             }
 
+        }
+
+        void InitializeSubAppCache(SubAppCache cache, string subAppName)
+        {
             if (cache.IsInitialized)
-                return cache;
+                return;
 
             lock (cache)
             {
                 if (!cache.IsInitialized)
                 {
-                    cache.SubAppId = subAppId;
                     cache.SubAppName = subAppName;
 
                     // the defaults might already be set if this is the root app
                     if (cache.Defaults == null)
-                        cache.Defaults = CollectDefaultsForSubApp(subAppId, subAppName);
+                        cache.Defaults = CollectDefaultsForSubApp(cache.SubAppId, subAppName);
 
                     // check if we can reuse the root app's initializer
-                    if (subAppId != null && cache.Defaults == _rootCache.Defaults)
+                    if (cache != _rootCache && cache.Defaults == _rootCache.Defaults)
                     {
                         // there are no sub-app specific defaults for this sub-app, so we don't need to create a unique initializer
-                        var root = GetSubAppCache(null, null);
-                        cache.Initializer = root.Initializer;
+                        InitializeSubAppCache(_rootCache, null);
+                        cache.Initializer = _rootCache.Initializer;
                     }
                     else
                     {
-                        cache.Initializer = CreateInitializer(subAppId, cache.Defaults);
+                        cache.Initializer = CreateInitializer(cache.SubAppId, cache.Defaults);
                     }
 
                     Interlocked.MemoryBarrier(); // ensure IsInitialized doesn't get set to true before all the other properties have been updated
                     cache.IsInitialized = true;
                 }
-
-                return cache;
             }
         }
 

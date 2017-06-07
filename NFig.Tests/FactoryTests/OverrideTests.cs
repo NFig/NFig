@@ -44,7 +44,7 @@ namespace NFig.Tests.FactoryTests
 
             var snapshot = Utils.CreateSnapshot(overrides: overrides);
 
-            var invalidOverrides = factory.TryGetSettings(null, null, snapshot, out var s);
+            var invalidOverrides = factory.TryGetSettings(null, snapshot, out var s);
             Console.WriteLine(invalidOverrides.Message);
 
             Assert.True(invalidOverrides != null && invalidOverrides.Exceptions.Count == 2);

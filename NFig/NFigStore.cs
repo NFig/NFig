@@ -219,6 +219,22 @@ namespace NFig
         }
 
         /// <summary>
+        /// Returns the current snapshot commit for the app.
+        /// </summary>
+        protected abstract string GetCurrentCommit(string appName);
+
+        /// <summary>
+        /// Returns the current snapshot commit for the app.
+        /// </summary>
+        protected abstract Task<string> GetCurrentCommitAsync(string appName);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal string GetCurrentCommitInternal(string appName) => GetCurrentCommit(appName);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal Task<string> GetCurrentCommitAsyncInternal(string appName) => GetCurrentCommitAsync(appName);
+
+        /// <summary>
         /// Sets an override for the specified setting name and data center combination. If an existing override shares that exact combination, it will be
         /// replaced.
         /// 

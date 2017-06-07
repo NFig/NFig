@@ -10,6 +10,9 @@ namespace NFig.Tests.FactoryTests
         public void IdenticalSubApp()
         {
             var factory = Utils.CreateFactory<SubAppSettings>();
+            factory.RegisterSubApp(0, "Zero");
+            factory.RegisterSubApp(1, "One");
+            factory.RegisterSubApp(2, "Two");
 
             var rootSettings = factory.GetSettings();
             Assert.AreEqual(1, rootSettings.One);
@@ -17,19 +20,19 @@ namespace NFig.Tests.FactoryTests
             Assert.AreEqual(3, rootSettings.Three);
             Assert.AreEqual(4, rootSettings.Four);
 
-            var zeroSettings = factory.GetSettings(0, "Zero");
+            var zeroSettings = factory.GetSettings(0);
             Assert.AreEqual(1, zeroSettings.One);
             Assert.AreEqual(10, zeroSettings.Two);
             Assert.AreEqual(11, zeroSettings.Three);
             Assert.AreEqual(4, zeroSettings.Four);
 
-            var oneSettings = factory.GetSettings(1, "One");
+            var oneSettings = factory.GetSettings(1);
             Assert.AreEqual(1, oneSettings.One);
             Assert.AreEqual(2, oneSettings.Two);
             Assert.AreEqual(12, oneSettings.Three);
             Assert.AreEqual(13, oneSettings.Four);
 
-            var twoSettings = factory.GetSettings(2, "Two");
+            var twoSettings = factory.GetSettings(2);
             Assert.AreEqual(1, twoSettings.One);
             Assert.AreEqual(2, twoSettings.Two);
             Assert.AreEqual(3, twoSettings.Three);
