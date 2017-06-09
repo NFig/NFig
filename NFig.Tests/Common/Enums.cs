@@ -12,7 +12,7 @@
     {
         Any = 0,
         Local = 1,
-        Dev = 2,
-        Prod = 3,
+        East = 2,
+        West = 3,
     }
 }
