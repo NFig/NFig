@@ -5,7 +5,7 @@ namespace NFig
     /// <summary>
     /// An override is a value defined at runtime which takes precendence over default values.
     /// </summary>
-    public class OverrideValue<TTier, TDataCenter> : ISettingValue<TTier, TDataCenter>
+    public class OverrideValue<TTier, TDataCenter> : ISettingValue<TTier, TDataCenter>, IEquatable<OverrideValue<TTier, TDataCenter>>
         where TTier : struct
         where TDataCenter : struct
     {
@@ -48,5 +48,66 @@ namespace NFig
             DataCenter = dataCenter;
             ExpirationTime = expirationtime;
         }
+
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+
+        public static bool operator ==(OverrideValue<TTier, TDataCenter> a, OverrideValue<TTier, TDataCenter> b)
+        {
+            if (a == null)
+                return b == null;
+
+            return a.Equals(b);
+        }
+
+        public static bool operator !=(OverrideValue<TTier, TDataCenter> a, OverrideValue<TTier, TDataCenter> b)
+        {
+            if (a == null)
+                return b != null;
+
+            return !a.Equals(b);
+        }
+
+        public bool Equals(OverrideValue<TTier, TDataCenter> other)
+        {
+            if (ReferenceEquals(null, other))
+                return false;
+
+            if (ReferenceEquals(this, other))
+                return true;
+
+            return Name == other.Name
+                   && Value == other.Value
+                   && SubAppId == other.SubAppId
+                   && Compare.AreEqual(DataCenter, other.DataCenter)
+                   && ExpirationTime == other.ExpirationTime;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj))
+                return false;
+
+            if (ReferenceEquals(this, obj))
+                return true;
+
+            if (obj.GetType() != GetType())
+                return false;
+
+            return Equals((OverrideValue<TTier, TDataCenter>)obj);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                var hashCode = (Name != null ? Name.GetHashCode() : 0);
+                hashCode = (hashCode * 397) ^ (Value != null ? Value.GetHashCode() : 0);
+                hashCode = (hashCode * 397) ^ SubAppId.GetHashCode();
+                hashCode = (hashCode * 397) ^ DataCenter.GetHashCode();
+                hashCode = (hashCode * 397) ^ ExpirationTime.GetHashCode();
+                return hashCode;
+            }
+        }
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
     }
 }

@@ -1,10 +1,12 @@
-﻿namespace NFig
+﻿using System;
+
+namespace NFig
 {
     /// <summary>
     /// Represents a default value for an NFig setting. Defaults are defined at compile-time using attributes. They cannot be instantiated by consumers at
     /// runtime.
     /// </summary>
-    public class DefaultValue<TTier, TDataCenter> : ISettingValue<TTier, TDataCenter>
+    public class DefaultValue<TTier, TDataCenter> : ISettingValue<TTier, TDataCenter>, IEquatable<DefaultValue<TTier, TDataCenter>>
         where TTier : struct
         where TDataCenter : struct
     {
@@ -47,5 +49,67 @@
             DataCenter = dataCenter;
             AllowsOverrides = allowsOverrides;
         }
+
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+
+        public static bool operator ==(DefaultValue<TTier, TDataCenter> a, DefaultValue<TTier, TDataCenter> b)
+        {
+            if (a == null)
+                return b == null;
+
+            return a.Equals(b);
+        }
+
+        public static bool operator !=(DefaultValue<TTier, TDataCenter> a, DefaultValue<TTier, TDataCenter> b)
+        {
+            if (a == null)
+                return b != null;
+
+            return !a.Equals(b);
+        }
+
+        public bool Equals(DefaultValue<TTier, TDataCenter> other)
+        {
+            if (ReferenceEquals(null, other))
+                return false;
+
+            if (ReferenceEquals(this, other))
+                return true;
+
+            return Name == other.Name
+                && Value == other.Value
+                && SubAppId == other.SubAppId
+                && Compare.AreEqual(Tier, other.Tier)
+                && Compare.AreEqual(DataCenter, other.DataCenter)
+                && AllowsOverrides == other.AllowsOverrides;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj))
+                return false;
+
+            if (ReferenceEquals(this, obj))
+                return true;
+
+            if (obj.GetType() != this.GetType()) return false;
+            return Equals((DefaultValue<TTier, TDataCenter>)obj);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                var hashCode = (Name != null ? Name.GetHashCode() : 0);
+                hashCode = (hashCode * 397) ^ (Value != null ? Value.GetHashCode() : 0);
+                hashCode = (hashCode * 397) ^ SubAppId.GetHashCode();
+                hashCode = (hashCode * 397) ^ Tier.GetHashCode();
+                hashCode = (hashCode * 397) ^ DataCenter.GetHashCode();
+                hashCode = (hashCode * 397) ^ AllowsOverrides.GetHashCode();
+                return hashCode;
+            }
+        }
+
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
     }
 }

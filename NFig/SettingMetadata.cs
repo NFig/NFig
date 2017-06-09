@@ -1,9 +1,11 @@
-﻿namespace NFig
+﻿using System;
+
+namespace NFig
 {
     /// <summary>
     /// Describes all information about an individual setting, except for its values.
     /// </summary>
-    public class SettingMetadata : IBySettingItem
+    public class SettingMetadata : IBySettingItem, IEquatable<SettingMetadata>
     {
         /// <summary>
         /// The name of the setting. Dots in the name represent nesting levels.
@@ -59,5 +61,73 @@
             IsDefaultConverter = isDefaultConverter;
             ChangeRequiresRestart = changeRequiresRestart;
         }
+
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+
+        public static bool operator ==(SettingMetadata a, SettingMetadata b)
+        {
+            if (a == null)
+                return b == null;
+
+            return a.Equals(b);
+        }
+
+        public static bool operator !=(SettingMetadata a, SettingMetadata b)
+        {
+            if (a == null)
+                return b != null;
+
+            return !a.Equals(b);
+        }
+
+        public bool Equals(SettingMetadata other)
+        {
+            if (ReferenceEquals(null, other))
+                return false;
+
+            if (ReferenceEquals(this, other))
+                return true;
+
+            return Name == other.Name
+                && Description == other.Description
+                && TypeName == other.TypeName
+                && IsEncrypted == other.IsEncrypted
+                && IsEnum == other.IsEnum
+                && ConverterTypeName == other.ConverterTypeName
+                && IsDefaultConverter == other.IsDefaultConverter
+                && ChangeRequiresRestart == other.ChangeRequiresRestart;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj))
+                return false;
+
+            if (ReferenceEquals(this, obj))
+                return true;
+
+            if (obj.GetType() != GetType())
+                return false;
+
+            return Equals((SettingMetadata)obj);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                var hashCode = (Name != null ? Name.GetHashCode() : 0);
+                hashCode = (hashCode * 397) ^ (Description != null ? Description.GetHashCode() : 0);
+                hashCode = (hashCode * 397) ^ (TypeName != null ? TypeName.GetHashCode() : 0);
+                hashCode = (hashCode * 397) ^ IsEncrypted.GetHashCode();
+                hashCode = (hashCode * 397) ^ IsEnum.GetHashCode();
+                hashCode = (hashCode * 397) ^ (ConverterTypeName != null ? ConverterTypeName.GetHashCode() : 0);
+                hashCode = (hashCode * 397) ^ IsDefaultConverter.GetHashCode();
+                hashCode = (hashCode * 397) ^ ChangeRequiresRestart.GetHashCode();
+                return hashCode;
+            }
+        }
+
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
     }
 }
