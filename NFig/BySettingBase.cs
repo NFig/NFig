@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Newtonsoft.Json;
 
 namespace NFig
 {
@@ -69,6 +70,14 @@ namespace NFig
             _entries = GetEntries(values, mergeDictionary);
             _buckets = GetBuckets(_entries, allowDuplicates, out var keyCount);
             Count = keyCount;
+        }
+
+        /// <summary>
+        /// Serializes the dictionary to JSON.
+        /// </summary>
+        public string Serialize()
+        {
+            return JsonConvert.SerializeObject(this);
         }
 
         /// <summary>

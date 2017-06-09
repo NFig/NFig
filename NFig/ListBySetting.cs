@@ -1,12 +1,14 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using JetBrains.Annotations;
+using Newtonsoft.Json;
 
 namespace NFig
 {
     /// <summary>
     /// An immutable dictionary where they keys are a setting name, and the values are lists of <typeparamref name="TValue"/>.
     /// </summary>
+    [JsonConverter(typeof(BySettingJsonConverter))]
     public class ListBySetting<TValue> : BySettingBase<TValue>, IReadOnlyDictionary<string, BySettingBase<TValue>.ValueList>
         where TValue : IBySettingItem
     {
@@ -46,6 +48,14 @@ namespace NFig
         public ListBySetting([NotNull] IReadOnlyCollection<TValue> values, BySettingBase<TValue> mergeDictionary = null)
             : base(values, mergeDictionary, true)
         {
+        }
+
+        /// <summary>
+        /// Deserializes a <see cref="ListBySetting{TValue}"/> from JSON.
+        /// </summary>
+        public static ListBySetting<TValue> Deserialize(string json)
+        {
+            return JsonConvert.DeserializeObject<ListBySetting<TValue>>(json);
         }
 
         /// <summary>

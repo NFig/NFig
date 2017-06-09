@@ -49,29 +49,110 @@ namespace NFig
 
         static void WriteBySetting<T>(JsonWriter w, JsonSerializer serializer, BySetting<T> value) where T : IBySettingItem
         {
-            throw new NotImplementedException();
+            w.WriteStartObject();
+
+            foreach (var kvp in value)
+            {
+                w.WritePropertyName(kvp.Key);
+                serializer.Serialize(w, kvp.Value);
+            }
+
+            w.WriteEndObject();
         }
 
         static void WriteListBySetting<T>(JsonWriter w, JsonSerializer serializer, ListBySetting<T> value) where T : IBySettingItem
         {
-            throw new NotImplementedException();
+            w.WriteStartObject();
+
+            foreach (var kvp in value)
+            {
+                w.WritePropertyName(kvp.Key);
+                w.WriteStartArray();
+                foreach (var item in kvp.Value)
+                {
+                    serializer.Serialize(w, item);
+                }
+                w.WriteEndArray();
+            }
+
+            w.WriteEndObject();
         }
 
         static BySetting<T> ReadBySetting<T>(JsonReader r, JsonSerializer serializer) where T : IBySettingItem
         {
-            throw new NotImplementedException();
+            if (r.TokenType != JsonToken.StartObject)
+                throw new JsonSerializationException($"Expected '{{' but got token type {r.TokenType}");
+
+            r.Read(); // consume {
+
+            var items = new List<T>();
+            while (r.TokenType == JsonToken.PropertyName)
+            {
+                r.Read(); // consume property name
+                var item = serializer.Deserialize<T>(r);
+                items.Add(item);
+
+                if (r.TokenType != JsonToken.EndObject)
+                    throw new JsonSerializationException($"Expected '}}' but got token type {r.TokenType}");
+
+                r.Read(); // consume } from the end of the item we just deserialized
+            }
+
+            if (r.TokenType != JsonToken.EndObject)
+                throw new JsonSerializationException($"Expected '}}' but got token type {r.TokenType}");
+
+            r.Read(); // consume }
+
+            return new BySetting<T>(items);
         }
 
         static ListBySetting<T> ReadListBySetting<T>(JsonReader r, JsonSerializer serializer) where T : IBySettingItem
         {
-            throw new NotImplementedException();
+            if (r.TokenType != JsonToken.StartObject)
+                throw new JsonSerializationException($"Expected '{{' but got token type {r.TokenType}");
+
+            r.Read(); // consume {
+
+            var items = new List<T>();
+            while (r.TokenType == JsonToken.PropertyName)
+            {
+                r.Read(); // consume property name
+
+                if (r.TokenType != JsonToken.StartArray)
+                    throw new JsonSerializationException($"Expected '[' but got token type {r.TokenType}");
+
+                r.Read(); // consume [
+
+                while (r.TokenType == JsonToken.StartObject)
+                {
+                    var item = serializer.Deserialize<T>(r);
+                    items.Add(item);
+
+                    if (r.TokenType != JsonToken.EndObject)
+                        throw new JsonSerializationException($"Expected '}}' but got token type {r.TokenType}");
+
+                    r.Read(); // consume } from the end of the item we just deserialized
+                }
+
+                if (r.TokenType != JsonToken.EndArray)
+                    throw new JsonSerializationException($"Expected '[' but got token type {r.TokenType}");
+
+                r.Read(); // consume ]
+            }
+
+            if (r.TokenType != JsonToken.EndObject)
+                throw new JsonSerializationException($"Expected '}}' but got token type {r.TokenType}");
+
+            r.Read(); // consume }
+
+            return new ListBySetting<T>(items);
         }
 
         ReflectionCache GetReflectionCache(Type objectType)
         {
             var cache = _cache;
 
-            if (cache.ObjectType == objectType)
+            if (cache != null && cache.ObjectType == objectType)
                 return cache;
 
             lock (_cacheByObjectType)
