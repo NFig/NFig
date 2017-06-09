@@ -50,6 +50,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Common\Generate.cs" />
     <Compile Include="Common\Utils.cs" />
     <Compile Include="FactoryTests\CustomConverterTests.cs" />
     <Compile Include="FactoryTests\EnumTests.cs" />
