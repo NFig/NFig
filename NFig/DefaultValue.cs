@@ -1,4 +1,5 @@
 ﻿using System;
+using Newtonsoft.Json;
 
 namespace NFig
 {
@@ -40,6 +41,7 @@ namespace NFig
         public bool IsOverride => false;
 
         // This constructor is used for deserialization. Make sure it includes all properties which need to be set.
+        [JsonConstructor]
         internal DefaultValue(string name, string value, int? subAppId, TTier tier, TDataCenter dataCenter, bool allowsOverrides)
         {
             Name = name;

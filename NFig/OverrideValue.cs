@@ -1,4 +1,5 @@
 ﻿using System;
+using Newtonsoft.Json;
 
 namespace NFig
 {
@@ -40,6 +41,7 @@ namespace NFig
         /// <summary>
         /// Instantiates a new override. Note: overrides always apply to the currently active tier.
         /// </summary>
+        [JsonConstructor]
         public OverrideValue(string name, string value, int? subAppId, TDataCenter dataCenter, DateTimeOffset? expirationtime)
         {
             Name = name;

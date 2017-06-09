@@ -1,4 +1,5 @@
 ﻿using System;
+using Newtonsoft.Json;
 
 namespace NFig
 {
@@ -42,6 +43,7 @@ namespace NFig
         /// </summary>
         public bool ChangeRequiresRestart { get; }
 
+        [JsonConstructor]
         internal SettingMetadata(
             string name,
             string description,
