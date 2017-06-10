@@ -56,18 +56,12 @@ namespace NFig
 
         public static bool operator ==(DefaultValue<TTier, TDataCenter> a, DefaultValue<TTier, TDataCenter> b)
         {
-            if (a == null)
-                return b == null;
-
-            return a.Equals(b);
+            return ReferenceEquals(a, null) ? ReferenceEquals(b, null) : a.Equals(b);
         }
 
         public static bool operator !=(DefaultValue<TTier, TDataCenter> a, DefaultValue<TTier, TDataCenter> b)
         {
-            if (a == null)
-                return b != null;
-
-            return !a.Equals(b);
+            return !(a == b);
         }
 
         public bool Equals(DefaultValue<TTier, TDataCenter> other)

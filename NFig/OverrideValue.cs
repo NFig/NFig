@@ -55,18 +55,12 @@ namespace NFig
 
         public static bool operator ==(OverrideValue<TTier, TDataCenter> a, OverrideValue<TTier, TDataCenter> b)
         {
-            if (a == null)
-                return b == null;
-
-            return a.Equals(b);
+            return ReferenceEquals(a, null) ? ReferenceEquals(b, null) : a.Equals(b);
         }
 
         public static bool operator !=(OverrideValue<TTier, TDataCenter> a, OverrideValue<TTier, TDataCenter> b)
         {
-            if (a == null)
-                return b != null;
-
-            return !a.Equals(b);
+            return !(a == b);
         }
 
         public bool Equals(OverrideValue<TTier, TDataCenter> other)
@@ -110,6 +104,7 @@ namespace NFig
                 return hashCode;
             }
         }
+
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
     }
 }
