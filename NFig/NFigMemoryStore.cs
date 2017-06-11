@@ -107,9 +107,14 @@ namespace NFig
             var app = GetApp(appName);
             lock (app)
             {
+                if (commit != null && app.Commit != commit)
+                    return null;
+
                 SerializeOverride(ov, out var key, out var value);
                 app.Overrides[key] = value;
                 app.Commit = NewCommit();
+
+                // todo: log
 
                 return GetSnapshot(appName);
             }
@@ -129,11 +134,18 @@ namespace NFig
             var app = GetApp(appName);
             lock (app)
             {
+                if (commit != null && app.Commit != commit)
+                    return null;
+
                 var key = CreateOverrideKey(settingName, subAppId, dataCenter);
                 var removed = app.Overrides.Remove(key);
 
                 if (removed)
+                {
                     app.Commit = NewCommit();
+
+                    // todo: log
+                }
 
                 return GetSnapshot(appName);
             }
