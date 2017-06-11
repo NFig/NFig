@@ -210,19 +210,13 @@ namespace NFig
         /// <summary>
         /// Extracts the value of a setting by name from an existing TSettings object. If no setting by that name exists, and exception is thrown.
         /// </summary>
-        public object GetSettingValue(TSettings settings, string settingName)
-        {
-            throw new NotImplementedException();
-        }
+        public object GetSettingValue(TSettings settings, string settingName) => _factory.GetSettingValue(settings, settingName);
 
         /// <summary>
-        /// Extracts the value of a setting by name from an existing TSettings object. If not setting by that name exists, or if <typeparamref name="TValue"/>
+        /// Extracts the value of a setting by name from an existing TSettings object. If no setting by that name exists, or if <typeparamref name="TValue"/>
         /// doesn't match the setting's declared type, an exception is thrown.
         /// </summary>
-        public TValue GetSettingValue<TValue>(TSettings settings, string settingName)
-        {
-            throw new NotImplementedException();
-        }
+        public TValue GetSettingValue<TValue>(TSettings settings, string settingName) => _factory.GetSettingValue<TValue>(settings, settingName);
 
         void RegisterRootApp()
         {

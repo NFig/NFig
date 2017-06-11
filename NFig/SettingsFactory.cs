@@ -59,6 +59,26 @@ namespace NFig
 
         internal Type GetSettingType(string settingName) => _settingsByName[settingName].Type;
 
+        internal object GetSettingValue(TSettings settings, string settingName)
+        {
+            return _settingsByName[settingName].GetValueAsObject(settings);
+        }
+
+        internal TValue GetSettingValue<TValue>(TSettings settings, string settingName)
+        {
+            var setting = _settingsByName[settingName];
+
+            if (setting is Setting<TValue> s)
+            {
+                return s.GetValue(settings);
+            }
+
+            var ex = new NFigException($"{nameof(GetSettingValue)} called with the incorrect type for setting {settingName}");
+            ex.Data["TValue"] = typeof(TValue).FullName;
+            ex.Data["SettingType"] = setting.Type.FullName;
+            throw ex;
+        }
+
         internal InvalidOverridesException TryGetSettings(
             int? subAppId,
             OverridesSnapshot<TTier, TDataCenter> snapshot,
