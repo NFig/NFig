@@ -50,6 +50,11 @@ namespace NFig
         public TDataCenter DataCenter { get; }
 
         /// <summary>
+        /// Metadata about the <typeparamref name="TDataCenter"/> type.
+        /// </summary>
+        public EnumMetadata DataCenterMetadata { get; }
+
+        /// <summary>
         /// Instantiates the base Store class.
         /// </summary>
         /// <param name="tier">The deployment tier which the store exists on.</param>
@@ -66,6 +71,8 @@ namespace NFig
 
             Tier = tier;
             DataCenter = dataCenter;
+
+            DataCenterMetadata = EnumMetadata.Create(typeof(TDataCenter), tier);
         }
 
         /// <summary>
