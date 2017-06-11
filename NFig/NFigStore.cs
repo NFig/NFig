@@ -151,18 +151,18 @@ namespace NFig
         /// <summary>
         /// Gets the name and ID of every sub-app that has been added to this application.
         /// </summary>
-        protected abstract IEnumerable<SubAppInfo> GetSubApps(string appName); // todo: use a concrete type rather than IEnumerable
+        protected abstract IEnumerable<SubApp> GetSubApps(string appName); // todo: use a concrete type rather than IEnumerable
 
         /// <summary>
         /// Gets the name and ID of every sub-app that has been added to this application.
         /// </summary>
-        protected abstract Task<IEnumerable<SubAppInfo>> GetSubAppsAsync(string appName); // todo: use a concrete type rather than IEnumerable
+        protected abstract Task<IEnumerable<SubApp>> GetSubAppsAsync(string appName); // todo: use a concrete type rather than IEnumerable
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal IEnumerable<SubAppInfo> GetSubAppsInternal(string appName) => GetSubApps(appName);
+        internal IEnumerable<SubApp> GetSubAppsInternal(string appName) => GetSubApps(appName);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal Task<IEnumerable<SubAppInfo>> GetSubAppsAsyncInternal(string appName) => GetSubAppsAsync(appName);
+        internal Task<IEnumerable<SubApp>> GetSubAppsAsyncInternal(string appName) => GetSubAppsAsync(appName);
 
         /// <summary>
         /// Gets the current snapshot of overrides for the app, including all of its sub-apps.

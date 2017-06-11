@@ -54,7 +54,7 @@ namespace NFig
         /// <summary>
         /// Gets the name and ID of every sub-app that has been added to this application.
         /// </summary>
-        public IEnumerable<SubAppInfo> GetSubApps() // todo: use a concrete type rather than IEnumerable
+        public IEnumerable<SubApp> GetSubApps() // todo: use a concrete type rather than IEnumerable
         {
             return Store.GetSubAppsInternal(AppName);
         }
@@ -62,7 +62,7 @@ namespace NFig
         /// <summary>
         /// Gets the name and ID of every sub-app that has been added to this application.
         /// </summary>
-        public Task<IEnumerable<SubAppInfo>> GetSubAppsAsync() // todo: use a concrete type rather than IEnumerable
+        public Task<IEnumerable<SubApp>> GetSubAppsAsync() // todo: use a concrete type rather than IEnumerable
         {
             return Store.GetSubAppsAsyncInternal(AppName);
         }

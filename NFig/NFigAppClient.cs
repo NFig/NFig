@@ -159,7 +159,7 @@ namespace NFig
         /// <param name="name">Name of the sub-app.</param>
         public void RegisterSubApp(int id, string name)
         {
-            RegisterSubApp(new SubAppInfo(id, name));
+            RegisterSubApp(new SubApp(id, name));
         }
 
         /// <summary>
@@ -171,7 +171,7 @@ namespace NFig
         /// 
         /// Sub-app names are not required to be unique, but it is best practice for every unique sub-app to have a unique name.
         /// </summary>
-        public void RegisterSubApp(SubAppInfo info)
+        public void RegisterSubApp(SubApp info)
         {
             var defaults = _factory.RegisterSubApp(info.Id, info.Name);
             Store.SetSubAppInternal(AppName, info.Id, info.Name, defaults);
@@ -184,11 +184,11 @@ namespace NFig
         /// 
         /// Sub-app names are not required to be unique, but it is best practice for every unique sub-app to have a unique name.
         /// </summary>
-        /// <param name="subAppInfos"></param>
-        public void RegisterSubApps(IEnumerable<SubAppInfo> subAppInfos)
+        /// <param name="subApps"></param>
+        public void RegisterSubApps(IEnumerable<SubApp> subApps)
         {
             // todo: we should probably make this parallel
-            foreach (var info in subAppInfos)
+            foreach (var info in subApps)
             {
                 RegisterSubApp(info);
             }
@@ -197,7 +197,7 @@ namespace NFig
         /// <summary>
         /// Gets the name and ID of every sub-app that has been registered on this client.
         /// </summary>
-        public IEnumerable<SubAppInfo> GetRegisteredSubApps() // todo: use a concrete type rather than IEnumerable, perhaps convert to property
+        public IEnumerable<SubApp> GetRegisteredSubApps() // todo: use a concrete type rather than IEnumerable, perhaps convert to property
         {
             throw new NotImplementedException();
         }

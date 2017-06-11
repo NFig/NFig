@@ -3,7 +3,7 @@
     /// <summary>
     /// Describes basic information about a sub-app.
     /// </summary>
-    public struct SubAppInfo
+    public struct SubApp
     {
         /// <summary>
         /// The ID of the sub-app.
@@ -19,7 +19,7 @@
         /// </summary>
         /// <param name="id">The ID of the sub-app.</param>
         /// <param name="name">The name of the sub-app.</param>
-        public SubAppInfo(int id, string name)
+        public SubApp(int id, string name)
         {
             Id = id;
             Name = name;
