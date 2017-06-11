@@ -1,8 +1,9 @@
 ﻿using System;
+using NFig.Metadata;
 using NFig.Tests.Common;
 using NUnit.Framework;
 
-using OverrideValue = NFig.OverrideValue<NFig.Tests.Common.Tier, NFig.Tests.Common.DataCenter>;
+using OverrideValue = NFig.Metadata.OverrideValue<NFig.Tests.Common.Tier, NFig.Tests.Common.DataCenter>;
 
 namespace NFig.Tests.FactoryTests
 {

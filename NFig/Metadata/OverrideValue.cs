@@ -1,13 +1,12 @@
 ﻿using System;
 using Newtonsoft.Json;
 
-namespace NFig
+namespace NFig.Metadata
 {
     /// <summary>
-    /// Represents a default value for an NFig setting. Defaults are defined at compile-time using attributes. They cannot be instantiated by consumers at
-    /// runtime.
+    /// An override is a value defined at runtime which takes precendence over default values.
     /// </summary>
-    public class DefaultValue<TTier, TDataCenter> : ISettingValue<TTier, TDataCenter>, IEquatable<DefaultValue<TTier, TDataCenter>>
+    public class OverrideValue<TTier, TDataCenter> : ISettingValue<TTier, TDataCenter>, IEquatable<OverrideValue<TTier, TDataCenter>>
         where TTier : struct
         where TDataCenter : struct
     {
@@ -24,72 +23,73 @@ namespace NFig
         /// </summary>
         public int? SubAppId { get; }
         /// <summary>
-        /// The tier that this value applies to. Tier=Any means that the value can be applied to any tier.
-        /// </summary>
-        public TTier Tier { get; }
-        /// <summary>
         /// The data center that this value applies to. DataCenter=Any means that the value can be applied to any data center.
         /// </summary>
         public TDataCenter DataCenter { get; }
         /// <summary>
-        /// Indicates whether overrides are allowed when this default value is active.
+        /// Indicated when the override is set to automatically expire, if applicable.
         /// </summary>
-        public bool AllowsOverrides { get; }
+        public DateTimeOffset? ExpirationTime { get; }
+
+        TTier ISettingValue<TTier, TDataCenter>.Tier => default(TTier);
         /// <summary>
         /// True if the value is an override (not a default).
         /// </summary>
-        public bool IsOverride => false;
+        public bool IsOverride => true;
 
         // This constructor is used for deserialization. Make sure it includes all properties which need to be set.
+        /// <summary>
+        /// Instantiates a new override. Note: overrides always apply to the currently active tier.
+        /// </summary>
         [JsonConstructor]
-        internal DefaultValue(string name, string value, int? subAppId, TTier tier, TDataCenter dataCenter, bool allowsOverrides)
+        public OverrideValue(string name, string value, int? subAppId, TDataCenter dataCenter, DateTimeOffset? expirationtime)
         {
             Name = name;
             Value = value;
             SubAppId = subAppId;
-            Tier = tier;
             DataCenter = dataCenter;
-            AllowsOverrides = allowsOverrides;
+            ExpirationTime = expirationtime;
         }
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
-        public static bool operator ==(DefaultValue<TTier, TDataCenter> a, DefaultValue<TTier, TDataCenter> b)
+        public static bool operator ==(OverrideValue<TTier, TDataCenter> a, OverrideValue<TTier, TDataCenter> b)
         {
-            return ReferenceEquals(a, null) ? ReferenceEquals(b, null) : a.Equals(b);
+            return Object.ReferenceEquals(a, null) ? Object.ReferenceEquals(b, null) : a.Equals(b);
         }
 
-        public static bool operator !=(DefaultValue<TTier, TDataCenter> a, DefaultValue<TTier, TDataCenter> b)
+        public static bool operator !=(OverrideValue<TTier, TDataCenter> a, OverrideValue<TTier, TDataCenter> b)
         {
             return !(a == b);
         }
 
-        public bool Equals(DefaultValue<TTier, TDataCenter> other)
+        public bool Equals(OverrideValue<TTier, TDataCenter> other)
         {
-            if (ReferenceEquals(null, other))
+            if (Object.ReferenceEquals(null, other))
                 return false;
 
-            if (ReferenceEquals(this, other))
+            if (Object.ReferenceEquals(this, other))
                 return true;
 
             return Name == other.Name
-                && Value == other.Value
-                && SubAppId == other.SubAppId
-                && Compare.AreEqual(Tier, other.Tier)
-                && Compare.AreEqual(DataCenter, other.DataCenter)
-                && AllowsOverrides == other.AllowsOverrides;
+                   && Value == other.Value
+                   && SubAppId == other.SubAppId
+                   && Compare.AreEqual(DataCenter, other.DataCenter)
+                   && ExpirationTime == other.ExpirationTime;
         }
 
         public override bool Equals(object obj)
         {
-            if (ReferenceEquals(null, obj))
+            if (Object.ReferenceEquals(null, obj))
                 return false;
 
-            if (ReferenceEquals(this, obj))
+            if (Object.ReferenceEquals(this, obj))
                 return true;
 
-            if (obj.GetType() != this.GetType()) return false;
-            return Equals((DefaultValue<TTier, TDataCenter>)obj);
+            if (obj.GetType() != GetType())
+                return false;
+
+            return Equals((OverrideValue<TTier, TDataCenter>)obj);
         }
 
         public override int GetHashCode()
@@ -99,9 +99,8 @@ namespace NFig
                 var hashCode = (Name != null ? Name.GetHashCode() : 0);
                 hashCode = (hashCode * 397) ^ (Value != null ? Value.GetHashCode() : 0);
                 hashCode = (hashCode * 397) ^ SubAppId.GetHashCode();
-                hashCode = (hashCode * 397) ^ Tier.GetHashCode();
                 hashCode = (hashCode * 397) ^ DataCenter.GetHashCode();
-                hashCode = (hashCode * 397) ^ AllowsOverrides.GetHashCode();
+                hashCode = (hashCode * 397) ^ ExpirationTime.GetHashCode();
                 return hashCode;
             }
         }

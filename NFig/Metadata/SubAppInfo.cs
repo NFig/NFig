@@ -1,4 +1,4 @@
-﻿namespace NFig
+﻿namespace NFig.Metadata
 {
     /// <summary>
     /// Describes basic information about a sub-app.

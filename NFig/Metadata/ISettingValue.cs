@@ -1,8 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using JetBrains.Annotations;
 
-namespace NFig
+namespace NFig.Metadata
 {
     /// <summary>
     /// The common inferface for defaults and overrides. However, typically you'll want to use one of the concrete types
@@ -56,7 +55,7 @@ namespace NFig
             where TTier : struct
             where TDataCenter : struct
         {
-            return !Compare.IsDefault(value.Tier);
+            return !Compare.IsDefault<TTier>(value.Tier);
         }
 
         /// <summary>
@@ -66,7 +65,7 @@ namespace NFig
             where TTier : struct
             where TDataCenter : struct
         {
-            return !Compare.IsDefault(value.DataCenter);
+            return !Compare.IsDefault<TDataCenter>(value.DataCenter);
         }
 
         /// <summary>
@@ -130,7 +129,7 @@ namespace NFig
             where TTier : struct
             where TDataCenter : struct
         {
-            return a.SubAppId == b.SubAppId && Compare.AreEqual(a.Tier, b.Tier) && Compare.AreEqual(a.DataCenter, b.DataCenter);
+            return a.SubAppId == b.SubAppId && Compare.AreEqual<TTier>(a.Tier, b.Tier) && Compare.AreEqual<TDataCenter>(a.DataCenter, b.DataCenter);
         }
 
         internal static int GetBestValueFor<TSettingValue, TTier, TDataCenter>(

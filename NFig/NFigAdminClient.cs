@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using NFig.Converters;
 using NFig.Encryption;
+using NFig.Metadata;
 
 namespace NFig
 {

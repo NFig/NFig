@@ -1,7 +1,7 @@
 ﻿using System;
 using Newtonsoft.Json;
 
-namespace NFig
+namespace NFig.Metadata
 {
     /// <summary>
     /// Describes all information about an individual setting, except for its values.
@@ -68,7 +68,7 @@ namespace NFig
 
         public static bool operator ==(SettingMetadata a, SettingMetadata b)
         {
-            return ReferenceEquals(a, null) ? ReferenceEquals(b, null) : a.Equals(b);
+            return Object.ReferenceEquals(a, null) ? Object.ReferenceEquals(b, null) : a.Equals(b);
         }
 
         public static bool operator !=(SettingMetadata a, SettingMetadata b)
@@ -78,10 +78,10 @@ namespace NFig
 
         public bool Equals(SettingMetadata other)
         {
-            if (ReferenceEquals(null, other))
+            if (Object.ReferenceEquals(null, other))
                 return false;
 
-            if (ReferenceEquals(this, other))
+            if (Object.ReferenceEquals(this, other))
                 return true;
 
             return Name == other.Name
@@ -96,10 +96,10 @@ namespace NFig
 
         public override bool Equals(object obj)
         {
-            if (ReferenceEquals(null, obj))
+            if (Object.ReferenceEquals(null, obj))
                 return false;
 
-            if (ReferenceEquals(this, obj))
+            if (Object.ReferenceEquals(this, obj))
                 return true;
 
             if (obj.GetType() != GetType())

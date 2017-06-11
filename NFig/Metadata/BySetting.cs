@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using JetBrains.Annotations;
 using Newtonsoft.Json;
 
-namespace NFig
+namespace NFig.Metadata
 {
     /// <summary>
     /// An immutable dictionary where they keys are a setting name, and the values are <typeparamref name="TValue"/>.
@@ -46,7 +46,7 @@ namespace NFig
         /// (optional) A dictionary whose values you want to merge with <paramref name="values"/> to create a new dictionary.
         /// </param>
         public BySetting([NotNull] IReadOnlyCollection<TValue> values, BySettingBase<TValue> mergeDictionary = null)
-            : base(values, mergeDictionary, false)
+            : base(values, mergeDictionary, (bool)false)
         {
         }
 

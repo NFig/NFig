@@ -1,4 +1,4 @@
-﻿namespace NFig
+﻿namespace NFig.Metadata
 {
     /// <summary>
     /// The interface for the values of an <see cref="BySetting{TValue}"/> or <see cref="ListBySetting{TValue}"/>.

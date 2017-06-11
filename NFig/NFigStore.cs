@@ -5,6 +5,7 @@ using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using NFig.Encryption;
+using NFig.Metadata;
 
 namespace NFig
 {

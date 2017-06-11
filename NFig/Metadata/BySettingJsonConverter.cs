@@ -3,8 +3,9 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
 using Newtonsoft.Json;
+using NFig;
 
-namespace NFig
+namespace NFig.Metadata
 {
     /// <summary>
     /// Used to JSON serialize and deserialize <see cref="BySetting{TValue}"/> and <see cref="ListBySetting{TValue}"/> objects.
@@ -203,7 +204,7 @@ namespace NFig
                 ObjectType = objectType;
 
                 var tValue = objectType.GenericTypeArguments[0];
-                var module = GetType().Module();
+                var module = DotNetShim.Module(GetType());
 
                 Write = CreateWriteDelegate(mode, objectType, tValue, module);
                 Read = CreateReadDelegate(mode, tValue, module);
@@ -222,7 +223,7 @@ namespace NFig
                 il.Emit(OpCodes.Ldarg_1);               // [writer] [serializer]
                 il.Emit(OpCodes.Ldarg_2);               // [writer] [serializer] [object value]
                 il.Emit(OpCodes.Castclass, objectType); // [writer] [serializer] [value]
-                il.Emit(OpCodes.Call, methodInfo);      // empty
+                il.Emit(OpCodes.Call, (MethodInfo)methodInfo);      // empty
                 il.Emit(OpCodes.Ret);
 
                 return (Action<JsonWriter, JsonSerializer, object>)dm.CreateDelegate(typeof(Action<JsonWriter, JsonSerializer, object>));
@@ -239,7 +240,7 @@ namespace NFig
 
                 il.Emit(OpCodes.Ldarg_0);               // [reader]
                 il.Emit(OpCodes.Ldarg_1);               // [reader] [serializer]
-                il.Emit(OpCodes.Call, methodInfo);      // [value]
+                il.Emit(OpCodes.Call, (MethodInfo)methodInfo);      // [value]
                 il.Emit(OpCodes.Ret);
 
                 return (Func<JsonReader, JsonSerializer, object>)dm.CreateDelegate(typeof(Func<JsonReader, JsonSerializer, object>));

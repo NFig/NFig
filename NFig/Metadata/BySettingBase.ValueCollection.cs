@@ -1,80 +1,52 @@
-﻿using System;
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 
-namespace NFig
+namespace NFig.Metadata
 {
     public abstract partial class BySettingBase<TValue>
     {
         /// <summary>
-        /// A value-type read-only list.
+        /// A value-type collection of dictionary values for <see cref="BySetting{TValue}"/>.
         /// </summary>
-        public struct ValueList : IReadOnlyList<TValue>
+        public struct ValueCollection : IReadOnlyCollection<TValue>
         {
             readonly BySettingBase<TValue> _dictionary;
-            readonly int _offset;
 
             /// <summary>
-            /// The number of values in the list.
+            /// The number of values in the collection.
             /// </summary>
-            public int Count { get; }
+            public int Count => _dictionary._entries.Length;
 
-            /// <summary>
-            /// Gets a value by index.
-            /// </summary>
-            public TValue this[int index]
-            {
-                get
-                {
-                    if (index < 0 || index >= Count)
-                        throw new ArgumentOutOfRangeException(nameof(index));
-
-                    return _dictionary._entries[_offset + index].Value;
-                }
-            }
-
-            internal ValueList(BySettingBase<TValue> dictionary, int entryIndex)
+            internal ValueCollection(BySettingBase<TValue> dictionary)
             {
                 _dictionary = dictionary;
-                _offset = entryIndex;
-                Count = dictionary._entries[entryIndex].ListLength;
             }
 
             /// <summary>
-            /// Gets an enumerator for the list.
+            /// Gets the enumerator for dictionary values.
             /// </summary>
-            public Enumerator GetEnumerator()
-            {
-                return new Enumerator(_dictionary, _offset);
-            }
-
+            public Enumerator GetEnumerator() => new Enumerator(_dictionary);
             IEnumerator<TValue> IEnumerable<TValue>.GetEnumerator() => GetEnumerator();
             IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
             /// <summary>
-            /// Enumerator for <see cref="ValueList"/>.
+            /// Enumerator for <see cref="ValueCollection"/>.
             /// </summary>
             public struct Enumerator : IEnumerator<TValue>
             {
                 readonly Entry[] _entries;
-                readonly int _start;
-                readonly int _end;
                 int _entryIndex;
 
                 /// <summary>
-                /// The current value of the enumerator. This is undefined before <see cref="MoveNext"/> is called, and after <see cref="MoveNext"/> returns false.
+                /// The current value of the enumerator. This is undefined before <see cref="MoveNext()"/> is called, and after <see cref="MoveNext()"/> returns false.
                 /// </summary>
                 public TValue Current { get; private set; }
-
                 object IEnumerator.Current => Current;
 
-                internal Enumerator(BySettingBase<TValue> dictionary, int entryIndex)
+                internal Enumerator(BySettingBase<TValue> dictionary)
                 {
                     _entries = dictionary._entries;
-                    _start = entryIndex;
-                    _end = entryIndex + dictionary._entries[entryIndex].ListLength;
-                    _entryIndex = entryIndex - 1;
-
+                    _entryIndex = -1;
                     Current = default(TValue);
                 }
 
@@ -93,7 +65,7 @@ namespace NFig
                     var index = _entryIndex + 1;
                     _entryIndex = index;
 
-                    if (index < _end)
+                    if (index < _entries.Length)
                     {
                         Current = _entries[index].Value;
                         return true;
@@ -108,7 +80,7 @@ namespace NFig
                 /// </summary>
                 public void Reset()
                 {
-                    _entryIndex = _start - 1;
+                    _entryIndex = -1;
                 }
             }
         }

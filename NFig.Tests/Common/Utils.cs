@@ -1,4 +1,5 @@
 ﻿using NFig.Encryption;
+using NFig.Metadata;
 
 namespace NFig.Tests.Common
 {

@@ -1,8 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using JetBrains.Annotations;
 
-namespace NFig
+namespace NFig.Metadata
 {
     /// <summary>
     /// Represents the state of all overrides, and the last event, for an application.

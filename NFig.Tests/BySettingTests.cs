@@ -1,11 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using NFig.Metadata;
 using NFig.Tests.Common;
 using NUnit.Framework;
 
-using Default = NFig.DefaultValue<NFig.Tests.Common.Tier, NFig.Tests.Common.DataCenter>;
-using Override = NFig.OverrideValue<NFig.Tests.Common.Tier, NFig.Tests.Common.DataCenter>;
+using Default = NFig.Metadata.DefaultValue<NFig.Tests.Common.Tier, NFig.Tests.Common.DataCenter>;
+using Override = NFig.Metadata.OverrideValue<NFig.Tests.Common.Tier, NFig.Tests.Common.DataCenter>;
 
 namespace NFig.Tests
 {

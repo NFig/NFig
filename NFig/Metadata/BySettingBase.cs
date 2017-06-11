@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using Newtonsoft.Json;
 
-namespace NFig
+namespace NFig.Metadata
 {
     /*
      * This is a custom dictionary implementation which is optimized for grouping values by a setting name. It can be used in two different modes: single value

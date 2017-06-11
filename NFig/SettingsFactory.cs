@@ -8,6 +8,7 @@ using System.Threading;
 using JetBrains.Annotations;
 using NFig.Converters;
 using NFig.Encryption;
+using NFig.Metadata;
 
 namespace NFig
 {

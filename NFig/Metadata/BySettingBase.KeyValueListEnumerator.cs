@@ -1,7 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 
-namespace NFig
+namespace NFig.Metadata
 {
     public abstract partial class BySettingBase<TValue>
     {
@@ -14,7 +14,7 @@ namespace NFig
             int _entryIndex;
 
             /// <summary>
-            /// The current value of the enumerator. This is undefined before <see cref="MoveNext"/> is called, and after <see cref="MoveNext"/> returns false.
+            /// The current value of the enumerator. This is undefined before <see cref="MoveNext()"/> is called, and after <see cref="MoveNext()"/> returns false.
             /// </summary>
             public KeyValuePair<string, ValueList> Current { get; private set; }
             object IEnumerator.Current => Current;
