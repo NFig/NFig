@@ -153,16 +153,15 @@ namespace NFig
         /// 
         /// Sub-app names are not required to be unique, but it is best practice for every unique sub-app to have a unique name.
         /// </summary>
-        /// <param name="subApps"></param>
-        public void RegisterSubApps(IEnumerable<SubApp> subApps)
+        public void RegisterSubApps(params SubApp[] subApps)
         {
-            var metas = new List<SubAppMetadata<TTier, TDataCenter>>();
-            foreach (var subApp in subApps)
+            var metas = new SubAppMetadata<TTier, TDataCenter>[subApps.Length];
+            for (var i = 0; i < subApps.Length; i++)
             {
                 // todo: we should probably make this parallel
+                ref var subApp = ref subApps[i];
                 var defaults = _factory.RegisterSubApp(subApp.Id, subApp.Name);
-                var meta = new SubAppMetadata<TTier, TDataCenter>(AppName, subApp.Id, subApp.Name, defaults);
-                metas.Add(meta);
+                metas[i] = new SubAppMetadata<TTier, TDataCenter>(AppName, subApp.Id, subApp.Name, defaults);
             }
 
             Store.UpdateSubAppsInternal(AppName, metas);

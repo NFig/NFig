@@ -381,10 +381,10 @@ namespace NFig
         /// </summary>
         /// <param name="appName">The root application name.</param>
         /// <param name="subAppsMetadata">Metadata about the sub-apps (and/or root app)</param>
-        protected abstract void UpdateSubApps(string appName, List<SubAppMetadata<TTier, TDataCenter>> subAppsMetadata);
+        protected abstract void UpdateSubApps(string appName, SubAppMetadata<TTier, TDataCenter>[] subAppsMetadata);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void UpdateSubAppsInternal(string appName, List<SubAppMetadata<TTier, TDataCenter>> subAppsMetadata)
+        internal void UpdateSubAppsInternal(string appName, params SubAppMetadata<TTier, TDataCenter>[] subAppsMetadata)
         {
             UpdateSubApps(appName, subAppsMetadata);
         }

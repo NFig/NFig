@@ -181,7 +181,7 @@ namespace NFig
             app.Metadata = JsonConvert.SerializeObject(metadata);
         }
 
-        protected override void UpdateSubApps(string appName, List<SubAppMetadata<TTier, TDataCenter>> subAppsMetadata)
+        protected override void UpdateSubApps(string appName, SubAppMetadata<TTier, TDataCenter>[] subAppsMetadata)
         {
             var app = GetApp(appName);
             lock (app)
