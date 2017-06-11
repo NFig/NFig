@@ -205,10 +205,7 @@ namespace NFig
         /// <summary>
         /// Returns the declared type of a setting by name. If no setting by that name exists, and exception is thrown.
         /// </summary>
-        public Type GetSettingType(string settingName)
-        {
-            throw new NotImplementedException();
-        }
+        public Type GetSettingType(string settingName) => _factory.GetSettingType(settingName);
 
         /// <summary>
         /// Extracts the value of a setting by name from an existing TSettings object. If no setting by that name exists, and exception is thrown.

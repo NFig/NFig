@@ -57,6 +57,8 @@ namespace NFig
 
         internal bool SettingExists(string settingName) => _settingsByName.ContainsKey(settingName);
 
+        internal Type GetSettingType(string settingName) => _settingsByName[settingName].Type;
+
         internal InvalidOverridesException TryGetSettings(
             int? subAppId,
             OverridesSnapshot<TTier, TDataCenter> snapshot,
