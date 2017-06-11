@@ -181,18 +181,22 @@ namespace NFig
             app.Metadata = JsonConvert.SerializeObject(metadata);
         }
 
-        protected override void SetSubApp(string appName, int? subAppId, string subAppName, ListBySetting<DefaultValue<TTier, TDataCenter>> defaults)
+        protected override void UpdateSubApps(string appName, List<SubAppMetadata<TTier, TDataCenter>> subAppsMetadata)
         {
-            var key = subAppId?.ToString() ?? ROOT_KEY;
-            var json = JsonConvert.SerializeObject(defaults);
-
             var app = GetApp(appName);
             lock (app)
             {
-                if (subAppId.HasValue)
-                    app.SubApps[subAppId.Value] = subAppName;
+                foreach (var subApp in subAppsMetadata)
+                {
+                    var key = subApp.SubAppId?.ToString() ?? ROOT_KEY;
+                    var json = JsonConvert.SerializeObject(subApp.DefaultsBySetting);
 
-                app.Defaults[key] = json;
+                    app.Defaults[key] = json;
+
+                    if (subApp.SubAppId.HasValue)
+                        app.SubApps[subApp.SubAppId.Value] = subApp.SubAppName;
+                }
+
             }
         }
 

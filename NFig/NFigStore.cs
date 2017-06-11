@@ -380,15 +380,13 @@ namespace NFig
         /// Sends information about a sub-app (name, ID, defaults) to the backing store. This may also be called with the default values for the root app.
         /// </summary>
         /// <param name="appName">The root application name.</param>
-        /// <param name="subAppId">The ID of the sub-app, or null for the root application.</param>
-        /// <param name="subAppName">The name of the sub-app. This is ignored for the root app.</param>
-        /// <param name="defaults">The default values which are applicable to the sub-app.</param>
-        protected abstract void SetSubApp(string appName, int? subAppId, string subAppName, ListBySetting<DefaultValue<TTier, TDataCenter>> defaults);
+        /// <param name="subAppsMetadata">Metadata about the sub-apps (and/or root app)</param>
+        protected abstract void UpdateSubApps(string appName, List<SubAppMetadata<TTier, TDataCenter>> subAppsMetadata);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void SetSubAppInternal(string appName, int? subAppId, string subAppName, ListBySetting<DefaultValue<TTier, TDataCenter>> defaults)
+        internal void UpdateSubAppsInternal(string appName, List<SubAppMetadata<TTier, TDataCenter>> subAppsMetadata)
         {
-            SetSubApp(appName, subAppId, subAppName, defaults);
+            UpdateSubApps(appName, subAppsMetadata);
         }
 
         /// <summary>

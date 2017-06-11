@@ -147,37 +147,6 @@ namespace NFig
         public Task<string> GetCurrentCommitAsync() => Store.GetCurrentCommitAsyncInternal(AppName);
 
         /// <summary>
-        /// Registers a sub-app. The sub-app will be added to the store's metadata and included when the callback to <see cref="SubscribeToSubApps"/> is called.
-        /// If a sub-app with the same ID already exists, and the names DO NOT match, an exception is thrown. Registering a sub-app multiple times with the same
-        /// ID and name has no effect.
-        /// 
-        /// If you need to register more than one sub-app at a time, use <see cref="RegisterSubApps"/>.
-        /// 
-        /// Sub-app names are not required to be unique, but it is best practice for every unique sub-app to have a unique name.
-        /// </summary>
-        /// <param name="id">Unique ID of the sub-app.</param>
-        /// <param name="name">Name of the sub-app.</param>
-        public void RegisterSubApp(int id, string name)
-        {
-            RegisterSubApp(new SubApp(id, name));
-        }
-
-        /// <summary>
-        /// Registers a sub-app. The sub-app will be added to the store's metadata and included when the callback to <see cref="SubscribeToSubApps"/> is called.
-        /// If a sub-app with the same ID already exists, and the names DO NOT match, an exception is thrown. Registering a sub-app multiple times with the same
-        /// ID and name has no effect.
-        /// 
-        /// If you need to register more than one sub-app at a time, use <see cref="RegisterSubApps"/>.
-        /// 
-        /// Sub-app names are not required to be unique, but it is best practice for every unique sub-app to have a unique name.
-        /// </summary>
-        public void RegisterSubApp(SubApp info)
-        {
-            var defaults = _factory.RegisterSubApp(info.Id, info.Name);
-            Store.SetSubAppInternal(AppName, info.Id, info.Name, defaults);
-        }
-
-        /// <summary>
         /// Registers multiple sub-apps at once. Each sub-app will be added to the store's metadata and included when the callback to
         /// <see cref="SubscribeToSubApps"/> is called. If a sub-app with the same ID already exists, and the names DO NOT match, an exception is thrown.
         /// Registering a sub-app multiple times with the same ID and name has no effect.
@@ -187,11 +156,16 @@ namespace NFig
         /// <param name="subApps"></param>
         public void RegisterSubApps(IEnumerable<SubApp> subApps)
         {
-            // todo: we should probably make this parallel
-            foreach (var info in subApps)
+            var metas = new List<SubAppMetadata<TTier, TDataCenter>>();
+            foreach (var subApp in subApps)
             {
-                RegisterSubApp(info);
+                // todo: we should probably make this parallel
+                var defaults = _factory.RegisterSubApp(subApp.Id, subApp.Name);
+                var meta = new SubAppMetadata<TTier, TDataCenter>(AppName, subApp.Id, subApp.Name, defaults);
+                metas.Add(meta);
             }
+
+            Store.UpdateSubAppsInternal(AppName, metas);
         }
 
         /// <summary>
