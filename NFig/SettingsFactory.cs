@@ -27,6 +27,7 @@ namespace NFig
         readonly ReflectionCache _reflectionCache;
         readonly SubAppCache _rootCache = new SubAppCache();
         Dictionary<int, SubAppCache> _cacheBySubAppId;
+        List<SubApp> _subAppList;
         object[] _valueCache;
         int _valueCacheCount;
 
@@ -68,6 +69,17 @@ namespace NFig
             settings.SetBasicInformation(AppInfo.AppName, snapshot.Commit, subAppId, cache.SubAppName, Tier, DataCenter);
 
             return TryApplyOverrides(settings, subAppId, snapshot.Overrides);
+        }
+
+        internal SubApp[] GetRegisteredSubApps()
+        {
+            if (_subAppList == null)
+                return Array.Empty<SubApp>();
+
+            lock (_rootCache)
+            {
+                return _subAppList.ToArray();
+            }
         }
 
         internal ListBySetting<DefaultValue<TTier, TDataCenter>> RegisterSubApp(int subAppId, string subAppName)
@@ -147,6 +159,14 @@ namespace NFig
                     else
                     {
                         cache.Initializer = CreateInitializer(cache.SubAppId, cache.Defaults);
+                    }
+
+                    if (cache.SubAppId.HasValue)
+                    {
+                        if (_subAppList == null)
+                            _subAppList = new List<SubApp>();
+
+                        _subAppList.Add(new SubApp(cache.SubAppId.Value, subAppName));
                     }
 
                     Interlocked.MemoryBarrier(); // ensure IsInitialized doesn't get set to true before all the other properties have been updated

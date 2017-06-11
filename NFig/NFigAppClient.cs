@@ -169,12 +169,10 @@ namespace NFig
         }
 
         /// <summary>
-        /// Gets the name and ID of every sub-app that has been registered on this client.
+        /// Gets the name and ID of every sub-app that has been registered on this client. This may not include every sub-app which has been registered by other
+        /// clients. If you want to know the list of every sub-app, use <see cref="NFigAdminClient{TTier,TDataCenter}.GetSubApps"/>.
         /// </summary>
-        public IEnumerable<SubApp> GetRegisteredSubApps() // todo: use a concrete type rather than IEnumerable, perhaps convert to property
-        {
-            throw new NotImplementedException();
-        }
+        public SubApp[] GetRegisteredSubApps() => _factory.GetRegisteredSubApps();
 
         /// <summary>
         /// Subscribes to settings changes. The callback will be called for the first time before this method returns, and then will be called each time
