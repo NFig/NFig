@@ -55,6 +55,8 @@ namespace NFig
             _rootCache.Defaults = CollectDefaultsForSubApp(null, null);
         }
 
+        internal bool SettingExists(string settingName) => _settingsByName.ContainsKey(settingName);
+
         internal InvalidOverridesException TryGetSettings(
             int? subAppId,
             OverridesSnapshot<TTier, TDataCenter> snapshot,

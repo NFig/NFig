@@ -200,10 +200,7 @@ namespace NFig
         /// <summary>
         /// Returns true if a setting by that name exists.
         /// </summary>
-        public bool SettingExists(string settingName)
-        {
-            throw new NotImplementedException();
-        }
+        public bool SettingExists(string settingName) => _factory.SettingExists(settingName);
 
         /// <summary>
         /// Returns the declared type of a setting by name. If no setting by that name exists, and exception is thrown.
