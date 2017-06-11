@@ -25,8 +25,9 @@ namespace NFig
         /// </summary>
         /// <param name="tier">The deployment tier of the store.</param>
         /// <param name="dataCenter">The current data center.</param>
-        public NFigMemoryStore(TTier tier, TDataCenter dataCenter)
-            : base(tier, dataCenter)
+        /// <param name="backgroundExceptionHandler">Used to log exceptions which occur on a background thread.</param>
+        public NFigMemoryStore(TTier tier, TDataCenter dataCenter, Action<Exception> backgroundExceptionHandler)
+            : base(tier, dataCenter, backgroundExceptionHandler)
         {
         }
 

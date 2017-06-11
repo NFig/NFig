@@ -39,6 +39,10 @@ namespace NFig
         /// Casts an integer as a data center.
         /// </summary>
         protected Func<int, TDataCenter> IntToDataCenter { get; }
+        /// <summary>
+        /// Used to log exceptions which occur on a background thread.
+        /// </summary>
+        protected Action<Exception> BackgroundExceptionHandler { get; }
 
         /// <summary>
         /// The deployment tier of the store.
@@ -59,7 +63,8 @@ namespace NFig
         /// </summary>
         /// <param name="tier">The deployment tier which the store exists on.</param>
         /// <param name="dataCenter">The data center of the current app or admin panel.</param>
-        protected NFigStore(TTier tier, TDataCenter dataCenter)
+        /// <param name="backgroundExceptionHandler">Used to log exceptions which occur on a background thread.</param>
+        protected NFigStore(TTier tier, TDataCenter dataCenter, Action<Exception> backgroundExceptionHandler)
         {
             AssertIsValidEnumType(typeof(TTier), nameof(TTier));
             AssertIsValidEnumType(typeof(TDataCenter), nameof(TDataCenter));
@@ -73,6 +78,8 @@ namespace NFig
             DataCenter = dataCenter;
 
             DataCenterMetadata = EnumMetadata.Create(typeof(TDataCenter), tier);
+
+            BackgroundExceptionHandler = backgroundExceptionHandler;
         }
 
         /// <summary>
