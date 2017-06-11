@@ -13,6 +13,8 @@ namespace NFig
         where TTier : struct
         where TDataCenter : struct
     {
+        bool _isRootRegistered = false;
+
         /// <summary>
         /// The method signature of callback functions passed to <see cref="Subscribe"/>.
         /// </summary>
@@ -76,6 +78,7 @@ namespace NFig
         /// </param>
         public TSettings GetSettings(int? subAppId = null)
         {
+            RegisterRootApp();
             var snapshot = Store.GetSnapshotInternal(AppName);
 
             var ex = _factory.TryGetSettings(subAppId, snapshot, out var settings);
@@ -179,6 +182,7 @@ namespace NFig
         /// </summary>
         public void Subscribe(UpdateDelegate callback)
         {
+            RegisterRootApp();
             throw new NotImplementedException();
         }
 
@@ -224,6 +228,17 @@ namespace NFig
         public TValue GetSettingValue<TValue>(TSettings settings, string settingName)
         {
             throw new NotImplementedException();
+        }
+
+        void RegisterRootApp()
+        {
+            if (_isRootRegistered)
+                return;
+
+            _isRootRegistered = true;
+            var defaults = _factory.RegisterRootApp();
+            var meta = new SubAppMetadata<TTier, TDataCenter>(AppName, null, null, defaults);
+            Store.UpdateSubAppsInternal(AppName, meta);
         }
     }
 }

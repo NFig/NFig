@@ -71,6 +71,12 @@ namespace NFig
             return TryApplyOverrides(settings, subAppId, snapshot.Overrides);
         }
 
+        internal ListBySetting<DefaultValue<TTier, TDataCenter>> RegisterRootApp()
+        {
+            InitializeSubAppCache(_rootCache, null);
+            return _rootCache.Defaults;
+        }
+
         internal SubApp[] GetRegisteredSubApps()
         {
             if (_subAppList == null)
