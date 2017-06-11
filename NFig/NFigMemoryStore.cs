@@ -84,7 +84,26 @@ namespace NFig
 
         protected override OverridesSnapshot<TTier, TDataCenter> RestoreSnapshot(string appName, OverridesSnapshot<TTier, TDataCenter> snapshot, string user)
         {
-            throw new NotImplementedException();
+            var app = GetApp(snapshot.AppName);
+            lock (app)
+            {
+                app.Overrides.Clear();
+
+                if (snapshot.Overrides != null)
+                {
+                    foreach (var ov in snapshot.Overrides.GetAllValues())
+                    {
+                        SerializeOverride(ov, out var key, out var value);
+                        app.Overrides[key] = value;
+                    }
+                }
+
+                app.Commit = snapshot.Commit;
+
+                // todo: log
+
+                return GetSnapshot(app.AppName);
+            }
         }
 
         protected override Task<OverridesSnapshot<TTier, TDataCenter>> RestoreSnapshotAsync(string appName, OverridesSnapshot<TTier, TDataCenter> snapshot, string user)
