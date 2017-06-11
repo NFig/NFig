@@ -26,5 +26,19 @@ namespace NFig
         {
             Tiers = tiers;
         }
+
+        internal bool ContainsTier<TTier>(TTier tier) where TTier : struct
+        {
+            foreach (var t in Tiers)
+            {
+                if (t is TTier tt)
+                {
+                    if (Compare.AreEqual(tier, tt))
+                        return true;
+                }
+            }
+
+            return false;
+        }
     }
 }
