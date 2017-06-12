@@ -150,10 +150,34 @@ namespace NFig
         }
 
         /// <summary>
+        /// Gets a client for consuming NFig settings within an application. This method is idempotent and will return the exact same client instance every time
+        /// it is called with the same app name.
+        /// </summary>
+        /// <typeparam name="TSettings">
+        /// The class which represents your settings. It must inherit from <see cref="INFigSettings{TTier,TDataCenter}"/> or
+        /// <see cref="NFigSettingsBase{TTier,TDataCenter}"/>.
+        /// </typeparam>
+        /// <param name="appName">The name of your application. Overrides are keyed off of this name.</param>
+        public Task<NFigAppClient<TSettings, TTier, TDataCenter>> GetAppClientAsync<TSettings>(string appName)
+            where TSettings : class, INFigSettings<TTier, TDataCenter>, new()
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
         /// Gets a client for administering NFig settings for a given application.
         /// </summary>
         /// <param name="appName">The name of the application to administer.</param>
         public NFigAdminClient<TTier, TDataCenter> GetAdminClient(string appName)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Gets a client for administering NFig settings for a given application.
+        /// </summary>
+        /// <param name="appName">The name of the application to administer.</param>
+        public Task<NFigAdminClient<TTier, TDataCenter>> GetAdminClientAsync(string appName)
         {
             throw new NotImplementedException();
         }
@@ -167,57 +191,27 @@ namespace NFig
         }
 
         /// <summary>
-        /// Asynchronously gets the names of all applications connected to this store.
-        /// </summary>
-        public Task<IEnumerable<string>> GetAppNamesAsync() // todo: use a concrete type instead of IEnumerable
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <summary>
         /// Gets the name and ID of every sub-app that has been added to this application.
         /// </summary>
         protected abstract SubApp[] GetSubApps(string appName);
 
-        /// <summary>
-        /// Gets the name and ID of every sub-app that has been added to this application.
-        /// </summary>
-        protected abstract Task<SubApp[]> GetSubAppsAsync(string appName);
-
         internal SubApp[] GetSubAppsInternal(string appName) => GetSubApps(appName);
-        internal Task<SubApp[]> GetSubAppsAsyncInternal(string appName) => GetSubAppsAsync(appName);
 
         /// <summary>
         /// Gets basic metadata about each setting.
         /// </summary>
         protected abstract BySetting<SettingMetadata> GetSettingsMetadata(string appName);
 
-        /// <summary>
-        /// Gets basic metadata about each setting.
-        /// </summary>
-        protected abstract Task<BySetting<SettingMetadata>> GetSettingsMetadataAsync(string appName);
-
         internal BySetting<SettingMetadata> GetSettingsMetadataInternal(string appName) => GetSettingsMetadata(appName);
-        internal Task<BySetting<SettingMetadata>> GetSettingsMetadataAsyncInternal(string appName) => GetSettingsMetadataAsync(appName);
 
         /// <summary>
         /// Gets default values for a sub-app, or the root app if subAppId is null.
         /// </summary>
         protected abstract ListBySetting<DefaultValue<TTier, TDataCenter>> GetDefaults(string appName, int? subAppId);
 
-        /// <summary>
-        /// Gets default values for a sub-app, or the root app if subAppId is null.
-        /// </summary>
-        protected abstract Task<ListBySetting<DefaultValue<TTier, TDataCenter>>> GetDefaultsAsync(string appName, int? subAppId);
-
         internal ListBySetting<DefaultValue<TTier, TDataCenter>> GetDefaultsInternal(string appName, int? subAppId)
         {
             return GetDefaults(appName, subAppId);
-        }
-
-        internal Task<ListBySetting<DefaultValue<TTier, TDataCenter>>> GetDefaultsAsyncInternal(string appName, int? subAppId)
-        {
-            return GetDefaultsAsync(appName, subAppId);
         }
 
         /// <summary>
@@ -225,13 +219,7 @@ namespace NFig
         /// </summary>
         protected abstract OverridesSnapshot<TTier, TDataCenter> GetSnapshot(string appName);
 
-        /// <summary>
-        /// Gets the current snapshot of overrides for the app, including all of its sub-apps.
-        /// </summary>
-        protected abstract Task<OverridesSnapshot<TTier, TDataCenter>> GetSnapshotAsync(string appName);
-
         internal OverridesSnapshot<TTier, TDataCenter> GetSnapshotInternal(string appName) => GetSnapshot(appName);
-        internal Task<OverridesSnapshot<TTier, TDataCenter>> GetSnapshotAsyncInternal(string appName) => GetSnapshotAsync(appName);
 
         /// <summary>
         /// Restores all overrides to a previous state. Returns a snapshot of the new current state (after restoring).
@@ -275,13 +263,7 @@ namespace NFig
         /// </summary>
         protected abstract string GetCurrentCommit(string appName);
 
-        /// <summary>
-        /// Returns the current snapshot commit for the app.
-        /// </summary>
-        protected abstract Task<string> GetCurrentCommitAsync(string appName);
-
         internal string GetCurrentCommitInternal(string appName) => GetCurrentCommit(appName);
-        internal Task<string> GetCurrentCommitAsyncInternal(string appName) => GetCurrentCommitAsync(appName);
 
         /// <summary>
         /// Sets an override for the specified setting name and data center combination. If an existing override shares that exact combination, it will be
@@ -412,18 +394,36 @@ namespace NFig
         /// </summary>
         protected abstract void SetMetadata(string appName, BySetting<SettingMetadata> metadata);
 
+        /// <summary>
+        /// Sends metadata to the backing store.
+        /// </summary>
+        protected abstract Task SetMetadataAsync(string appName, BySetting<SettingMetadata> metadata);
+
         internal void SetMetadataInternal(string appName, BySetting<SettingMetadata> metadata) => SetMetadata(appName, metadata);
+        internal Task SetMetadataAsyncInternal(string appName, BySetting<SettingMetadata> metadata) => SetMetadataAsync(appName, metadata);
 
         /// <summary>
         /// Sends information about a sub-app (name, ID, defaults) to the backing store. This may also be called with the default values for the root app.
         /// </summary>
         /// <param name="appName">The root application name.</param>
         /// <param name="subAppsMetadata">Metadata about the sub-apps (and/or root app)</param>
-        protected abstract void UpdateSubApps(string appName, SubAppMetadata<TTier, TDataCenter>[] subAppsMetadata);
+        protected abstract void UpdateSubAppMetadata(string appName, SubAppMetadata<TTier, TDataCenter>[] subAppsMetadata);
 
-        internal void UpdateSubAppsInternal(string appName, params SubAppMetadata<TTier, TDataCenter>[] subAppsMetadata)
+        /// <summary>
+        /// Sends information about a sub-app (name, ID, defaults) to the backing store. This may also be called with the default values for the root app.
+        /// </summary>
+        /// <param name="appName">The root application name.</param>
+        /// <param name="subAppsMetadata">Metadata about the sub-apps (and/or root app)</param>
+        protected abstract Task UpdateSubAppMetadataAsync(string appName, SubAppMetadata<TTier, TDataCenter>[] subAppsMetadata);
+
+        internal void UpdateSubAppMetadataInternal(string appName, params SubAppMetadata<TTier, TDataCenter>[] subAppsMetadata)
         {
-            UpdateSubApps(appName, subAppsMetadata);
+            UpdateSubAppMetadata(appName, subAppsMetadata);
+        }
+
+        internal Task UpdateSubAppMetadataAsyncInternal(string appName, params SubAppMetadata<TTier, TDataCenter>[] subAppsMetadata)
+        {
+            return UpdateSubAppMetadataAsync(appName, subAppsMetadata);
         }
 
         /// <summary>

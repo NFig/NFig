@@ -60,14 +60,6 @@ namespace NFig
         }
 
         /// <summary>
-        /// Gets the name and ID of every sub-app that has been added to this application.
-        /// </summary>
-        public Task<SubApp[]> GetSubAppsAsync()
-        {
-            return Store.GetSubAppsAsyncInternal(AppName);
-        }
-
-        /// <summary>
         /// Gets basic metadata about the application which is useful for an admin panel. This does not include default values. To get default values, call
         /// <see cref="GetSubAppMetadata"/>.
         /// </summary>
@@ -83,34 +75,10 @@ namespace NFig
         }
 
         /// <summary>
-        /// Gets basic metadata about the application which is useful for an admin panel. This does not include default values. To get default values, call
-        /// <see cref="GetSubAppMetadata"/>.
-        /// </summary>
-        public async Task<AppMetadata> GetAppMetadataAsync()
-        {
-            var settingsMetadata = await Store.GetSettingsMetadataAsyncInternal(AppName);
-
-            if (settingsMetadata == null)
-                throw new NFigException($"Unable to load metadata for app {AppName}");
-
-            var subApps = await GetSubAppsAsync();
-            return new AppMetadata(AppName, Store.CurrentTierValue, Store.CurrentDataCenterValue, Store.DataCenterMetadata, settingsMetadata, subApps);
-        }
-
-        /// <summary>
         /// Gets metadata specific to a sub-app, or the root app if <paramref name="subAppId"/> is null. This includes the applicable default values.
         /// </summary>
         /// <param name="subAppId">The ID of the sub-app, or null for the root app.</param>
         public SubAppMetadata<TTier, TDataCenter> GetSubAppMetadata(int? subAppId)
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <summary>
-        /// Gets metadata specific to a sub-app, or the root app if <paramref name="subAppId"/> is null. This includes the applicable default values.
-        /// </summary>
-        /// <param name="subAppId">The ID of the sub-app, or null for the root app.</param>
-        public Task<SubAppMetadata<TTier, TDataCenter>> GetSubAppMetadataAsync(int? subAppId)
         {
             throw new NotImplementedException();
         }
@@ -121,15 +89,6 @@ namespace NFig
         public string GetCurrentCommit()
         {
             var snapshot = Store.GetSnapshotInternal(AppName);
-            return snapshot.Commit;
-        }
-
-        /// <summary>
-        /// Asynchronously gets the current commit ID of the application. This changes every time overrides are updated.
-        /// </summary>
-        public async Task<string> GetCurrentCommitAsync()
-        {
-            var snapshot = await Store.GetSnapshotAsyncInternal(AppName);
             return snapshot.Commit;
         }
 
@@ -267,11 +226,6 @@ namespace NFig
         /// Returns a snapshot of all current overrides which can be used to restore the current state at a later date.
         /// </summary>
         public OverridesSnapshot<TTier, TDataCenter> GetSnapshot() => Store.GetSnapshotInternal(AppName);
-
-        /// <summary>
-        /// Returns a snapshot of all current overrides which can be used to restore the current state at a later date.
-        /// </summary>
-        public Task<OverridesSnapshot<TTier, TDataCenter>> GetSnapshotAsync() => Store.GetSnapshotAsyncInternal(AppName);
 
         /// <summary>
         /// Restores all overrides to a previous state.

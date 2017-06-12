@@ -61,6 +61,11 @@ namespace NFig
         public TDataCenter DataCenter { get; }
 
         /// <summary>
+        /// Returns the current snapshot commit for the app.
+        /// </summary>
+        public string Commit => Store.GetCurrentCommitInternal(AppName);
+
+        /// <summary>
         /// Initializes the app client.
         /// </summary>
         internal NFigAppClient(NFigStore<TTier, TDataCenter> store, AppInternalInfo appInfo)
@@ -95,26 +100,6 @@ namespace NFig
         }
 
         /// <summary>
-        /// Asynchronously returns a hydrated settings object based on the current defaults and overrides.
-        /// </summary>
-        /// <param name="subAppId">
-        /// The ID of a sub-app. This is only applicable in multi-tenancy environments. If not null, this sub-app must have been previously declared via one of
-        /// the AddSubApp or AddSubApps methods, otherwise an exception is thrown.
-        /// </param>
-        public async Task<TSettings> GetSettingsAsync(int? subAppId = null)
-        {
-            var snapshot = await Store.GetSnapshotAsyncInternal(AppName);
-
-            List<InvalidOverrideValueException> invalidOverrides = null;
-            _factory.TryGetSettings(subAppId, snapshot, out var settings, ref invalidOverrides);
-
-            if (invalidOverrides?.Count > 0)
-                throw new InvalidOverridesException(invalidOverrides);
-
-            return settings;
-        }
-
-        /// <summary>
         /// Returns true if <paramref name="settings"/> is up-to-date.
         /// </summary>
         public bool IsCurrent(TSettings settings)
@@ -127,35 +112,8 @@ namespace NFig
                 throw ex;
             }
 
-            return settings.Commit == GetCurrentCommit();
+            return settings.Commit == Commit;
         }
-
-        /// <summary>
-        /// Asynchronously returns true if <paramref name="settings"/> is up-to-date.
-        /// </summary>
-        public async Task<bool> IsCurrentAsync(TSettings settings)
-        {
-            if (settings.AppName != AppName)
-            {
-                var ex = new InvalidOperationException("AppName does not match between NFigAppClient and settings object");
-                ex.Data["settings.AppName"] = settings.AppName;
-                ex.Data["NFigAppClient.AppName"] = AppName;
-                throw ex;
-            }
-
-            var currentCommit = await GetCurrentCommitAsync();
-            return settings.Commit == currentCommit;
-        }
-
-        /// <summary>
-        /// Returns the current snapshot commit for the app.
-        /// </summary>
-        public string GetCurrentCommit() => Store.GetCurrentCommitInternal(AppName);
-
-        /// <summary>
-        /// Returns the current snapshot commit for the app.
-        /// </summary>
-        public Task<string> GetCurrentCommitAsync() => Store.GetCurrentCommitAsyncInternal(AppName);
 
         /// <summary>
         /// Registers multiple sub-apps at once. Each sub-app will be added to the store's metadata and included when the callback to
@@ -175,7 +133,7 @@ namespace NFig
                 metas[i] = new SubAppMetadata<TTier, TDataCenter>(AppName, subApp.Id, subApp.Name, defaults);
             }
 
-            Store.UpdateSubAppsInternal(AppName, metas);
+            Store.UpdateSubAppMetadataInternal(AppName, metas);
         }
 
         /// <summary>
@@ -287,7 +245,7 @@ namespace NFig
             _isRootRegistered = true;
             var defaults = _factory.RegisterRootApp();
             var meta = new SubAppMetadata<TTier, TDataCenter>(AppName, null, null, defaults);
-            Store.UpdateSubAppsInternal(AppName, meta);
+            Store.UpdateSubAppMetadataInternal(AppName, meta);
         }
     }
 }
