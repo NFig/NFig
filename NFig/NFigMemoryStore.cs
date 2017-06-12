@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using JetBrains.Annotations;
 using Newtonsoft.Json;
 using NFig.Metadata;
 
@@ -55,24 +56,34 @@ namespace NFig
             return Task.FromResult(GetSubApps(appName));
         }
 
-        protected override AppMetadata GetAppMetadata(string appName)
+        protected override BySetting<SettingMetadata> GetSettingsMetadata(string appName)
         {
-            throw new NotImplementedException();
+            var app = GetApp(appName);
+            return app.Metadata == null ? null : BySetting<SettingMetadata>.Deserialize(app.Metadata);
         }
 
-        protected override Task<AppMetadata> GetAppMetadataAsync(string appName)
+        protected override Task<BySetting<SettingMetadata>> GetSettingsMetadataAsync(string appName)
         {
-            throw new NotImplementedException();
+            return Task.FromResult(GetSettingsMetadata(appName));
         }
 
-        protected override SubAppMetadata<TTier, TDataCenter> GetSubAppMetadata(string appName, int? subAppId)
+        protected override ListBySetting<DefaultValue<TTier, TDataCenter>> GetDefaults(string appName, int? subAppId)
         {
-            throw new NotImplementedException();
+            var app = GetApp(appName);
+            lock (app)
+            {
+                string json;
+                var key = subAppId.HasValue ? subAppId.Value.ToString() : ROOT_KEY;
+                if (!app.Defaults.TryGetValue(key, out json))
+                    return null;
+
+                return ListBySetting<DefaultValue<TTier, TDataCenter>>.Deserialize(json);
+            }
         }
 
-        protected override Task<SubAppMetadata<TTier, TDataCenter>> GetSubAppMetadataAsync(string appName, int? subAppId)
+        protected override Task<ListBySetting<DefaultValue<TTier, TDataCenter>>> GetDefaultsAsync(string appName, int? subAppId)
         {
-            throw new NotImplementedException();
+            return Task.FromResult(GetDefaults(appName, subAppId));
         }
 
         protected override OverridesSnapshot<TTier, TDataCenter> GetSnapshot(string appName)

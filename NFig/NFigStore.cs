@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Reflection.Emit;
 using System.Threading.Tasks;
+using JetBrains.Annotations;
 using NFig.Encryption;
 using NFig.Metadata;
 
@@ -44,6 +45,15 @@ namespace NFig
         protected Action<Exception> BackgroundExceptionHandler { get; }
 
         /// <summary>
+        /// Info about the enum value which represents the current tier.
+        /// </summary>
+        protected EnumValue CurrentTierValue { get; }
+        /// <summary>
+        /// Info about the enum value which represents the current data center.
+        /// </summary>
+        protected EnumValue CurrentDataCenterValue { get; }
+
+        /// <summary>
         /// The deployment tier of the store.
         /// </summary>
         public TTier Tier { get; }
@@ -75,6 +85,9 @@ namespace NFig
 
             Tier = tier;
             DataCenter = dataCenter;
+
+            CurrentTierValue = new EnumValue(Convert.ToInt64(tier), tier.ToString());
+            CurrentDataCenterValue = new EnumValue(Convert.ToInt64(dataCenter), dataCenter.ToString());
 
             DataCenterMetadata = EnumMetadata.Create(typeof(TDataCenter), tier);
 
@@ -175,36 +188,36 @@ namespace NFig
         internal Task<IEnumerable<SubApp>> GetSubAppsAsyncInternal(string appName) => GetSubAppsAsync(appName);
 
         /// <summary>
-        /// Gets basic metadata about the application.
+        /// Gets basic metadata about each setting.
         /// </summary>
-        protected abstract AppMetadata GetAppMetadata(string appName);
+        protected abstract BySetting<SettingMetadata> GetSettingsMetadata(string appName);
 
         /// <summary>
-        /// Gets basic metadata about the application.
+        /// Gets basic metadata about each setting.
         /// </summary>
-        protected abstract Task<AppMetadata> GetAppMetadataAsync(string appName);
+        protected abstract Task<BySetting<SettingMetadata>> GetSettingsMetadataAsync(string appName);
 
-        internal AppMetadata GetAppMetadataInternal(string appName) => GetAppMetadata(appName);
-        internal Task<AppMetadata> GetAppMetadataAsyncInternal(string appName) => GetAppMetadataAsync(appName);
+        internal BySetting<SettingMetadata> GetSettingsMetadataInternal(string appName) => GetSettingsMetadata(appName);
+        internal Task<BySetting<SettingMetadata>> GetSettingsMetadataAsyncInternal(string appName) => GetSettingsMetadataAsync(appName);
 
         /// <summary>
-        /// Gets default values and other metadata for a sub-app, or the root app if subAppId is null.
+        /// Gets default values for a sub-app, or the root app if subAppId is null.
         /// </summary>
-        protected abstract SubAppMetadata<TTier, TDataCenter> GetSubAppMetadata(string appName, int? subAppId);
+        protected abstract ListBySetting<DefaultValue<TTier, TDataCenter>> GetDefaults(string appName, int? subAppId);
 
         /// <summary>
-        /// Gets default values and other metadata for a sub-app, or the root app if subAppId is null.
+        /// Gets default values for a sub-app, or the root app if subAppId is null.
         /// </summary>
-        protected abstract Task<SubAppMetadata<TTier, TDataCenter>> GetSubAppMetadataAsync(string appName, int? subAppId);
+        protected abstract Task<ListBySetting<DefaultValue<TTier, TDataCenter>>> GetDefaultsAsync(string appName, int? subAppId);
 
-        internal SubAppMetadata<TTier, TDataCenter> GetSubAppMetadataInternal(string appName, int? subAppId)
+        internal ListBySetting<DefaultValue<TTier, TDataCenter>> GetDefaultsInternal(string appName, int? subAppId)
         {
-            return GetSubAppMetadata(appName, subAppId);
+            return GetDefaults(appName, subAppId);
         }
 
-        internal Task<SubAppMetadata<TTier, TDataCenter>> GetSubAppMetadataAsyncInternal(string appName, int? subAppId)
+        internal Task<ListBySetting<DefaultValue<TTier, TDataCenter>>> GetDefaultsAsyncInternal(string appName, int? subAppId)
         {
-            return GetSubAppMetadataAsync(appName, subAppId);
+            return GetDefaultsAsync(appName, subAppId);
         }
 
         /// <summary>
