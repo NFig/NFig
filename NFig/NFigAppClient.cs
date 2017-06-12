@@ -289,7 +289,5 @@ namespace NFig
             var meta = new SubAppMetadata<TTier, TDataCenter>(AppName, null, null, defaults);
             Store.UpdateSubAppsInternal(AppName, meta);
         }
-
-//        Dictionary<int, TSettings> Get
     }
 }
