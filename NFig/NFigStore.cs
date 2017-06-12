@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Reflection.Emit;
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using NFig.Encryption;
 using NFig.Metadata;
@@ -172,10 +171,7 @@ namespace NFig
         /// </summary>
         protected abstract Task<IEnumerable<SubApp>> GetSubAppsAsync(string appName); // todo: use a concrete type rather than IEnumerable
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal IEnumerable<SubApp> GetSubAppsInternal(string appName) => GetSubApps(appName);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal Task<IEnumerable<SubApp>> GetSubAppsAsyncInternal(string appName) => GetSubAppsAsync(appName);
 
         /// <summary>
@@ -221,10 +217,7 @@ namespace NFig
         /// </summary>
         protected abstract Task<OverridesSnapshot<TTier, TDataCenter>> GetSnapshotAsync(string appName);
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal OverridesSnapshot<TTier, TDataCenter> GetSnapshotInternal(string appName) => GetSnapshot(appName);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal Task<OverridesSnapshot<TTier, TDataCenter>> GetSnapshotAsyncInternal(string appName) => GetSnapshotAsync(appName);
 
         /// <summary>
@@ -251,13 +244,11 @@ namespace NFig
             OverridesSnapshot<TTier, TDataCenter> snapshot,
             string user);
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal OverridesSnapshot<TTier, TDataCenter> RestoreSnapshotInternal(string appName, OverridesSnapshot<TTier, TDataCenter> snapshot, string user)
         {
             return RestoreSnapshot(appName, snapshot, user);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal Task<OverridesSnapshot<TTier, TDataCenter>> RestoreSnapshotAsyncInternal(
             string appName,
             OverridesSnapshot<TTier, TDataCenter> snapshot,
@@ -276,10 +267,7 @@ namespace NFig
         /// </summary>
         protected abstract Task<string> GetCurrentCommitAsync(string appName);
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal string GetCurrentCommitInternal(string appName) => GetCurrentCommit(appName);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal Task<string> GetCurrentCommitAsyncInternal(string appName) => GetCurrentCommitAsync(appName);
 
         /// <summary>
@@ -320,7 +308,6 @@ namespace NFig
             string user,
             string commit);
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal OverridesSnapshot<TTier, TDataCenter> SetOverrideInternal(
             string appName,
             OverrideValue<TTier, TDataCenter> ov,
@@ -330,7 +317,6 @@ namespace NFig
             return SetOverride(appName, ov, user, commit);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal Task<OverridesSnapshot<TTier, TDataCenter>> SetOverrideAsyncInternal(
             string appName,
             OverrideValue<TTier, TDataCenter> ov,
@@ -413,7 +399,6 @@ namespace NFig
         /// </summary>
         protected abstract void SetMetadata(string appName, BySetting<SettingMetadata> metadata);
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void SetMetadataInternal(string appName, BySetting<SettingMetadata> metadata) => SetMetadata(appName, metadata);
 
         /// <summary>
@@ -423,7 +408,6 @@ namespace NFig
         /// <param name="subAppsMetadata">Metadata about the sub-apps (and/or root app)</param>
         protected abstract void UpdateSubApps(string appName, SubAppMetadata<TTier, TDataCenter>[] subAppsMetadata);
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void UpdateSubAppsInternal(string appName, params SubAppMetadata<TTier, TDataCenter>[] subAppsMetadata)
         {
             UpdateSubApps(appName, subAppsMetadata);
