@@ -55,6 +55,26 @@ namespace NFig
             return Task.FromResult(GetSubApps(appName));
         }
 
+        protected override AppMetadata GetAppMetadata(string appName)
+        {
+            throw new NotImplementedException();
+        }
+
+        protected override Task<AppMetadata> GetAppMetadataAsync(string appName)
+        {
+            throw new NotImplementedException();
+        }
+
+        protected override SubAppMetadata<TTier, TDataCenter> GetSubAppMetadata(string appName, int? subAppId)
+        {
+            throw new NotImplementedException();
+        }
+
+        protected override Task<SubAppMetadata<TTier, TDataCenter>> GetSubAppMetadataAsync(string appName, int? subAppId)
+        {
+            throw new NotImplementedException();
+        }
+
         protected override OverridesSnapshot<TTier, TDataCenter> GetSnapshot(string appName)
         {
             var app = GetApp(appName);

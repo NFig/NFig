@@ -71,37 +71,25 @@ namespace NFig
         /// Gets basic metadata about the application which is useful for an admin panel. This does not include default values. To get default values, call
         /// <see cref="GetSubAppMetadata"/>.
         /// </summary>
-        public AppMetadata GetAppMetadata()
-        {
-            throw new NotImplementedException();
-        }
+        public AppMetadata GetAppMetadata() => Store.GetAppMetadataInternal(AppName);
 
         /// <summary>
         /// Gets basic metadata about the application which is useful for an admin panel. This does not include default values. To get default values, call
         /// <see cref="GetSubAppMetadata"/>.
         /// </summary>
-        public Task<AppMetadata> GetAppMetadataAsync()
-        {
-            throw new NotImplementedException();
-        }
+        public Task<AppMetadata> GetAppMetadataAsync() => Store.GetAppMetadataAsyncInternal(AppName);
 
         /// <summary>
         /// Gets metadata specific to a sub-app, or the root app if <paramref name="subAppId"/> is null. This includes the applicable default values.
         /// </summary>
         /// <param name="subAppId">The ID of the sub-app, or null for the root app.</param>
-        public SubAppMetadata<TTier, TDataCenter> GetSubAppMetadata(int? subAppId)
-        {
-            throw new NotImplementedException();
-        }
+        public SubAppMetadata<TTier, TDataCenter> GetSubAppMetadata(int? subAppId) => Store.GetSubAppMetadataInternal(AppName, subAppId);
 
         /// <summary>
         /// Gets metadata specific to a sub-app, or the root app if <paramref name="subAppId"/> is null. This includes the applicable default values.
         /// </summary>
         /// <param name="subAppId">The ID of the sub-app, or null for the root app.</param>
-        public Task<SubAppMetadata<TTier, TDataCenter>> GetSubAppMetadataAsync(int? subAppId)
-        {
-            throw new NotImplementedException();
-        }
+        public Task<SubAppMetadata<TTier, TDataCenter>> GetSubAppMetadataAsync(int? subAppId) => Store.GetSubAppMetadataAsyncInternal(AppName, subAppId);
 
         /// <summary>
         /// Gets the current commit ID of the application. This changes every time overrides are updated.

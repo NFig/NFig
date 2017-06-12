@@ -179,6 +179,39 @@ namespace NFig
         internal Task<IEnumerable<SubApp>> GetSubAppsAsyncInternal(string appName) => GetSubAppsAsync(appName);
 
         /// <summary>
+        /// Gets basic metadata about the application.
+        /// </summary>
+        protected abstract AppMetadata GetAppMetadata(string appName);
+
+        /// <summary>
+        /// Gets basic metadata about the application.
+        /// </summary>
+        protected abstract Task<AppMetadata> GetAppMetadataAsync(string appName);
+
+        internal AppMetadata GetAppMetadataInternal(string appName) => GetAppMetadata(appName);
+        internal Task<AppMetadata> GetAppMetadataAsyncInternal(string appName) => GetAppMetadataAsync(appName);
+
+        /// <summary>
+        /// Gets default values and other metadata for a sub-app, or the root app if subAppId is null.
+        /// </summary>
+        protected abstract SubAppMetadata<TTier, TDataCenter> GetSubAppMetadata(string appName, int? subAppId);
+
+        /// <summary>
+        /// Gets default values and other metadata for a sub-app, or the root app if subAppId is null.
+        /// </summary>
+        protected abstract Task<SubAppMetadata<TTier, TDataCenter>> GetSubAppMetadataAsync(string appName, int? subAppId);
+
+        internal SubAppMetadata<TTier, TDataCenter> GetSubAppMetadataInternal(string appName, int? subAppId)
+        {
+            return GetSubAppMetadata(appName, subAppId);
+        }
+
+        internal Task<SubAppMetadata<TTier, TDataCenter>> GetSubAppMetadataAsyncInternal(string appName, int? subAppId)
+        {
+            return GetSubAppMetadataAsync(appName, subAppId);
+        }
+
+        /// <summary>
         /// Gets the current snapshot of overrides for the app, including all of its sub-apps.
         /// </summary>
         protected abstract OverridesSnapshot<TTier, TDataCenter> GetSnapshot(string appName);
