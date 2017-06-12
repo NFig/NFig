@@ -54,7 +54,7 @@ namespace NFig
         /// <summary>
         /// Gets the name and ID of every sub-app that has been added to this application.
         /// </summary>
-        public IEnumerable<SubApp> GetSubApps() // todo: use a concrete type rather than IEnumerable
+        public SubApp[] GetSubApps()
         {
             return Store.GetSubAppsInternal(AppName);
         }
@@ -62,7 +62,7 @@ namespace NFig
         /// <summary>
         /// Gets the name and ID of every sub-app that has been added to this application.
         /// </summary>
-        public Task<IEnumerable<SubApp>> GetSubAppsAsync() // todo: use a concrete type rather than IEnumerable
+        public Task<SubApp[]> GetSubAppsAsync()
         {
             return Store.GetSubAppsAsyncInternal(AppName);
         }
@@ -73,16 +73,28 @@ namespace NFig
         /// </summary>
         public AppMetadata GetAppMetadata()
         {
-            throw new NotImplementedException();
+            var settingsMetadata = Store.GetSettingsMetadataInternal(AppName);
+
+            if (settingsMetadata == null)
+                throw new NFigException($"Unable to load metadata for app {AppName}");
+
+            var subApps = GetSubApps();
+            return new AppMetadata(AppName, Store.CurrentTierValue, Store.CurrentDataCenterValue, Store.DataCenterMetadata, settingsMetadata, subApps);
         }
 
         /// <summary>
         /// Gets basic metadata about the application which is useful for an admin panel. This does not include default values. To get default values, call
         /// <see cref="GetSubAppMetadata"/>.
         /// </summary>
-        public Task<AppMetadata> GetAppMetadataAsync()
+        public async Task<AppMetadata> GetAppMetadataAsync()
         {
-            throw new NotImplementedException();
+            var settingsMetadata = await Store.GetSettingsMetadataAsyncInternal(AppName);
+
+            if (settingsMetadata == null)
+                throw new NFigException($"Unable to load metadata for app {AppName}");
+
+            var subApps = await GetSubAppsAsync();
+            return new AppMetadata(AppName, Store.CurrentTierValue, Store.CurrentDataCenterValue, Store.DataCenterMetadata, settingsMetadata, subApps);
         }
 
         /// <summary>

@@ -34,7 +34,7 @@ namespace NFig
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
-        protected override IEnumerable<SubApp> GetSubApps(string appName)
+        protected override SubApp[] GetSubApps(string appName)
         {
             var app = GetApp(appName);
             lock (app)
@@ -51,7 +51,7 @@ namespace NFig
             }
         }
 
-        protected override Task<IEnumerable<SubApp>> GetSubAppsAsync(string appName)
+        protected override Task<SubApp[]> GetSubAppsAsync(string appName)
         {
             return Task.FromResult(GetSubApps(appName));
         }

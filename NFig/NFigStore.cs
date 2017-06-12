@@ -47,11 +47,11 @@ namespace NFig
         /// <summary>
         /// Info about the enum value which represents the current tier.
         /// </summary>
-        protected EnumValue CurrentTierValue { get; }
+        internal EnumValue CurrentTierValue { get; }
         /// <summary>
         /// Info about the enum value which represents the current data center.
         /// </summary>
-        protected EnumValue CurrentDataCenterValue { get; }
+        internal EnumValue CurrentDataCenterValue { get; }
 
         /// <summary>
         /// The deployment tier of the store.
@@ -177,15 +177,15 @@ namespace NFig
         /// <summary>
         /// Gets the name and ID of every sub-app that has been added to this application.
         /// </summary>
-        protected abstract IEnumerable<SubApp> GetSubApps(string appName); // todo: use a concrete type rather than IEnumerable
+        protected abstract SubApp[] GetSubApps(string appName);
 
         /// <summary>
         /// Gets the name and ID of every sub-app that has been added to this application.
         /// </summary>
-        protected abstract Task<IEnumerable<SubApp>> GetSubAppsAsync(string appName); // todo: use a concrete type rather than IEnumerable
+        protected abstract Task<SubApp[]> GetSubAppsAsync(string appName);
 
-        internal IEnumerable<SubApp> GetSubAppsInternal(string appName) => GetSubApps(appName);
-        internal Task<IEnumerable<SubApp>> GetSubAppsAsyncInternal(string appName) => GetSubAppsAsync(appName);
+        internal SubApp[] GetSubAppsInternal(string appName) => GetSubApps(appName);
+        internal Task<SubApp[]> GetSubAppsAsyncInternal(string appName) => GetSubAppsAsync(appName);
 
         /// <summary>
         /// Gets basic metadata about each setting.
