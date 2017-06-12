@@ -79,10 +79,11 @@ namespace NFig
             throw ex;
         }
 
-        internal InvalidOverridesException TryGetSettings(
+        internal void TryGetSettings(
             int? subAppId,
             OverridesSnapshot<TTier, TDataCenter> snapshot,
-            out TSettings settings)
+            out TSettings settings,
+            ref List<InvalidOverrideValueException> exceptions)
         {
             var cache = GetSubAppCache(subAppId);
             if (cache?.IsInitialized != true)
@@ -92,7 +93,7 @@ namespace NFig
             settings = initializer();
             settings.SetBasicInformation(AppInfo.AppName, snapshot.Commit, subAppId, cache.SubAppName, Tier, DataCenter);
 
-            return TryApplyOverrides(settings, subAppId, snapshot.Overrides);
+            TryApplyOverrides(settings, subAppId, snapshot.Overrides, ref exceptions);
         }
 
         internal ListBySetting<DefaultValue<TTier, TDataCenter>> RegisterRootApp()
@@ -101,6 +102,7 @@ namespace NFig
             return _rootCache.Defaults;
         }
 
+        [NotNull]
         internal SubApp[] GetRegisteredSubApps()
         {
             if (_subAppList == null)
@@ -887,13 +889,15 @@ namespace NFig
             return bestDefault;
         }
 
-        [CanBeNull]
-        InvalidOverridesException TryApplyOverrides(TSettings settingsObj, int? subAppId, ListBySetting<OverrideValue<TTier, TDataCenter>> overrides)
+        void TryApplyOverrides(
+            TSettings settingsObj,
+            int? subAppId,
+            ListBySetting<OverrideValue<TTier, TDataCenter>> overrides,
+            ref List<InvalidOverrideValueException> exceptions)
         {
             if (overrides == null)
-                return null;
+                return;
 
-            List<InvalidOverrideValueException> exceptions = null;
             foreach (var kvp in overrides)
             {
                 Setting setting;
@@ -915,11 +919,6 @@ namespace NFig
                     exceptions.Add(ex);
                 }
             }
-
-            if (exceptions != null)
-                return new InvalidOverridesException(exceptions);
-
-            return null;
         }
 
         [CanBeNull]

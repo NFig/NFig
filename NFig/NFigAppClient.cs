@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using JetBrains.Annotations;
 using NFig.Metadata;
 
 namespace NFig
@@ -15,6 +16,9 @@ namespace NFig
     {
         bool _isRootRegistered = false;
 
+        readonly List<UpdateDelegate> _rootUpdateCallbacks = new List<UpdateDelegate>();
+        readonly List<SubAppsUpdateDelegate> _subAppUpdateCallbacks = new List<SubAppsUpdateDelegate>();
+
         /// <summary>
         /// The method signature of callback functions passed to <see cref="Subscribe"/>.
         /// </summary>
@@ -22,7 +26,7 @@ namespace NFig
         /// <param name="settings">A hydrated settings object which represents the current active setting values.</param>
         /// <param name="client">A reference to the app client which generated the settings object.</param>
         public delegate void UpdateDelegate(
-            Exception ex,
+            InvalidOverridesException ex,
             TSettings settings,
             NFigAppClient<TSettings, TTier, TDataCenter> client);
 
@@ -33,7 +37,7 @@ namespace NFig
         /// <param name="settingsBySubAppId">A dictionary of hydrated settings object by sub-app.</param>
         /// <param name="client">A reference to the app client which generated the settings object.</param>
         public delegate void SubAppsUpdateDelegate(
-            Exception ex,
+            InvalidOverridesException ex,
             Dictionary<int, TSettings> settingsBySubAppId,
             NFigAppClient<TSettings, TTier, TDataCenter> client);
 
@@ -81,9 +85,11 @@ namespace NFig
             RegisterRootApp();
             var snapshot = Store.GetSnapshotInternal(AppName);
 
-            var ex = _factory.TryGetSettings(subAppId, snapshot, out var settings);
-            if (ex != null)
-                throw ex;
+            List<InvalidOverrideValueException> invalidOverrides = null;
+            _factory.TryGetSettings(subAppId, snapshot, out var settings, ref invalidOverrides);
+
+            if (invalidOverrides?.Count > 0)
+                throw new InvalidOverridesException(invalidOverrides);
 
             return settings;
         }
@@ -99,9 +105,11 @@ namespace NFig
         {
             var snapshot = await Store.GetSnapshotAsyncInternal(AppName);
 
-            var ex = _factory.TryGetSettings(subAppId, snapshot, out var settings);
-            if (ex != null)
-                throw ex;
+            List<InvalidOverrideValueException> invalidOverrides = null;
+            _factory.TryGetSettings(subAppId, snapshot, out var settings, ref invalidOverrides);
+
+            if (invalidOverrides?.Count > 0)
+                throw new InvalidOverridesException(invalidOverrides);
 
             return settings;
         }
@@ -174,27 +182,80 @@ namespace NFig
         /// Gets the name and ID of every sub-app that has been registered on this client. This may not include every sub-app which has been registered by other
         /// clients. If you want to know the list of every sub-app, use <see cref="NFigAdminClient{TTier,TDataCenter}.GetSubApps"/>.
         /// </summary>
+        [NotNull]
         public SubApp[] GetRegisteredSubApps() => _factory.GetRegisteredSubApps();
 
         /// <summary>
         /// Subscribes to settings changes. The callback will be called for the first time before this method returns, and then will be called each time
-        /// overrides are updated in the backing store.
+        /// overrides are updated in the backing store, unless <paramref name="once"/> is true.
         /// </summary>
-        public void Subscribe(UpdateDelegate callback)
+        /// <param name="callback">The delegate to call when there are updates</param>
+        /// <param name="once">If true, the callback will only be called once (before this method returns), and will not be called when updates occur.</param>
+        public void Subscribe([NotNull] UpdateDelegate callback, bool once = false)
         {
+            if (callback == null)
+                throw new ArgumentNullException(nameof(callback));
+
             RegisterRootApp();
-            throw new NotImplementedException();
+
+            var snapshot = Store.GetSnapshotInternal(AppName);
+
+            List<InvalidOverrideValueException> invalidOverrides = null;
+            _factory.TryGetSettings(null, snapshot, out var settings, ref invalidOverrides);
+            var ex = invalidOverrides?.Count > 0 ? new InvalidOverridesException(invalidOverrides) : null;
+            callback(ex, settings, this);
+
+            if (!once)
+            {
+                lock (_rootUpdateCallbacks)
+                {
+                    _rootUpdateCallbacks.Add(callback);
+                }
+            }
         }
 
         /// <summary>
         /// Subscribes to sub-app settings. Only sub-apps which have been declared via AddSubApp or AddSubApps will be sent to the callback. The callback will
         /// be called for the first time before this method returns, and then will be called anytime overrides are updated in the backing store or new sub-apps
-        /// are declared. Each time it is called, a new settings object is provided for all sub-apps, even if some sub-apps have not changed.
+        /// are declared, unless <paramref name="once"/> is true. Each time it is called, a new settings object is provided for all sub-apps, even if some
+        /// sub-apps have not changed.
         /// </summary>
-        /// <param name="callback"></param>
-        public void SubscribeToSubApps(SubAppsUpdateDelegate callback)
+        /// <param name="callback">The delegate to call when there are updates</param>
+        /// <param name="once">If true, the callback will only be called once (before this method returns), and will not be called when updates occur.</param>
+        public void SubscribeToSubApps([NotNull] SubAppsUpdateDelegate callback, bool once = false)
         {
-            throw new NotImplementedException();
+            if (callback == null)
+                throw new ArgumentNullException(nameof(callback));
+
+            var subApps = GetRegisteredSubApps();
+            var settingsBySubAppId = new Dictionary<int, TSettings>(subApps.Length);
+            InvalidOverridesException ex = null;
+
+            if (subApps.Length > 0)
+            {
+                var snapshot = Store.GetSnapshotInternal(AppName);
+                List<InvalidOverrideValueException> invalidOverrides = null;
+
+                for (var i = 0; i < subApps.Length; i++)
+                {
+                    var subAppId = subApps[i].Id;
+                    _factory.TryGetSettings(subAppId, snapshot, out var settings, ref invalidOverrides);
+                    settingsBySubAppId[subAppId] = settings;
+                }
+
+                if (invalidOverrides?.Count > 0)
+                    ex = new InvalidOverridesException(invalidOverrides);
+            }
+
+            callback(ex, settingsBySubAppId, this);
+
+            if (!once)
+            {
+                lock (_subAppUpdateCallbacks)
+                {
+                    _subAppUpdateCallbacks.Add(callback);
+                }
+            }
         }
 
         /// <summary>
@@ -228,5 +289,7 @@ namespace NFig
             var meta = new SubAppMetadata<TTier, TDataCenter>(AppName, null, null, defaults);
             Store.UpdateSubAppsInternal(AppName, meta);
         }
+
+//        Dictionary<int, TSettings> Get
     }
 }

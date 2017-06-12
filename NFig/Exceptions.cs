@@ -123,16 +123,16 @@ namespace NFig
         /// <summary>
         /// A list of nested exceptions. The number of exceptions in this list will be the same as the number of overrides which were unable to be applied.
         /// </summary>
-        public IList<InvalidOverrideValueException> Exceptions { get; }
+        public List<InvalidOverrideValueException> Exceptions { get; }
 
-        internal InvalidOverridesException(IList<InvalidOverrideValueException> exceptions) : base(GetMessage(exceptions))
+        internal InvalidOverridesException(List<InvalidOverrideValueException> exceptions) : base(GetMessage(exceptions))
         {
             Exceptions = exceptions;
         }
 
-        static string GetMessage(IList<InvalidOverrideValueException> exceptions)
+        static string GetMessage(List<InvalidOverrideValueException> exceptions)
         {
-            return $"{exceptions.Count} invalid setting overrides were not applied ({string.Join(", ", exceptions.Select(e => e.SettingName))}). You should edit or clear these overrides.";
+            return $"{exceptions.Count} invalid setting overrides were not applied. See the {nameof(Exceptions)} property for details. You should edit or clear these overrides.";
         }
     }
 }

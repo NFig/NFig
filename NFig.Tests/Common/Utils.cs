@@ -1,4 +1,5 @@
-﻿using NFig.Encryption;
+﻿using System.Collections.Generic;
+using NFig.Encryption;
 using NFig.Metadata;
 
 namespace NFig.Tests.Common
@@ -37,9 +38,10 @@ namespace NFig.Tests.Common
             if (snapshot == null)
                 snapshot = CreateSnapshot(factory.AppInfo.AppName);
 
-            var ex = factory.TryGetSettings(subAppId, snapshot, out var settings);
-            if (ex != null)
-                throw ex;
+            List<InvalidOverrideValueException> invalidOverrides = null;
+            factory.TryGetSettings(subAppId, snapshot, out var settings, ref invalidOverrides);
+            if (invalidOverrides != null)
+                throw new InvalidOverridesException(invalidOverrides);
 
             return settings;
         }

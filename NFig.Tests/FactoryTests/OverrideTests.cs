@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using NFig.Metadata;
 using NFig.Tests.Common;
 using NUnit.Framework;
@@ -45,13 +46,14 @@ namespace NFig.Tests.FactoryTests
 
             var snapshot = Utils.CreateSnapshot(overrides: overrides);
 
-            var invalidOverrides = factory.TryGetSettings(null, snapshot, out var s);
-            Console.WriteLine(invalidOverrides.Message);
+            List<InvalidOverrideValueException> invalidOverrides = null;
+            factory.TryGetSettings(null, snapshot, out var s, ref invalidOverrides);
 
-            Assert.True(invalidOverrides != null && invalidOverrides.Exceptions.Count == 2);
+            Assert.True(invalidOverrides != null);
+            Assert.True(invalidOverrides.Count == 2);
 
-            var ex = invalidOverrides.Exceptions[0];
-            Assert.True(ex.SettingName == "A");
+            Assert.True(invalidOverrides[0].SettingName == "A");
+            Assert.True(invalidOverrides[1].SettingName == "B");
 
             Assert.AreEqual(s.A, 0);
             Assert.AreEqual(s.B, 1);
