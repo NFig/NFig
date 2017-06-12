@@ -15,6 +15,10 @@ namespace NFig
     {
         const string ROOT_KEY = "$root";
 
+        NFigMemoryStore(TTier tier, TDataCenter dataCenter, Action<Exception> backgroundExceptionHandler)
+            : base(tier, dataCenter, backgroundExceptionHandler)
+        {
+        }
 
         /// <summary>
         /// Creates an in-memory NFig store. This store is primarily intended for testing and sample apps, but could be used for an app with no persistent
@@ -23,12 +27,36 @@ namespace NFig
         /// <param name="tier">The deployment tier of the store.</param>
         /// <param name="dataCenter">The current data center.</param>
         /// <param name="backgroundExceptionHandler">Used to log exceptions which occur on a background thread.</param>
-        public NFigMemoryStore(TTier tier, TDataCenter dataCenter, Action<Exception> backgroundExceptionHandler)
-            : base(tier, dataCenter, backgroundExceptionHandler)
+        public NFigMemoryStore<TTier, TDataCenter> Create(TTier tier, TDataCenter dataCenter, Action<Exception> backgroundExceptionHandler)
         {
+            var store = new NFigMemoryStore<TTier, TDataCenter>(tier, dataCenter, backgroundExceptionHandler);
+            store.RefreshAppNames();
+            return store;
         }
 
+        // If this were a real store, there should be an async version of Create, because it needs to load all of the app names from the backing store.
+
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+
+        protected override string[] GetRefreshedAppNames()
+        {
+            throw new NotImplementedException();
+        }
+
+        protected override Task<string[]> GetRefreshedAppNamesAsync()
+        {
+            throw new NotImplementedException();
+        }
+
+        protected override void RefreshApp(string appName, bool force)
+        {
+            throw new NotImplementedException();
+        }
+
+        protected override Task RefreshAppAsync(string appName, bool force)
+        {
+            throw new NotImplementedException();
+        }
 
         protected override SubApp[] GetSubApps(string appName)
         {

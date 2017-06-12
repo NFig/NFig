@@ -61,11 +61,15 @@ namespace NFig
         /// The data center of the current app or admin panel.
         /// </summary>
         public TDataCenter DataCenter { get; }
-
         /// <summary>
         /// Metadata about the <typeparamref name="TDataCenter"/> type.
         /// </summary>
         public EnumMetadata DataCenterMetadata { get; }
+
+        /// <summary>
+        /// The names of all applications connected to this store.
+        /// </summary>
+        public string[] AppNames { get; private set; }
 
         /// <summary>
         /// Instantiates the base Store class.
@@ -83,16 +87,66 @@ namespace NFig
             IntToTier = CreateIntToEnumConverter<TTier>();
             IntToDataCenter = CreateIntToEnumConverter<TDataCenter>();
 
-            Tier = tier;
-            DataCenter = dataCenter;
+            BackgroundExceptionHandler = backgroundExceptionHandler;
 
             CurrentTierValue = new EnumValue(Convert.ToInt64(tier), tier.ToString());
             CurrentDataCenterValue = new EnumValue(Convert.ToInt64(dataCenter), dataCenter.ToString());
 
+            Tier = tier;
+            DataCenter = dataCenter;
             DataCenterMetadata = EnumMetadata.Create(typeof(TDataCenter), tier);
-
-            BackgroundExceptionHandler = backgroundExceptionHandler;
         }
+
+        /// <summary>
+        /// Forces a refresh of the list of app names. This typically isn't necessary because the store should auto-refresh when an app is added.
+        /// 
+        /// Returns the new list of app names.
+        /// </summary>
+        public string[] RefreshAppNames()
+        {
+            var appNames = GetRefreshedAppNames();
+            AppNames = appNames;
+            return appNames;
+        }
+
+        /// <summary>
+        /// Forces a refresh of the list of app names. This typically isn't necessary because the store should auto-refresh when an app is added.
+        /// 
+        /// Returns the new list of app names.
+        /// </summary>
+        public async Task<string[]> RefreshAppNamesAsync()
+        {
+            var appNames = await GetRefreshedAppNamesAsync();
+            AppNames = appNames;
+            return appNames;
+        }
+
+        /// <summary>
+        /// Returns an updated list of app names which are known by the backing store.
+        /// </summary>
+        protected abstract string[] GetRefreshedAppNames();
+
+        /// <summary>
+        /// Returns an updated list of app names which are known by the backing store.
+        /// </summary>
+        protected abstract Task<string[]> GetRefreshedAppNamesAsync();
+
+        /// <summary>
+        /// Checks the backing store for changes to the app's metadata, including sub-apps, and refreshes as necessary.
+        /// </summary>
+        /// <param name="appName">The name of the root app.</param>
+        /// <param name="force">If true, all metadata for the app will be reloaded, even if no change was detected.</param>
+        protected abstract void RefreshApp(string appName, bool force);
+
+        /// <summary>
+        /// Checks the backing store for changes to the app's metadata, including sub-apps, and refreshes as necessary.
+        /// </summary>
+        /// <param name="appName">The name of the root app.</param>
+        /// <param name="force">If true, all metadata for the app will be reloaded, even if no change was detected.</param>
+        protected abstract Task RefreshAppAsync(string appName, bool force);
+
+        internal void RefreshAppInternal(string appName, bool force) => RefreshApp(appName, force);
+        internal Task RefreshAppAsyncInternal(string appName, bool force) => RefreshAppAsync(appName, force);
 
         /// <summary>
         /// Sets an encryptor for an application. This will be used by both app and admin clients. It MUST be called before
