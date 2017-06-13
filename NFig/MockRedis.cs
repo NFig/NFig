@@ -135,7 +135,67 @@ namespace NFig
          * Hashes
          * ================================================================================================================================================== */
 
-        //
+        public static void HashSet(string key, string hashKey, string value)
+        {
+            if (value == null)
+                throw new ArgumentNullException(nameof(value));
+
+            lock (s_database)
+            {
+                Dictionary<string, string> hash;
+                if (s_database.TryGetValue(key, out var valueObj))
+                {
+                    if (valueObj.Type != DataType.Hash)
+                        throw new InvalidOperationException($"Key {key} is not a Hash");
+
+                    hash = (Dictionary<string, string>)valueObj.Data;
+                }
+                else
+                {
+                    hash = new Dictionary<string, string>();
+                    s_database[key] = new Value(DataType.Hash, hash);
+                }
+
+                hash[hashKey] = value;
+            }
+        }
+
+        public static bool HashDelete(string key, string hashKey)
+        {
+            if (hashKey == null)
+                throw new ArgumentNullException(nameof(hashKey));
+
+            lock (s_database)
+            {
+                if (s_database.TryGetValue(key, out var valueObj))
+                {
+                    if (valueObj.Type != DataType.Hash)
+                        throw new InvalidOperationException($"Key {key} is not a Hash");
+
+                    var hash = (Dictionary<string, string>)valueObj.Data;
+                    return hash.Remove(hashKey);
+                }
+
+                return false;
+            }
+        }
+
+        public static Dictionary<string, string> HashGetAll(string key)
+        {
+            lock (s_database)
+            {
+                if (s_database.TryGetValue(key, out var valueObj))
+                {
+                    if (valueObj.Type != DataType.Hash)
+                        throw new InvalidOperationException($"Key {key} is not a Hash");
+
+                    var hash = (Dictionary<string, string>)valueObj.Data;
+                    return new Dictionary<string, string>(hash);
+                }
+
+                return new Dictionary<string, string>();
+            }
+        }
 
         /* ================================================================================================================================================== *
          * Data
