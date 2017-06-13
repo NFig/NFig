@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using NFig.Metadata;
 
@@ -15,9 +16,13 @@ namespace NFig
     {
         const string ROOT_KEY = "$root";
 
+        readonly string _appNamesKey;
+        readonly Dictionary<string, Keys> _keysByApp = new Dictionary<string, Keys>();
+
         NFigMemoryStore(TTier tier, TDataCenter dataCenter, Action<Exception> backgroundExceptionHandler)
             : base(tier, dataCenter, backgroundExceptionHandler)
         {
+            _appNamesKey = Keys.GetKeyPrefix(tier) + ":AppNames";
         }
 
         /// <summary>
@@ -40,32 +45,50 @@ namespace NFig
 
         protected override string[] GetAppNames()
         {
-            throw new NotImplementedException();
+            return MockRedis.SetMembers(_appNamesKey);
         }
 
         protected override Task<string[]> GetAppNamesAsync()
         {
-            throw new NotImplementedException();
+            return Task.FromResult(GetAppNames());
         }
 
         protected override void RefreshAppMetadata(string appName, bool forceReload)
         {
-            throw new NotImplementedException();
+            // todo: look at history to decide if a refresh is necessary
+
+            var keys = GetKeys(appName);
+            string metadataBySettingJson;
+            Dictionary<string, string> metadataBySubAppHash;
+            using (MockRedis.Multi())
+            {
+                metadataBySettingJson = MockRedis.Get(keys.MetadataBySetting);
+                //metadataBySubAppHash = MockRedis.HashGetAll(keys.MetadataBySubApp);
+            }
+
+            if (metadataBySettingJson == null)
+                throw new NFigException($"Metadata not found for app {appName}");
+
+            var metadataBySetting = BySetting<SettingMetadata>.Deserialize(metadataBySettingJson);
+            //UpdateAppMetadataCache(appName, metadataBySetting, );
         }
 
         protected override Task RefreshAppMetadataAsync(string appName, bool forceReload)
         {
-            throw new NotImplementedException();
+            RefreshAppMetadata(appName, forceReload);
+            return Task.CompletedTask;
         }
 
         protected override void RefreshSnapshot(string appName, bool forceReload)
         {
+            // todo: look at history to decide if a refresh is necessary
             throw new NotImplementedException();
         }
 
         protected override Task RefreshSnapshotAsync(string appName, bool forceReload)
         {
-            throw new NotImplementedException();
+            RefreshSnapshot(appName, forceReload);
+            return Task.CompletedTask;
         }
 
         protected override OverridesSnapshot<TTier, TDataCenter> RestoreSnapshot(string appName, OverridesSnapshot<TTier, TDataCenter> snapshot, string user)
@@ -75,7 +98,7 @@ namespace NFig
 
         protected override Task<OverridesSnapshot<TTier, TDataCenter>> RestoreSnapshotAsync(string appName, OverridesSnapshot<TTier, TDataCenter> snapshot, string user)
         {
-            throw new NotImplementedException();
+            return Task.FromResult(RestoreSnapshot(appName, snapshot, user));
         }
 
         protected override OverridesSnapshot<TTier, TDataCenter> SetOverride(string appName, OverrideValue<TTier, TDataCenter> ov, string user, string commit)
@@ -85,7 +108,7 @@ namespace NFig
 
         protected override Task<OverridesSnapshot<TTier, TDataCenter>> SetOverrideAsync(string appName, OverrideValue<TTier, TDataCenter> ov, string user, string commit)
         {
-            throw new NotImplementedException();
+            return Task.FromResult(SetOverride(appName, ov, user, commit));
         }
 
         protected override OverridesSnapshot<TTier, TDataCenter> ClearOverride(string appName, string settingName, TDataCenter dataCenter, string user, int? subAppId, string commit)
@@ -95,7 +118,7 @@ namespace NFig
 
         protected override Task<OverridesSnapshot<TTier, TDataCenter>> ClearOverrideAsync(string appName, string settingName, TDataCenter dataCenter, string user, int? subAppId, string commit)
         {
-            throw new NotImplementedException();
+            return Task.FromResult(ClearOverride(appName, settingName, dataCenter, user, subAppId, commit));
         }
 
         protected override void SetMetadata(string appName, BySetting<SettingMetadata> metadata)
@@ -105,7 +128,8 @@ namespace NFig
 
         protected override Task SetMetadataAsync(string appName, BySetting<SettingMetadata> metadata)
         {
-            throw new NotImplementedException();
+            SetMetadata(appName, metadata);
+            return Task.CompletedTask;
         }
 
         protected override void UpdateSubAppMetadata(string appName, SubAppMetadata<TTier, TDataCenter>[] subAppsMetadata)
@@ -115,9 +139,49 @@ namespace NFig
 
         protected override Task UpdateSubAppMetadataAsync(string appName, SubAppMetadata<TTier, TDataCenter>[] subAppsMetadata)
         {
-            throw new NotImplementedException();
+            UpdateSubAppMetadata(appName, subAppsMetadata);
+            return Task.CompletedTask;
         }
 
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
+
+        Keys GetKeys(string appName)
+        {
+            lock (_keysByApp)
+            {
+                var exists = _keysByApp.TryGetValue(appName, out var keys);
+
+                if (!exists)
+                {
+                    keys = new Keys(Tier, appName);
+                    _keysByApp[appName] = keys;
+                }
+
+                return keys;
+            }
+        }
+
+        class Keys
+        {
+            public string DefaultsBySubApp { get; }
+            public string MetadataBySetting { get; }
+            public string MetadataBySubApp { get; }
+            public string Overrides { get; }
+
+            public Keys(TTier tier, string appName)
+            {
+                var prefix = GetKeyPrefix(tier);
+
+                DefaultsBySubApp = prefix + nameof(DefaultsBySubApp) + ":" + appName;
+                MetadataBySetting = prefix + nameof(MetadataBySetting) + ":" + appName;
+                MetadataBySubApp = prefix + nameof(MetadataBySubApp) + ":" + appName;
+                Overrides = prefix + nameof(Overrides) + ":" + appName;
+            }
+
+            public static string GetKeyPrefix(TTier tier)
+            {
+                return "NFig3.0:" + Convert.ToInt32(tier) + ":";
+            }
+        }
     }
 }
