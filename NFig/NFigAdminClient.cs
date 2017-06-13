@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using NFig.Converters;
 using NFig.Encryption;
@@ -14,7 +13,7 @@ namespace NFig
         where TTier : struct
         where TDataCenter : struct
     {
-        readonly ISettingEncryptor _encryptor;
+        readonly AppInternalInfo<TTier, TDataCenter> _appInfo;
 
         /// <summary>
         /// The backing store for NFig overrides and metadata.
@@ -23,55 +22,39 @@ namespace NFig
         /// <summary>
         /// The name of the application to administer.
         /// </summary>
-        public string AppName { get; }
+        public string AppName => _appInfo.AppName;
         /// <summary>
         /// The deployment tier of the application.
         /// </summary>
         public TTier Tier { get; }
         /// <summary>
+        /// Metadata about the application, not including default values.
+        /// </summary>
+        public AppMetadata AppMetadata => _appInfo.AppMetadata;
+        /// <summary>
         /// True if this admin client is capable of encrypting settings for the application.
         /// </summary>
-        public bool CanEncrypt { get; }
+        public bool CanEncrypt => _appInfo.CanEncrypt;
         /// <summary>
         /// True if this admin client is capable of decrypting the application's encrypted settings.
         /// </summary>
-        public bool CanDecrypt { get; }
+        public bool CanDecrypt => _appInfo.CanDecrypt;
 
         /// <summary>
-        /// Initializes the admin client.
+        /// Gets the current overrides-snapshot for the app.
         /// </summary>
-        protected internal NFigAdminClient(NFigStore<TTier, TDataCenter> store, string appName, TTier tier, ISettingEncryptor encryptor)
+        public OverridesSnapshot<TTier, TDataCenter> Snapshot => _appInfo.Snapshot;
+        /// <summary>
+        /// Returns the current snapshot commit for the app.
+        /// </summary>
+        public string Commit => Snapshot.Commit;
+
+        internal NFigAdminClient(NFigStore<TTier, TDataCenter> store, AppInternalInfo<TTier, TDataCenter> appInfo)
         {
-            _encryptor = encryptor;
+            _appInfo = appInfo;
 
             Store = store;
-            AppName = appName;
-            Tier = tier;
-            CanEncrypt = encryptor != null;
-            CanDecrypt = encryptor?.CanDecrypt ?? false;
-        }
-
-        /// <summary>
-        /// Gets the name and ID of every sub-app that has been added to this application.
-        /// </summary>
-        public SubApp[] GetSubApps()
-        {
-            return Store.GetSubAppsInternal(AppName);
-        }
-
-        /// <summary>
-        /// Gets basic metadata about the application which is useful for an admin panel. This does not include default values. To get default values, call
-        /// <see cref="GetSubAppMetadata"/>.
-        /// </summary>
-        public AppMetadata GetAppMetadata()
-        {
-            var settingsMetadata = Store.GetSettingsMetadataInternal(AppName);
-
-            if (settingsMetadata == null)
-                throw new NFigException($"Unable to load metadata for app {AppName}");
-
-            var subApps = GetSubApps();
-            return new AppMetadata(AppName, Store.CurrentTierValue, Store.CurrentDataCenterValue, Store.DataCenterMetadata, settingsMetadata, subApps);
+            Tier = store.Tier;
         }
 
         /// <summary>
@@ -84,13 +67,28 @@ namespace NFig
         }
 
         /// <summary>
-        /// Gets the current commit ID of the application. This changes every time overrides are updated.
+        /// Checks the backing store for changes to the app's metadata, including sub-apps, and updates as necessary.
         /// </summary>
-        public string GetCurrentCommit()
-        {
-            var snapshot = Store.GetSnapshotInternal(AppName);
-            return snapshot.Commit;
-        }
+        /// <param name="forceReload">If true, the metadata will be reloaded, even if no change was detected.</param>
+        public void RefreshMetadata(bool forceReload) => Store.RefreshAppMetadataInternal(AppName, forceReload);
+
+        /// <summary>
+        /// Checks the backing store for changes to the app's metadata, including sub-apps, and updates as necessary.
+        /// </summary>
+        /// <param name="forceReload">If true, the metadata will be reloaded, even if no change was detected.</param>
+        public Task RefreshMetadataAsync(bool forceReload) => Store.RefreshAppMetadataAsyncInternal(AppName, forceReload);
+
+        /// <summary>
+        /// Checks the backing store for changes to the app's overrides, including sub-apps, and updates the snapshot as necessary.
+        /// </summary>
+        /// <param name="forceReload">If true, the snapshot will be reloaded, even if no change was detected.</param>
+        public void RefreshSnapshot(bool forceReload) => Store.RefreshSnapshotInternal(AppName, forceReload);
+
+        /// <summary>
+        /// Checks the backing store for changes to the app's overrides, including sub-apps, and updates the snapshot as necessary.
+        /// </summary>
+        /// <param name="forceReload">If true, the snapshot will be reloaded, even if no change was detected.</param>
+        public Task RefreshSnapshotAsync(bool forceReload) => Store.RefreshSnapshotAsyncInternal(AppName, forceReload);
 
         /// <summary>
         /// Sets an override for the specified setting name and data center combination. If an existing override shares that exact combination, it will be
@@ -221,11 +219,6 @@ namespace NFig
         {
             throw new NotImplementedException();
         }
-
-        /// <summary>
-        /// Returns a snapshot of all current overrides which can be used to restore the current state at a later date.
-        /// </summary>
-        public OverridesSnapshot<TTier, TDataCenter> GetSnapshot() => Store.GetSnapshotInternal(AppName);
 
         /// <summary>
         /// Restores all overrides to a previous state.

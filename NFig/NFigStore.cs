@@ -16,7 +16,7 @@ namespace NFig
         where TTier : struct
         where TDataCenter : struct
     {
-        readonly Dictionary<string, AppInternalInfo> _infoByApp = new Dictionary<string, AppInternalInfo>();
+        readonly Dictionary<string, AppInternalInfo<TTier, TDataCenter>> _infoByApp = new Dictionary<string, AppInternalInfo<TTier, TDataCenter>>();
 
         /// <summary>
         /// The Commit value which should be used when no overrides have ever been set for the application.
@@ -104,7 +104,7 @@ namespace NFig
         /// </summary>
         public string[] RefreshAppNames()
         {
-            var appNames = GetRefreshedAppNames();
+            var appNames = GetAppNames();
             AppNames = appNames;
             return appNames;
         }
@@ -116,7 +116,7 @@ namespace NFig
         /// </summary>
         public async Task<string[]> RefreshAppNamesAsync()
         {
-            var appNames = await GetRefreshedAppNamesAsync();
+            var appNames = await GetAppNamesAsync();
             AppNames = appNames;
             return appNames;
         }
@@ -124,29 +124,102 @@ namespace NFig
         /// <summary>
         /// Returns an updated list of app names which are known by the backing store.
         /// </summary>
-        protected abstract string[] GetRefreshedAppNames();
+        protected abstract string[] GetAppNames();
 
         /// <summary>
         /// Returns an updated list of app names which are known by the backing store.
         /// </summary>
-        protected abstract Task<string[]> GetRefreshedAppNamesAsync();
+        protected abstract Task<string[]> GetAppNamesAsync();
 
         /// <summary>
-        /// Checks the backing store for changes to the app's metadata, including sub-apps, and refreshes as necessary.
+        /// Checks the backing store for changes to the app's metadata, including sub-apps, and calls <see cref="UpdateAppMetadataCache"/> as necessary.
         /// </summary>
         /// <param name="appName">The name of the root app.</param>
-        /// <param name="force">If true, all metadata for the app will be reloaded, even if no change was detected.</param>
-        protected abstract void RefreshApp(string appName, bool force);
+        /// <param name="forceReload">If true, all metadata for the app should be reloaded, even if no change was detected.</param>
+        protected abstract void RefreshAppMetadata(string appName, bool forceReload);
 
         /// <summary>
-        /// Checks the backing store for changes to the app's metadata, including sub-apps, and refreshes as necessary.
+        /// Checks the backing store for changes to the app's metadata, including sub-apps, and calls <see cref="UpdateAppMetadataCache"/> as necessary.
         /// </summary>
         /// <param name="appName">The name of the root app.</param>
-        /// <param name="force">If true, all metadata for the app will be reloaded, even if no change was detected.</param>
-        protected abstract Task RefreshAppAsync(string appName, bool force);
+        /// <param name="forceReload">If true, all metadata for the app will be reloaded, even if no change was detected.</param>
+        protected abstract Task RefreshAppMetadataAsync(string appName, bool forceReload);
 
-        internal void RefreshAppInternal(string appName, bool force) => RefreshApp(appName, force);
-        internal Task RefreshAppAsyncInternal(string appName, bool force) => RefreshAppAsync(appName, force);
+        internal void RefreshAppMetadataInternal(string appName, bool forceReload) => RefreshAppMetadata(appName, forceReload);
+        internal Task RefreshAppMetadataAsyncInternal(string appName, bool forceReload) => RefreshAppMetadataAsync(appName, forceReload);
+
+        /// <summary>
+        /// Updates the metadata cache for the application.
+        /// </summary>
+        protected void UpdateAppMetadataCache(
+            [NotNull] string appName,
+            [NotNull] BySetting<SettingMetadata> metadataBySetting,
+            [NotNull] SubAppMetadata<TTier, TDataCenter> rootAppMetadata,
+            [NotNull] Dictionary<int, SubAppMetadata<TTier, TDataCenter>> subAppMetadata)
+        {
+            if (appName == null)
+                throw new ArgumentNullException(nameof(appName));
+
+            if (metadataBySetting == null)
+                throw new ArgumentNullException(nameof(metadataBySetting));
+
+            if (rootAppMetadata == null)
+                throw new ArgumentNullException(nameof(rootAppMetadata));
+
+            if (subAppMetadata == null)
+                throw new ArgumentNullException(nameof(subAppMetadata));
+
+            var subApps = new SubApp[subAppMetadata.Count];
+            var i = 0;
+            foreach (var kvp in subAppMetadata)
+            {
+                subApps[i] = new SubApp(kvp.Key, kvp.Value.SubAppName);
+                i++;
+            }
+
+            var appMetadata = new AppMetadata(appName, CurrentTierValue, CurrentDataCenterValue, DataCenterMetadata, metadataBySetting, subApps);
+
+            lock (_infoByApp)
+            {
+                var info = _infoByApp[appName];
+                info.AppMetadata = appMetadata;
+                info.RootAppMetadata = rootAppMetadata;
+                info.SubAppMetadata = subAppMetadata;
+                // todo: notify clients
+            }
+        }
+
+        /// <summary>
+        /// Checks the backing store for changes to the app's overrides, including sub-apps, and calls <see cref="UpdateSnapshotCache"/> as necessary.
+        /// </summary>
+        /// <param name="appName">The name of the root app.</param>
+        /// <param name="forceReload">If true, the snapshot must be reloaded, even if no change was detected.</param>
+        protected abstract void RefreshSnapshot(string appName, bool forceReload);
+
+        /// <summary>
+        /// Checks the backing store for changes to the app's overrides, including sub-apps, and calls <see cref="UpdateSnapshotCache"/> as necessary.
+        /// </summary>
+        /// <param name="appName">The name of the root app.</param>
+        /// <param name="forceReload">If true, the snapshot must be reloaded, even if no change was detected.</param>
+        protected abstract Task RefreshSnapshotAsync(string appName, bool forceReload);
+
+        internal void RefreshSnapshotInternal(string appName, bool forceReload) => RefreshSnapshot(appName, forceReload);
+        internal Task RefreshSnapshotAsyncInternal(string appName, bool forceReload) => RefreshSnapshotAsync(appName, forceReload);
+
+        /// <summary>
+        /// Updates the cached snapshot for the app.
+        /// </summary>
+        protected void UpdateSnapshotCache(OverridesSnapshot<TTier, TDataCenter> snapshot)
+        {
+            if (snapshot == null)
+                throw new NFigException("Cannot set a null snapshot");
+
+            lock (_infoByApp)
+            {
+                _infoByApp[snapshot.AppName].Snapshot = snapshot;
+                // todo: notify clients
+            }
+        }
 
         /// <summary>
         /// Sets an encryptor for an application. This will be used by both app and admin clients. It MUST be called before
@@ -162,10 +235,10 @@ namespace NFig
             if (encryptor == null)
                 throw new ArgumentNullException(nameof(encryptor));
 
-            var info = GetAppInfo(appName);
-
             lock (_infoByApp)
             {
+                var info = SetupAppInfo(appName);
+
                 // For now, we're not going to allow replacing an encryptor which has already been set. It's unclear why you would ever want to do that.
                 // However, I do think we do need to provide a way for a user to tell whether an encryptor has already been set for a particular app.
                 // todo: provide a way to check whether an app already has an encryptor set
@@ -188,11 +261,13 @@ namespace NFig
         public NFigAppClient<TSettings, TTier, TDataCenter> GetAppClient<TSettings>(string appName)
             where TSettings : class, INFigSettings<TTier, TDataCenter>, new()
         {
-            var appInfo = GetAppInfo(appName, typeof(TSettings));
+            var appInfo = SetupAppInfo(appName, typeof(TSettings));
             var client = (NFigAppClient<TSettings, TTier, TDataCenter>)appInfo.AppClient;
 
             if (client == null)
             {
+                RefreshSnapshotInternal(appName, true);
+
                 lock (appInfo)
                 {
                     client = new NFigAppClient<TSettings, TTier, TDataCenter>(this, appInfo);
@@ -212,10 +287,24 @@ namespace NFig
         /// <see cref="NFigSettingsBase{TTier,TDataCenter}"/>.
         /// </typeparam>
         /// <param name="appName">The name of your application. Overrides are keyed off of this name.</param>
-        public Task<NFigAppClient<TSettings, TTier, TDataCenter>> GetAppClientAsync<TSettings>(string appName)
+        public async Task<NFigAppClient<TSettings, TTier, TDataCenter>> GetAppClientAsync<TSettings>(string appName)
             where TSettings : class, INFigSettings<TTier, TDataCenter>, new()
         {
-            throw new NotImplementedException();
+            var appInfo = SetupAppInfo(appName, typeof(TSettings));
+            var client = (NFigAppClient<TSettings, TTier, TDataCenter>)appInfo.AppClient;
+
+            if (client == null)
+            {
+                await RefreshSnapshotAsyncInternal(appName, true);
+
+                lock (appInfo)
+                {
+                    client = new NFigAppClient<TSettings, TTier, TDataCenter>(this, appInfo);
+                    appInfo.AppClient = client;
+                }
+            }
+
+            return client;
         }
 
         /// <summary>
@@ -224,56 +313,47 @@ namespace NFig
         /// <param name="appName">The name of the application to administer.</param>
         public NFigAdminClient<TTier, TDataCenter> GetAdminClient(string appName)
         {
-            throw new NotImplementedException();
+            var appInfo = SetupAppInfo(appName);
+            var client = (NFigAdminClient<TTier, TDataCenter>)appInfo.AdminClient;
+
+            if (client == null)
+            {
+                RefreshSnapshotInternal(appName, true);
+                RefreshAppMetadataInternal(appName, true);
+
+                lock (appInfo)
+                {
+                    client = new NFigAdminClient<TTier, TDataCenter>(this, appInfo);
+                    appInfo.AdminClient = client;
+                }
+            }
+
+            return client;
         }
 
         /// <summary>
         /// Gets a client for administering NFig settings for a given application.
         /// </summary>
         /// <param name="appName">The name of the application to administer.</param>
-        public Task<NFigAdminClient<TTier, TDataCenter>> GetAdminClientAsync(string appName)
+        public async Task<NFigAdminClient<TTier, TDataCenter>> GetAdminClientAsync(string appName)
         {
-            throw new NotImplementedException();
+            var appInfo = SetupAppInfo(appName);
+            var client = (NFigAdminClient<TTier, TDataCenter>)appInfo.AdminClient;
+
+            if (client == null)
+            {
+                await RefreshSnapshotAsyncInternal(appName, true);
+                await RefreshAppMetadataAsyncInternal(appName, true);
+
+                lock (appInfo)
+                {
+                    client = new NFigAdminClient<TTier, TDataCenter>(this, appInfo);
+                    appInfo.AdminClient = client;
+                }
+            }
+
+            return client;
         }
-
-        /// <summary>
-        /// Gets the names of all applications connected to this store.
-        /// </summary>
-        public IEnumerable<string> GetAppNames() // todo: use a concrete type instead of IEnumerable
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <summary>
-        /// Gets the name and ID of every sub-app that has been added to this application.
-        /// </summary>
-        protected abstract SubApp[] GetSubApps(string appName);
-
-        internal SubApp[] GetSubAppsInternal(string appName) => GetSubApps(appName);
-
-        /// <summary>
-        /// Gets basic metadata about each setting.
-        /// </summary>
-        protected abstract BySetting<SettingMetadata> GetSettingsMetadata(string appName);
-
-        internal BySetting<SettingMetadata> GetSettingsMetadataInternal(string appName) => GetSettingsMetadata(appName);
-
-        /// <summary>
-        /// Gets default values for a sub-app, or the root app if subAppId is null.
-        /// </summary>
-        protected abstract ListBySetting<DefaultValue<TTier, TDataCenter>> GetDefaults(string appName, int? subAppId);
-
-        internal ListBySetting<DefaultValue<TTier, TDataCenter>> GetDefaultsInternal(string appName, int? subAppId)
-        {
-            return GetDefaults(appName, subAppId);
-        }
-
-        /// <summary>
-        /// Gets the current snapshot of overrides for the app, including all of its sub-apps.
-        /// </summary>
-        protected abstract OverridesSnapshot<TTier, TDataCenter> GetSnapshot(string appName);
-
-        internal OverridesSnapshot<TTier, TDataCenter> GetSnapshotInternal(string appName) => GetSnapshot(appName);
 
         /// <summary>
         /// Restores all overrides to a previous state. Returns a snapshot of the new current state (after restoring).
@@ -311,13 +391,6 @@ namespace NFig
         {
             return RestoreSnapshotAsync(appName, snapshot, user);
         }
-
-        /// <summary>
-        /// Returns the current snapshot commit for the app.
-        /// </summary>
-        protected abstract string GetCurrentCommit(string appName);
-
-        internal string GetCurrentCommitInternal(string appName) => GetCurrentCommit(appName);
 
         /// <summary>
         /// Sets an override for the specified setting name and data center combination. If an existing override shares that exact combination, it will be
@@ -576,14 +649,14 @@ namespace NFig
             return value;
         }
 
-        AppInternalInfo GetAppInfo(string appName, Type settingsType = null)
+        AppInternalInfo<TTier, TDataCenter> SetupAppInfo(string appName, Type settingsType = null)
         {
             if (appName == null)
                 throw new ArgumentNullException(nameof(appName));
 
             lock (_infoByApp)
             {
-                AppInternalInfo info;
+                AppInternalInfo<TTier, TDataCenter> info;
                 if (_infoByApp.TryGetValue(appName, out info))
                 {
                     if (settingsType != null) // called from an AppClient
@@ -595,7 +668,6 @@ namespace NFig
                         }
                         else if (settingsType != info.SettingsType)
                         {
-                            // there is a mismatch between 
                             var ex = new NFigException($"The TSettings of app \"{appName}\" does not match the TSettings used when the first NFigAppClient was initialized for the app");
                             ex.Data["OriginalTSettings"] = info.SettingsType.FullName;
                             ex.Data["NewTSettings"] = settingsType.FullName;
@@ -606,7 +678,7 @@ namespace NFig
                     return info;
                 }
 
-                info = new AppInternalInfo(appName, settingsType);
+                info = new AppInternalInfo<TTier, TDataCenter>(appName, settingsType);
                 _infoByApp[appName] = info;
                 return info;
             }

@@ -16,7 +16,7 @@ namespace NFig.Tests.Common
             ISettingEncryptor encryptor = null)
             where TSettings : class, INFigSettings<Tier, DataCenter>, new()
         {
-            var appInfo = new AppInternalInfo(GLOBAL_APP_1, typeof(TSettings));
+            var appInfo = new AppInternalInfo<Tier, DataCenter>(GLOBAL_APP_1, typeof(TSettings));
             appInfo.Encryptor = encryptor;
             return new SettingsFactory<TSettings, Tier, DataCenter>(appInfo, tier, dataCenter);
         }

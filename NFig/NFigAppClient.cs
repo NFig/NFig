@@ -19,6 +19,8 @@ namespace NFig
         readonly List<UpdateDelegate> _rootUpdateCallbacks = new List<UpdateDelegate>();
         readonly List<SubAppsUpdateDelegate> _subAppUpdateCallbacks = new List<SubAppsUpdateDelegate>();
 
+        readonly AppInternalInfo<TTier, TDataCenter> _appInfo;
+
         /// <summary>
         /// The method signature of callback functions passed to <see cref="Subscribe"/>.
         /// </summary>
@@ -61,20 +63,25 @@ namespace NFig
         public TDataCenter DataCenter { get; }
 
         /// <summary>
+        /// Gets the current overrides-snapshot for the app.
+        /// </summary>
+        public OverridesSnapshot<TTier, TDataCenter> Snapshot => _appInfo.Snapshot;
+        /// <summary>
         /// Returns the current snapshot commit for the app.
         /// </summary>
-        public string Commit => Store.GetCurrentCommitInternal(AppName);
+        public string Commit => Snapshot.Commit;
 
         /// <summary>
         /// Initializes the app client.
         /// </summary>
-        internal NFigAppClient(NFigStore<TTier, TDataCenter> store, AppInternalInfo appInfo)
+        internal NFigAppClient(NFigStore<TTier, TDataCenter> store, AppInternalInfo<TTier, TDataCenter> appInfo)
         {
             Store = store;
             AppName = appInfo.AppName;
             Tier = store.Tier;
             DataCenter = store.DataCenter;
 
+            _appInfo = appInfo;
             _factory = new SettingsFactory<TSettings, TTier, TDataCenter>(appInfo, Tier, DataCenter);
         }
 
@@ -88,10 +95,9 @@ namespace NFig
         public TSettings GetSettings(int? subAppId = null)
         {
             RegisterRootApp();
-            var snapshot = Store.GetSnapshotInternal(AppName);
 
             List<InvalidOverrideValueException> invalidOverrides = null;
-            _factory.TryGetSettings(subAppId, snapshot, out var settings, ref invalidOverrides);
+            _factory.TryGetSettings(subAppId, Snapshot, out var settings, ref invalidOverrides);
 
             if (invalidOverrides?.Count > 0)
                 throw new InvalidOverridesException(invalidOverrides);
@@ -138,7 +144,7 @@ namespace NFig
 
         /// <summary>
         /// Gets the name and ID of every sub-app that has been registered on this client. This may not include every sub-app which has been registered by other
-        /// clients. If you want to know the list of every sub-app, use <see cref="NFigAdminClient{TTier,TDataCenter}.GetSubApps"/>.
+        /// clients. If you want to know the list of every sub-app, see <see cref="NFigAdminClient{TTier,TDataCenter}.AppMetadata"/>.
         /// </summary>
         [NotNull]
         public SubApp[] GetRegisteredSubApps() => _factory.GetRegisteredSubApps();
@@ -156,10 +162,8 @@ namespace NFig
 
             RegisterRootApp();
 
-            var snapshot = Store.GetSnapshotInternal(AppName);
-
             List<InvalidOverrideValueException> invalidOverrides = null;
-            _factory.TryGetSettings(null, snapshot, out var settings, ref invalidOverrides);
+            _factory.TryGetSettings(null, Snapshot, out var settings, ref invalidOverrides);
             var ex = invalidOverrides?.Count > 0 ? new InvalidOverridesException(invalidOverrides) : null;
             callback(ex, settings, this);
 
@@ -191,7 +195,7 @@ namespace NFig
 
             if (subApps.Length > 0)
             {
-                var snapshot = Store.GetSnapshotInternal(AppName);
+                var snapshot = Snapshot;
                 List<InvalidOverrideValueException> invalidOverrides = null;
 
                 for (var i = 0; i < subApps.Length; i++)
@@ -215,6 +219,18 @@ namespace NFig
                 }
             }
         }
+
+        /// <summary>
+        /// Checks the backing store for changes to the app's overrides, including sub-apps, and updates the snapshot as necessary.
+        /// </summary>
+        /// <param name="forceReload">If true, the snapshot will be reloaded, even if no change was detected.</param>
+        public void RefreshSnapshot(bool forceReload) => Store.RefreshSnapshotInternal(AppName, forceReload);
+
+        /// <summary>
+        /// Checks the backing store for changes to the app's overrides, including sub-apps, and updates the snapshot as necessary.
+        /// </summary>
+        /// <param name="forceReload">If true, the snapshot will be reloaded, even if no change was detected.</param>
+        public Task RefreshSnapshotAsync(bool forceReload) => Store.RefreshSnapshotAsyncInternal(AppName, forceReload);
 
         /// <summary>
         /// Returns true if a setting by that name exists.

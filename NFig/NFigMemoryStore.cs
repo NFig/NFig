@@ -38,42 +38,32 @@ namespace NFig
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
-        protected override string[] GetRefreshedAppNames()
+        protected override string[] GetAppNames()
         {
             throw new NotImplementedException();
         }
 
-        protected override Task<string[]> GetRefreshedAppNamesAsync()
+        protected override Task<string[]> GetAppNamesAsync()
         {
             throw new NotImplementedException();
         }
 
-        protected override void RefreshApp(string appName, bool force)
+        protected override void RefreshAppMetadata(string appName, bool forceReload)
         {
             throw new NotImplementedException();
         }
 
-        protected override Task RefreshAppAsync(string appName, bool force)
+        protected override Task RefreshAppMetadataAsync(string appName, bool forceReload)
         {
             throw new NotImplementedException();
         }
 
-        protected override SubApp[] GetSubApps(string appName)
+        protected override void RefreshSnapshot(string appName, bool forceReload)
         {
             throw new NotImplementedException();
         }
 
-        protected override BySetting<SettingMetadata> GetSettingsMetadata(string appName)
-        {
-            throw new NotImplementedException();
-        }
-
-        protected override ListBySetting<DefaultValue<TTier, TDataCenter>> GetDefaults(string appName, int? subAppId)
-        {
-            throw new NotImplementedException();
-        }
-
-        protected override OverridesSnapshot<TTier, TDataCenter> GetSnapshot(string appName)
+        protected override Task RefreshSnapshotAsync(string appName, bool forceReload)
         {
             throw new NotImplementedException();
         }
@@ -84,11 +74,6 @@ namespace NFig
         }
 
         protected override Task<OverridesSnapshot<TTier, TDataCenter>> RestoreSnapshotAsync(string appName, OverridesSnapshot<TTier, TDataCenter> snapshot, string user)
-        {
-            throw new NotImplementedException();
-        }
-
-        protected override string GetCurrentCommit(string appName)
         {
             throw new NotImplementedException();
         }

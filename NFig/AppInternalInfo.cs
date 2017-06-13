@@ -1,10 +1,14 @@
 ﻿using System;
+using System.Collections.Generic;
 using JetBrains.Annotations;
 using NFig.Encryption;
+using NFig.Metadata;
 
 namespace NFig
 {
-    class AppInternalInfo
+    class AppInternalInfo<TTier, TDataCenter>
+        where TTier : struct
+        where TDataCenter : struct
     {
         internal string AppName { get; }
         [CanBeNull]
@@ -13,6 +17,11 @@ namespace NFig
         internal ISettingEncryptor Encryptor { get; set; } // todo: eventually make this private
         internal object AppClient { get; set; }
         internal object AdminClient { get; set; }
+
+        public AppMetadata AppMetadata { get; set; }
+        public SubAppMetadata<TTier, TDataCenter> RootAppMetadata { get; set; }
+        public Dictionary<int, SubAppMetadata<TTier, TDataCenter>> SubAppMetadata { get; set; }
+        public OverridesSnapshot<TTier, TDataCenter> Snapshot { get; set; }
 
         internal bool CanEncrypt => Encryptor != null;
         internal bool CanDecrypt => Encryptor?.CanDecrypt ?? false;

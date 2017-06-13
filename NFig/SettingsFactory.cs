@@ -31,11 +31,11 @@ namespace NFig
         object[] _valueCache;
         int _valueCacheCount;
 
-        internal AppInternalInfo AppInfo { get; }
+        internal AppInternalInfo<TTier, TDataCenter> AppInfo { get; }
         internal TTier Tier { get; }
         internal TDataCenter DataCenter { get; }
 
-        internal SettingsFactory(AppInternalInfo appInfo, TTier tier, TDataCenter dataCenter)
+        internal SettingsFactory(AppInternalInfo<TTier, TDataCenter> appInfo, TTier tier, TDataCenter dataCenter)
         {
             _settingsType = typeof(TSettings);
             _tierType = typeof(TTier);
@@ -1051,7 +1051,7 @@ namespace NFig
 
 
             public abstract object GetValueAsObject(TSettings settings);
-            public abstract InvalidOverrideValueException TryApplyOverride(TSettings settings, OverrideValue<TTier, TDataCenter> over, AppInternalInfo appInfo);
+            public abstract InvalidOverrideValueException TryApplyOverride(TSettings settings, OverrideValue<TTier, TDataCenter> over, AppInternalInfo<TTier, TDataCenter> appInfo);
             public abstract object GetValueFromString(string str);
             public abstract bool TryGetValueFromString(string str, out object value);
             public abstract bool TryGetStringFromValue(object value, out string str);
@@ -1094,7 +1094,7 @@ namespace NFig
                 return GetValue(settings);
             }
 
-            public override InvalidOverrideValueException TryApplyOverride(TSettings settings, OverrideValue<TTier, TDataCenter> over, AppInternalInfo appInfo)
+            public override InvalidOverrideValueException TryApplyOverride(TSettings settings, OverrideValue<TTier, TDataCenter> over, AppInternalInfo<TTier, TDataCenter> appInfo)
             {
                 TValue value;
 
