@@ -1,4 +1,6 @@
-﻿namespace NFig.Metadata
+﻿using Newtonsoft.Json;
+
+namespace NFig.Metadata
 {
     /// <summary>
     /// Metadata specific to a sub-app. This includes the default values applicable to the sub-app.
@@ -25,6 +27,7 @@
         /// </summary>
         public ListBySetting<DefaultValue<TTier, TDataCenter>> DefaultsBySetting { get; }
 
+        [JsonConstructor]
         internal SubAppMetadata(string appName, int? subAppId, string subAppName, ListBySetting<DefaultValue<TTier, TDataCenter>> defaultsBySetting)
         {
             AppName = appName;
