@@ -153,35 +153,35 @@ namespace NFig
         /// </summary>
         protected void UpdateAppMetadataCache(
             [NotNull] string appName,
-            [NotNull] BySetting<SettingMetadata> metadataBySetting,
-            [CanBeNull] SubAppMetadata<TTier, TDataCenter> rootAppMetadata,
-            [NotNull] Dictionary<int, SubAppMetadata<TTier, TDataCenter>> subAppMetadata)
+            [NotNull] BySetting<SettingMetadata> settingsMetadata,
+            [CanBeNull] Defaults<TTier, TDataCenter> rootDefaults,
+            [NotNull] Dictionary<int, Defaults<TTier, TDataCenter>> subAppDefaults)
         {
             if (appName == null)
                 throw new ArgumentNullException(nameof(appName));
 
-            if (metadataBySetting == null)
-                throw new ArgumentNullException(nameof(metadataBySetting));
+            if (settingsMetadata == null)
+                throw new ArgumentNullException(nameof(settingsMetadata));
 
-            if (subAppMetadata == null)
-                throw new ArgumentNullException(nameof(subAppMetadata));
+            if (subAppDefaults == null)
+                throw new ArgumentNullException(nameof(subAppDefaults));
 
-            var subApps = new SubApp[subAppMetadata.Count];
+            var subApps = new SubApp[subAppDefaults.Count];
             var i = 0;
-            foreach (var kvp in subAppMetadata)
+            foreach (var kvp in subAppDefaults)
             {
                 subApps[i] = new SubApp(kvp.Key, kvp.Value.SubAppName);
                 i++;
             }
 
-            var appMetadata = new AppMetadata(appName, CurrentTierValue, CurrentDataCenterValue, DataCenterMetadata, metadataBySetting, subApps);
+            var appMetadata = new AppMetadata(appName, CurrentTierValue, CurrentDataCenterValue, DataCenterMetadata, settingsMetadata, subApps);
 
             lock (_infoByApp)
             {
                 var info = _infoByApp[appName];
                 info.AppMetadata = appMetadata;
-                info.RootAppMetadata = rootAppMetadata;
-                info.SubAppMetadata = subAppMetadata;
+                info.RootDefaults = rootDefaults;
+                info.SubAppDefaults = subAppDefaults;
                 // todo: notify clients
             }
         }
@@ -527,27 +527,23 @@ namespace NFig
         internal Task SetMetadataAsyncInternal(string appName, BySetting<SettingMetadata> metadata) => SetMetadataAsync(appName, metadata);
 
         /// <summary>
-        /// Sends information about a sub-app (name, ID, defaults) to the backing store. This may also be called with the default values for the root app.
+        /// Sends default values to the backing store.
         /// </summary>
-        /// <param name="appName">The root application name.</param>
-        /// <param name="subAppsMetadata">Metadata about the sub-apps (and/or root app)</param>
-        protected abstract void UpdateSubAppMetadata(string appName, SubAppMetadata<TTier, TDataCenter>[] subAppsMetadata);
+        protected abstract void SaveDefaults(string appName, Defaults<TTier, TDataCenter>[] defaults);
 
         /// <summary>
-        /// Sends information about a sub-app (name, ID, defaults) to the backing store. This may also be called with the default values for the root app.
+        /// Sends default values to the backing store.
         /// </summary>
-        /// <param name="appName">The root application name.</param>
-        /// <param name="subAppsMetadata">Metadata about the sub-apps (and/or root app)</param>
-        protected abstract Task UpdateSubAppMetadataAsync(string appName, SubAppMetadata<TTier, TDataCenter>[] subAppsMetadata);
+        protected abstract Task SaveDefaultsAsync(string appName, Defaults<TTier, TDataCenter>[] defaults);
 
-        internal void UpdateSubAppMetadataInternal(string appName, params SubAppMetadata<TTier, TDataCenter>[] subAppsMetadata)
+        internal void SaveDefaultsInternal(string appName, params Defaults<TTier, TDataCenter>[] defaults)
         {
-            UpdateSubAppMetadata(appName, subAppsMetadata);
+            SaveDefaults(appName, defaults);
         }
 
-        internal Task UpdateSubAppMetadataAsyncInternal(string appName, params SubAppMetadata<TTier, TDataCenter>[] subAppsMetadata)
+        internal Task SaveDefaultsAsyncInternal(string appName, params Defaults<TTier, TDataCenter>[] defaults)
         {
-            return UpdateSubAppMetadataAsync(appName, subAppsMetadata);
+            return SaveDefaultsAsync(appName, defaults);
         }
 
         /// <summary>

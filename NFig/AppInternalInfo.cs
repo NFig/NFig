@@ -19,8 +19,8 @@ namespace NFig
         internal object AdminClient { get; set; }
 
         public AppMetadata AppMetadata { get; set; }
-        public SubAppMetadata<TTier, TDataCenter> RootAppMetadata { get; set; }
-        public Dictionary<int, SubAppMetadata<TTier, TDataCenter>> SubAppMetadata { get; set; }
+        public Defaults<TTier, TDataCenter> RootDefaults { get; set; }
+        public Dictionary<int, Defaults<TTier, TDataCenter>> SubAppDefaults { get; set; }
         public OverridesSnapshot<TTier, TDataCenter> Snapshot { get; set; }
 
         internal bool CanEncrypt => Encryptor != null;

@@ -59,36 +59,36 @@ namespace NFig
             // todo: look at history to decide if a refresh is necessary
 
             var keys = GetKeys(appName);
-            string metadataBySettingJson;
-            Dictionary<string, string> metadataBySubAppHash;
+            string settingsMetadataJson;
+            Dictionary<string, string> defaultsBySubAppHash;
             using (MockRedis.Multi())
             {
-                metadataBySettingJson = MockRedis.Get(keys.MetadataBySetting);
-                metadataBySubAppHash = MockRedis.HashGetAll(keys.MetadataBySubApp);
+                settingsMetadataJson = MockRedis.Get(keys.SettingsMetadata);
+                defaultsBySubAppHash = MockRedis.HashGetAll(keys.Defaults);
             }
 
-            if (metadataBySettingJson == null)
+            if (settingsMetadataJson == null)
                 throw new NFigException($"Metadata not found for app {appName}");
 
-            var metadataBySetting = BySetting<SettingMetadata>.Deserialize(metadataBySettingJson);
+            var settingsMetadata = BySetting<SettingMetadata>.Deserialize(settingsMetadataJson);
 
-            SubAppMetadata<TTier, TDataCenter> rootMetadata = null;
-            var metadataBySubApp = new Dictionary<int, SubAppMetadata<TTier, TDataCenter>>();
-            foreach (var kvp in metadataBySubAppHash)
+            Defaults<TTier, TDataCenter> rootDefaults = null;
+            var defaultsBySubApp = new Dictionary<int, Defaults<TTier, TDataCenter>>();
+            foreach (var kvp in defaultsBySubAppHash)
             {
-                var meta = JsonConvert.DeserializeObject<SubAppMetadata<TTier, TDataCenter>>(kvp.Value);
+                var defaults = JsonConvert.DeserializeObject<Defaults<TTier, TDataCenter>>(kvp.Value);
                 if (kvp.Key == ROOT_KEY)
                 {
-                    rootMetadata = meta;
+                    rootDefaults = defaults;
                 }
                 else
                 {
                     var subAppId = int.Parse(kvp.Key);
-                    metadataBySubApp[subAppId] = meta;
+                    defaultsBySubApp[subAppId] = defaults;
                 }
             }
 
-            UpdateAppMetadataCache(appName, metadataBySetting, rootMetadata, metadataBySubApp);
+            UpdateAppMetadataCache(appName, settingsMetadata, rootDefaults, defaultsBySubApp);
         }
 
         protected override Task RefreshAppMetadataAsync(string appName, bool forceReload)
@@ -150,14 +150,14 @@ namespace NFig
             return Task.CompletedTask;
         }
 
-        protected override void UpdateSubAppMetadata(string appName, SubAppMetadata<TTier, TDataCenter>[] subAppsMetadata)
+        protected override void SaveDefaults(string appName, Defaults<TTier, TDataCenter>[] defaults)
         {
             throw new NotImplementedException();
         }
 
-        protected override Task UpdateSubAppMetadataAsync(string appName, SubAppMetadata<TTier, TDataCenter>[] subAppsMetadata)
+        protected override Task SaveDefaultsAsync(string appName, Defaults<TTier, TDataCenter>[] defaults)
         {
-            UpdateSubAppMetadata(appName, subAppsMetadata);
+            SaveDefaults(appName, defaults);
             return Task.CompletedTask;
         }
 
@@ -181,16 +181,16 @@ namespace NFig
 
         class Keys
         {
-            public string MetadataBySetting { get; }
-            public string MetadataBySubApp { get; }
+            public string SettingsMetadata { get; }
+            public string Defaults { get; }
             public string Overrides { get; }
 
             public Keys(TTier tier, string appName)
             {
                 var prefix = GetKeyPrefix(tier);
 
-                MetadataBySetting = prefix + nameof(MetadataBySetting) + ":" + appName;
-                MetadataBySubApp = prefix + nameof(MetadataBySubApp) + ":" + appName;
+                SettingsMetadata = prefix + nameof(SettingsMetadata) + ":" + appName;
+                Defaults = prefix + nameof(Defaults) + ":" + appName;
                 Overrides = prefix + nameof(Overrides) + ":" + appName;
             }
 

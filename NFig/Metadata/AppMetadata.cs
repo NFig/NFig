@@ -2,7 +2,7 @@
 {
     /// <summary>
     /// Metadata about an NFig application. This provides most of the information that an admin panel needs for an app. However, it does not include default
-    /// values. For those, see <see cref="SubAppMetadata{TTier,TDataCenter}"/>.
+    /// values. For those, see <see cref="Defaults{TTier,TDataCenter}"/>.
     /// </summary>
     public class AppMetadata
     {
@@ -25,7 +25,7 @@
         /// <summary>
         /// Basic metadata about each setting.
         /// </summary>
-        public BySetting<SettingMetadata> MetadataBySetting { get; }
+        public BySetting<SettingMetadata> SettingsMetadata { get; }
         /// <summary>
         /// A list of sub-apps which are registered for this application.
         /// </summary>
@@ -36,14 +36,14 @@
             EnumValue currentTier,
             EnumValue currentDataCenter,
             EnumMetadata dataCenterMetadata,
-            BySetting<SettingMetadata> metadataBySetting,
+            BySetting<SettingMetadata> settingsMetadata,
             SubApp[] subApps)
         {
             AppName = appName;
             CurrentTier = currentTier;
             CurrentDataCenter = currentDataCenter;
             DataCenterMetadata = dataCenterMetadata;
-            MetadataBySetting = metadataBySetting;
+            SettingsMetadata = settingsMetadata;
             SubApps = subApps;
         }
     }

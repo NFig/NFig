@@ -5,7 +5,7 @@ namespace NFig.Metadata
     /// <summary>
     /// Metadata specific to a sub-app. This includes the default values applicable to the sub-app.
     /// </summary>
-    public class SubAppMetadata<TTier, TDataCenter>
+    public class Defaults<TTier, TDataCenter>
         where TTier : struct
         where TDataCenter : struct
     {
@@ -28,7 +28,7 @@ namespace NFig.Metadata
         public ListBySetting<DefaultValue<TTier, TDataCenter>> DefaultsBySetting { get; }
 
         [JsonConstructor]
-        internal SubAppMetadata(string appName, int? subAppId, string subAppName, ListBySetting<DefaultValue<TTier, TDataCenter>> defaultsBySetting)
+        internal Defaults(string appName, int? subAppId, string subAppName, ListBySetting<DefaultValue<TTier, TDataCenter>> defaultsBySetting)
         {
             AppName = appName;
             SubAppId = subAppId;

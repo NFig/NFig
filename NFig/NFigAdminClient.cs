@@ -58,10 +58,10 @@ namespace NFig
         }
 
         /// <summary>
-        /// Gets metadata specific to a sub-app, or the root app if <paramref name="subAppId"/> is null. This includes the applicable default values.
+        /// Gets the default values for a sub-app, or the root app if <paramref name="subAppId"/> is null.
         /// </summary>
         /// <param name="subAppId">The ID of the sub-app, or null for the root app.</param>
-        public SubAppMetadata<TTier, TDataCenter> GetSubAppMetadata(int? subAppId)
+        public Defaults<TTier, TDataCenter> GetDefaults(int? subAppId)
         {
             throw new NotImplementedException();
         }

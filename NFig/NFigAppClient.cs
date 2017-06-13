@@ -130,16 +130,16 @@ namespace NFig
         /// </summary>
         public void RegisterSubApps(params SubApp[] subApps)
         {
-            var metas = new SubAppMetadata<TTier, TDataCenter>[subApps.Length];
+            var defaults = new Defaults<TTier, TDataCenter>[subApps.Length];
             for (var i = 0; i < subApps.Length; i++)
             {
                 // todo: we should probably make this parallel
                 ref var subApp = ref subApps[i];
-                var defaults = _factory.RegisterSubApp(subApp.Id, subApp.Name);
-                metas[i] = new SubAppMetadata<TTier, TDataCenter>(AppName, subApp.Id, subApp.Name, defaults);
+                var defaultsBySetting = _factory.RegisterSubApp(subApp.Id, subApp.Name);
+                defaults[i] = new Defaults<TTier, TDataCenter>(AppName, subApp.Id, subApp.Name, defaultsBySetting);
             }
 
-            Store.UpdateSubAppMetadataInternal(AppName, metas);
+            Store.SaveDefaultsInternal(AppName, defaults);
         }
 
         /// <summary>
@@ -259,9 +259,9 @@ namespace NFig
                 return;
 
             _isRootRegistered = true;
-            var defaults = _factory.RegisterRootApp();
-            var meta = new SubAppMetadata<TTier, TDataCenter>(AppName, null, null, defaults);
-            Store.UpdateSubAppMetadataInternal(AppName, meta);
+            var defaultsBySetting = _factory.RegisterRootApp();
+            var defaults = new Defaults<TTier, TDataCenter>(AppName, null, null, defaultsBySetting);
+            Store.SaveDefaultsInternal(AppName, defaults);
         }
     }
 }
