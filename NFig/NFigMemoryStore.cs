@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 using NFig.Metadata;
 
 namespace NFig
@@ -63,14 +64,31 @@ namespace NFig
             using (MockRedis.Multi())
             {
                 metadataBySettingJson = MockRedis.Get(keys.MetadataBySetting);
-                //metadataBySubAppHash = MockRedis.HashGetAll(keys.MetadataBySubApp);
+                metadataBySubAppHash = MockRedis.HashGetAll(keys.MetadataBySubApp);
             }
 
             if (metadataBySettingJson == null)
                 throw new NFigException($"Metadata not found for app {appName}");
 
             var metadataBySetting = BySetting<SettingMetadata>.Deserialize(metadataBySettingJson);
-            //UpdateAppMetadataCache(appName, metadataBySetting, );
+
+            SubAppMetadata<TTier, TDataCenter> rootMetadata = null;
+            var metadataBySubApp = new Dictionary<int, SubAppMetadata<TTier, TDataCenter>>();
+            foreach (var kvp in metadataBySubAppHash)
+            {
+                var meta = JsonConvert.DeserializeObject<SubAppMetadata<TTier, TDataCenter>>(kvp.Value);
+                if (kvp.Key == ROOT_KEY)
+                {
+                    rootMetadata = meta;
+                }
+                else
+                {
+                    var subAppId = int.Parse(kvp.Key);
+                    metadataBySubApp[subAppId] = meta;
+                }
+            }
+
+            UpdateAppMetadataCache(appName, metadataBySetting, rootMetadata, metadataBySubApp);
         }
 
         protected override Task RefreshAppMetadataAsync(string appName, bool forceReload)
@@ -163,7 +181,6 @@ namespace NFig
 
         class Keys
         {
-            public string DefaultsBySubApp { get; }
             public string MetadataBySetting { get; }
             public string MetadataBySubApp { get; }
             public string Overrides { get; }
@@ -172,7 +189,6 @@ namespace NFig
             {
                 var prefix = GetKeyPrefix(tier);
 
-                DefaultsBySubApp = prefix + nameof(DefaultsBySubApp) + ":" + appName;
                 MetadataBySetting = prefix + nameof(MetadataBySetting) + ":" + appName;
                 MetadataBySubApp = prefix + nameof(MetadataBySubApp) + ":" + appName;
                 Overrides = prefix + nameof(Overrides) + ":" + appName;

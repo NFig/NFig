@@ -154,7 +154,7 @@ namespace NFig
         protected void UpdateAppMetadataCache(
             [NotNull] string appName,
             [NotNull] BySetting<SettingMetadata> metadataBySetting,
-            [NotNull] SubAppMetadata<TTier, TDataCenter> rootAppMetadata,
+            [CanBeNull] SubAppMetadata<TTier, TDataCenter> rootAppMetadata,
             [NotNull] Dictionary<int, SubAppMetadata<TTier, TDataCenter>> subAppMetadata)
         {
             if (appName == null)
@@ -162,9 +162,6 @@ namespace NFig
 
             if (metadataBySetting == null)
                 throw new ArgumentNullException(nameof(metadataBySetting));
-
-            if (rootAppMetadata == null)
-                throw new ArgumentNullException(nameof(rootAppMetadata));
 
             if (subAppMetadata == null)
                 throw new ArgumentNullException(nameof(subAppMetadata));
