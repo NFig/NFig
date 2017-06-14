@@ -73,14 +73,6 @@ namespace NFig.Metadata
         }
 
         /// <summary>
-        /// Serializes the dictionary to JSON.
-        /// </summary>
-        public string Serialize()
-        {
-            return JsonConvert.SerializeObject(this);
-        }
-
-        /// <summary>
         /// Returns true if the dictionary contains the key (a setting name).
         /// </summary>
         public bool ContainsKey(string key)

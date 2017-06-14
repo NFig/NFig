@@ -68,7 +68,7 @@ namespace NFig
             if (settingsMetadataJson == null)
                 throw new NFigException($"Metadata not found for app {appName}");
 
-            var settingsMetadata = BySetting<SettingMetadata>.Deserialize(settingsMetadataJson);
+            var settingsMetadata = NFigJson.Deserialize<BySetting<SettingMetadata>>(settingsMetadataJson);
 
             Defaults<TTier, TDataCenter> rootDefaults = null;
             var defaultsBySubApp = new Dictionary<int, Defaults<TTier, TDataCenter>>();

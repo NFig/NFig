@@ -51,14 +51,6 @@ namespace NFig.Metadata
         }
 
         /// <summary>
-        /// Deserializes a <see cref="ListBySetting{TValue}"/> from JSON.
-        /// </summary>
-        public static ListBySetting<TValue> Deserialize(string json)
-        {
-            return JsonConvert.DeserializeObject<ListBySetting<TValue>>(json);
-        }
-
-        /// <summary>
         /// Gets an enumeration of all <typeparamref name="TValue"/> items in all lists, as if it were a single collection.
         /// </summary>
         public ValueCollection GetAllValues() => new ValueCollection(this);

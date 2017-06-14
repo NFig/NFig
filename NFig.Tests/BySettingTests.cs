@@ -129,12 +129,12 @@ namespace NFig.Tests
         [Test]
         public void NullSerialization()
         {
-            Assert.IsNull(BySetting<Default>.Deserialize("null"));
-            Assert.IsNull(BySetting<Override>.Deserialize("null"));
-            Assert.IsNull(BySetting<SettingMetadata>.Deserialize("null"));
-            Assert.IsNull(ListBySetting<Default>.Deserialize("null"));
-            Assert.IsNull(ListBySetting<Override>.Deserialize("null"));
-            Assert.IsNull(ListBySetting<SettingMetadata>.Deserialize("null"));
+            Assert.IsNull(NFigJson.Deserialize<BySetting<Default>>("null"));
+            Assert.IsNull(NFigJson.Deserialize<BySetting<Override>>("null"));
+            Assert.IsNull(NFigJson.Deserialize<BySetting<SettingMetadata>>("null"));
+            Assert.IsNull(NFigJson.Deserialize<ListBySetting<Default>>("null"));
+            Assert.IsNull(NFigJson.Deserialize<ListBySetting<Override>>("null"));
+            Assert.IsNull(NFigJson.Deserialize<ListBySetting<SettingMetadata>>("null"));
         }
 
         [Test]
@@ -142,8 +142,8 @@ namespace NFig.Tests
         {
             var defaults = GenerateDefaults(20, false);
             var bySettingOrig = new BySetting<Default>(defaults);
-            var json = bySettingOrig.Serialize();
-            var bySetting = BySetting<Default>.Deserialize(json);
+            var json = NFigJson.Serialize(bySettingOrig);
+            var bySetting = NFigJson.Deserialize<BySetting<Default>>(json);
             AssertBySettingMatch(bySetting, defaults);
         }
 
@@ -152,8 +152,8 @@ namespace NFig.Tests
         {
             var overrides = GenerateOverrides(20, false);
             var bySettingOrig = new BySetting<Override>(overrides);
-            var json = bySettingOrig.Serialize();
-            var bySetting = BySetting<Override>.Deserialize(json);
+            var json = NFigJson.Serialize(bySettingOrig);
+            var bySetting = NFigJson.Deserialize<BySetting<Override>>(json);
             AssertBySettingMatch(bySetting, overrides);
         }
 
@@ -162,8 +162,8 @@ namespace NFig.Tests
         {
             var meta = GenerateMetadata(20);
             var bySettingOrig = new BySetting<SettingMetadata>(meta);
-            var json = bySettingOrig.Serialize();
-            var bySetting = BySetting<SettingMetadata>.Deserialize(json);
+            var json = NFigJson.Serialize(bySettingOrig);
+            var bySetting = NFigJson.Deserialize<BySetting<SettingMetadata>>(json);
             AssertBySettingMatch(bySetting, meta);
         }
 
@@ -172,8 +172,8 @@ namespace NFig.Tests
         {
             var defaults = GenerateDefaults(20, true);
             var listBySettingOrig = new ListBySetting<Default>(defaults);
-            var json = listBySettingOrig.Serialize();
-            var bySetting = ListBySetting<Default>.Deserialize(json);
+            var json = NFigJson.Serialize(listBySettingOrig);
+            var bySetting = NFigJson.Deserialize<ListBySetting<Default>>(json);
             AssertListBySettingMatch(bySetting, defaults);
         }
 
@@ -182,8 +182,8 @@ namespace NFig.Tests
         {
             var overrides = GenerateOverrides(20, true);
             var listBySettingOrig = new ListBySetting<Override>(overrides);
-            var json = listBySettingOrig.Serialize();
-            var bySetting = ListBySetting<Override>.Deserialize(json);
+            var json = NFigJson.Serialize(listBySettingOrig);
+            var bySetting = NFigJson.Deserialize<ListBySetting<Override>>(json);
             AssertListBySettingMatch(bySetting, overrides);
         }
 

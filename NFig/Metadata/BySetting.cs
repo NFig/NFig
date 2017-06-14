@@ -51,14 +51,6 @@ namespace NFig.Metadata
         }
 
         /// <summary>
-        /// Deserializes a <see cref="BySetting{TValue}"/> from JSON.
-        /// </summary>
-        public static BySetting<TValue> Deserialize(string json)
-        {
-            return JsonConvert.DeserializeObject<BySetting<TValue>>(json);
-        }
-
-        /// <summary>
         /// Gets a key/value enumerator for <see cref="BySetting{TValue}"/>.
         /// </summary>
         public KeyValueEnumerator GetEnumerator() => new KeyValueEnumerator(this);
