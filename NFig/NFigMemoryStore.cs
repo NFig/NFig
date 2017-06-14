@@ -174,14 +174,14 @@ namespace NFig
             return Task.FromResult(ClearOverride(appName, settingName, dataCenter, user, subAppId, commit));
         }
 
-        protected override void SetMetadata(string appName, BySetting<SettingMetadata> metadata)
+        protected override void SaveMetadata(string appName, BySetting<SettingMetadata> metadata)
         {
             throw new NotImplementedException();
         }
 
         protected override Task SetMetadataAsync(string appName, BySetting<SettingMetadata> metadata)
         {
-            SetMetadata(appName, metadata);
+            SaveMetadata(appName, metadata);
             return Task.CompletedTask;
         }
 
