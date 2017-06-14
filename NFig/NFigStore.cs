@@ -682,12 +682,14 @@ namespace NFig
             if (!type.IsEnum())
                 throw new NFigException(name + " must be an enum type.");
 
-            if (type == typeof(byte)
-                || type == typeof(sbyte)
-                || type == typeof(short)
-                || type == typeof(ushort)
-                || type == typeof(int)
-                || type == typeof(uint))
+            var backingType = Enum.GetUnderlyingType(type);
+
+            if (backingType == typeof(byte)
+                || backingType == typeof(sbyte)
+                || backingType == typeof(short)
+                || backingType == typeof(ushort)
+                || backingType == typeof(int)
+                || backingType == typeof(uint))
             {
                 return;
             }
