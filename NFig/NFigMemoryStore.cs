@@ -15,8 +15,6 @@ namespace NFig
         where TTier : struct
         where TDataCenter : struct
     {
-        const string ROOT_KEY = "$root";
-
         readonly string _appNamesKey;
         readonly Dictionary<string, Keys> _keysByApp = new Dictionary<string, Keys>();
 
@@ -77,7 +75,7 @@ namespace NFig
             foreach (var kvp in defaultsBySubAppHash)
             {
                 var defaults = JsonConvert.DeserializeObject<Defaults<TTier, TDataCenter>>(kvp.Value);
-                if (kvp.Key == ROOT_KEY)
+                if (kvp.Key == Keys.ROOT)
                 {
                     rootDefaults = defaults;
                 }
@@ -99,8 +97,45 @@ namespace NFig
 
         protected override void RefreshSnapshot(string appName, bool forceReload)
         {
-            // todo: look at history to decide if a refresh is necessary
-            throw new NotImplementedException();
+            var keys = GetKeys(appName);
+
+            if (!forceReload)
+            {
+                var redisCommit = MockRedis.HashGet(keys.Overrides, Keys.COMMIT);
+                var cachedCommit = GetSnapshot(appName).Commit;
+
+                if (redisCommit == cachedCommit)
+                    return;
+            }
+
+            var overridesHash = MockRedis.HashGetAll(keys.Overrides);
+            string commit = null;
+            var overrides = new List<OverrideValue<TTier, TDataCenter>>();
+            foreach (var kvp in overridesHash)
+            {
+                if (kvp.Key == Keys.COMMIT)
+                {
+                    commit = kvp.Value;
+                }
+                else
+                {
+                    var ov = ParseOverride(kvp.Key, kvp.Value);
+                    overrides.Add(ov);
+                }
+            }
+
+            if (commit == null)
+            {
+                if (overrides.Count > 0)
+                    throw new NFigException($"Commit for app {appName} is missing. The persistent store may be corrupted.");
+
+                commit = INITIAL_COMMIT;
+            }
+
+            var overridesBySetting = new ListBySetting<OverrideValue<TTier, TDataCenter>>(overrides);
+            var snapshot = new OverridesSnapshot<TTier, TDataCenter>(appName, commit, overridesBySetting);
+
+            UpdateSnapshotCache(snapshot);
         }
 
         protected override Task RefreshSnapshotAsync(string appName, bool forceReload)
@@ -181,6 +216,9 @@ namespace NFig
 
         class Keys
         {
+            public const string ROOT = "$root";
+            public const string COMMIT = "$commit";
+
             public string SettingsMetadata { get; }
             public string Defaults { get; }
             public string Overrides { get; }

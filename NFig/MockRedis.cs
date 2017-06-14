@@ -180,6 +180,26 @@ namespace NFig
             }
         }
 
+        public static string HashGet(string key, string hashKey)
+        {
+            if (hashKey == null)
+                throw new ArgumentNullException(nameof(hashKey));
+
+            lock (s_database)
+            {
+                if (s_database.TryGetValue(key, out var valueObj))
+                {
+                    if (valueObj.Type != DataType.Hash)
+                        throw new InvalidOperationException($"Key {key} is not a Hash");
+
+                    var hash = (Dictionary<string, string>)valueObj.Data;
+                    return hash.TryGetValue(hashKey, out var value) ? value : null;
+                }
+
+                return null;
+            }
+        }
+
         public static Dictionary<string, string> HashGetAll(string key)
         {
             lock (s_database)

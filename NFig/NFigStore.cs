@@ -218,6 +218,14 @@ namespace NFig
             }
         }
 
+        internal OverridesSnapshot<TTier, TDataCenter> GetSnapshot(string appName)
+        {
+            lock (_infoByApp)
+            {
+                return _infoByApp[appName].Snapshot;
+            }
+        }
+
         /// <summary>
         /// Sets an encryptor for an application. This will be used by both app and admin clients. It MUST be called before
         /// <see cref="GetAppClient{TSettings}"/> if the application uses encrypted settings.
