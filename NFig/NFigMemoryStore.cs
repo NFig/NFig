@@ -75,13 +75,26 @@ namespace NFig
             foreach (var kvp in defaultsBySubAppHash)
             {
                 var defaults = JsonConvert.DeserializeObject<Defaults<TTier, TDataCenter>>(kvp.Value);
+
+                if (defaults.AppName != appName)
+                    throw new NFigMemoryStoreCorruptException("Defaults do not match the expected app name", keys.Defaults, kvp.Key);
+
                 if (kvp.Key == Keys.ROOT)
                 {
                     rootDefaults = defaults;
+
+                    if (defaults.SubAppId.HasValue)
+                        throw new NFigMemoryStoreCorruptException("SubAppId for root defaults is not null", keys.Defaults, kvp.Key);
                 }
                 else
                 {
-                    var subAppId = int.Parse(kvp.Key);
+                    var success = int.TryParse(kvp.Key, out var subAppId);
+                    if (!success)
+                        throw new NFigMemoryStoreCorruptException("SubAppId was not an integer", keys.Defaults, kvp.Key);
+
+                    if (defaults.SubAppId != subAppId)
+                        throw new NFigMemoryStoreCorruptException("The SubAppId key does not match its value", keys.Defaults, kvp.Key);
+
                     defaultsBySubApp[subAppId] = defaults;
                 }
             }
@@ -127,7 +140,7 @@ namespace NFig
             if (commit == null)
             {
                 if (overrides.Count > 0)
-                    throw new NFigException($"Commit for app {appName} is missing. The persistent store may be corrupted.");
+                    throw new NFigMemoryStoreCorruptException($"Commit for app {appName} is missing.", keys.Overrides, Keys.COMMIT);
 
                 commit = INITIAL_COMMIT;
             }
@@ -176,10 +189,11 @@ namespace NFig
 
         protected override void SaveMetadata(string appName, BySetting<SettingMetadata> metadata)
         {
-            throw new NotImplementedException();
+            var json = NFigJson.Serialize(metadata);
+            MockRedis.Set(GetKeys(appName).SettingsMetadata, json);
         }
 
-        protected override Task SetMetadataAsync(string appName, BySetting<SettingMetadata> metadata)
+        protected override Task SaveMetadataAsync(string appName, BySetting<SettingMetadata> metadata)
         {
             SaveMetadata(appName, metadata);
             return Task.CompletedTask;
@@ -211,6 +225,18 @@ namespace NFig
                 }
 
                 return keys;
+            }
+        }
+
+        /// <summary>
+        /// Indicates that the MemoryStore is in an illogical state.
+        /// </summary>
+        public class NFigMemoryStoreCorruptException : NFigCorruptException
+        {
+            internal NFigMemoryStoreCorruptException(string message, string key, string hashKey = null) : base(message)
+            {
+                Data["Key"] = key;
+                Data["HashKey"] = hashKey;
             }
         }
 

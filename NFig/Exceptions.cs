@@ -135,4 +135,17 @@ namespace NFig
             return $"{exceptions.Count} invalid setting overrides were not applied. See the {nameof(Exceptions)} property for details. You should edit or clear these overrides.";
         }
     }
+
+    /// <summary>
+    /// Used to indicate that data in the persistent store is in an illogical state.
+    /// </summary>
+    public abstract class NFigCorruptException : NFigException
+    {
+        /// <summary>
+        /// Used to indicate that data in the persistent store is in an illogical state.
+        /// </summary>
+        protected NFigCorruptException(string message, Exception innerException = null) : base(message, innerException)
+        {
+        }
+    }
 }

@@ -529,10 +529,10 @@ namespace NFig
         /// <summary>
         /// Sends metadata to the backing store.
         /// </summary>
-        protected abstract Task SetMetadataAsync(string appName, BySetting<SettingMetadata> metadata);
+        protected abstract Task SaveMetadataAsync(string appName, BySetting<SettingMetadata> metadata);
 
         internal void SetMetadataInternal(string appName, BySetting<SettingMetadata> metadata) => SaveMetadata(appName, metadata);
-        internal Task SetMetadataAsyncInternal(string appName, BySetting<SettingMetadata> metadata) => SetMetadataAsync(appName, metadata);
+        internal Task SetMetadataAsyncInternal(string appName, BySetting<SettingMetadata> metadata) => SaveMetadataAsync(appName, metadata);
 
         /// <summary>
         /// Sends default values to the backing store.
