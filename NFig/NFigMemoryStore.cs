@@ -178,7 +178,35 @@ namespace NFig
 
         protected override OverridesSnapshot<TTier, TDataCenter> ClearOverride(string appName, string settingName, TDataCenter dataCenter, string user, int? subAppId, string commit)
         {
-            throw new NotImplementedException();
+            var keys = GetKeys(appName);
+            var hashKey = CreateOverrideKey(settingName, subAppId, dataCenter);
+
+            Dictionary<string, string> overridesHash;
+            using (MockRedis.Multi())
+            {
+                if (commit != null)
+                {
+                    var redisCommit = MockRedis.HashGet(keys.Overrides, Keys.COMMIT) ?? INITIAL_COMMIT;
+
+                    if (commit != redisCommit)
+                        return null;
+                }
+
+                var existed = MockRedis.HashDelete(keys.Overrides, hashKey);
+
+                if (!existed)
+                    return null;
+
+                MockRedis.HashSet(keys.Overrides, Keys.COMMIT, NewCommit());
+
+                // todo: log
+
+                overridesHash = MockRedis.HashGetAll(keys.Overrides);
+            }
+
+            // todo: broadcast
+
+            return CreateSnapshot(appName, overridesHash);
         }
 
         protected override Task<OverridesSnapshot<TTier, TDataCenter>> ClearOverrideAsync(string appName, string settingName, TDataCenter dataCenter, string user, int? subAppId, string commit)

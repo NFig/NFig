@@ -468,6 +468,7 @@ namespace NFig
         /// <param name="user">The user who is clearing the override (used for logging purposes). This can be null if you don't care about logging.</param>
         /// <param name="subAppId">The sub-app which the override is applied to.</param>
         /// <param name="commit">(optional) If non-null, the override will only be cleared if this is the current commit ID.</param>
+        [CanBeNull]
         protected abstract OverridesSnapshot<TTier, TDataCenter> ClearOverride(
             string appName,
             string settingName,
@@ -491,6 +492,7 @@ namespace NFig
         /// <param name="user">The user who is clearing the override (used for logging purposes). This can be null if you don't care about logging.</param>
         /// <param name="subAppId">The sub-app which the override is applied to.</param>
         /// <param name="commit">(optional) If non-null, the override will only be cleared if this is the current commit ID.</param>
+        [CanBeNull]
         protected abstract Task<OverridesSnapshot<TTier, TDataCenter>> ClearOverrideAsync(
             string appName,
             string settingName,
