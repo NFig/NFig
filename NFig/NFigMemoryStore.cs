@@ -33,7 +33,7 @@ namespace NFig
         /// <param name="tier">The deployment tier of the store.</param>
         /// <param name="dataCenter">The current data center.</param>
         /// <param name="backgroundExceptionHandler">Used to log exceptions which occur on a background thread.</param>
-        public NFigMemoryStore<TTier, TDataCenter> Create(TTier tier, TDataCenter dataCenter, Action<Exception> backgroundExceptionHandler)
+        public static NFigMemoryStore<TTier, TDataCenter> Create(TTier tier, TDataCenter dataCenter, Action<Exception> backgroundExceptionHandler)
         {
             var store = new NFigMemoryStore<TTier, TDataCenter>(tier, dataCenter, backgroundExceptionHandler);
             store.RefreshAppNames();
