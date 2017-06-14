@@ -122,32 +122,7 @@ namespace NFig
             }
 
             var overridesHash = MockRedis.HashGetAll(keys.Overrides);
-            string commit = null;
-            var overrides = new List<OverrideValue<TTier, TDataCenter>>();
-            foreach (var kvp in overridesHash)
-            {
-                if (kvp.Key == Keys.COMMIT)
-                {
-                    commit = kvp.Value;
-                }
-                else
-                {
-                    var ov = ParseOverride(kvp.Key, kvp.Value);
-                    overrides.Add(ov);
-                }
-            }
-
-            if (commit == null)
-            {
-                if (overrides.Count > 0)
-                    throw new NFigMemoryStoreCorruptException($"Commit for app {appName} is missing.", keys.Overrides, Keys.COMMIT);
-
-                commit = INITIAL_COMMIT;
-            }
-
-            var overridesBySetting = new ListBySetting<OverrideValue<TTier, TDataCenter>>(overrides);
-            var snapshot = new OverridesSnapshot<TTier, TDataCenter>(appName, commit, overridesBySetting);
-
+            var snapshot = CreateSnapshot(appName, overridesHash);
             UpdateSnapshotCache(snapshot);
         }
 
@@ -169,7 +144,31 @@ namespace NFig
 
         protected override OverridesSnapshot<TTier, TDataCenter> SetOverride(string appName, OverrideValue<TTier, TDataCenter> ov, string user, string commit)
         {
-            throw new NotImplementedException();
+            var keys = GetKeys(appName);
+            SerializeOverride(ov,out var hashKey, out var value);
+
+            Dictionary<string, string> overridesHash;
+            using (MockRedis.Multi())
+            {
+                if (commit != null)
+                {
+                    var redisCommit = MockRedis.HashGet(keys.Overrides, Keys.COMMIT) ?? INITIAL_COMMIT;
+
+                    if (commit != redisCommit)
+                        return null;
+                }
+
+                MockRedis.HashSet(keys.Overrides, hashKey, value);
+                MockRedis.HashSet(keys.Overrides, Keys.COMMIT, NewCommit());
+
+                // todo: log
+
+                overridesHash = MockRedis.HashGetAll(keys.Overrides);
+            }
+
+            // todo: broadcast
+
+            return CreateSnapshot(appName, overridesHash);
         }
 
         protected override Task<OverridesSnapshot<TTier, TDataCenter>> SetOverrideAsync(string appName, OverrideValue<TTier, TDataCenter> ov, string user, string commit)
@@ -211,6 +210,35 @@ namespace NFig
         }
 
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
+
+        OverridesSnapshot<TTier, TDataCenter> CreateSnapshot(string appName, Dictionary<string, string> overridesHash)
+        {
+            string commit = null;
+            var overrides = new List<OverrideValue<TTier, TDataCenter>>();
+            foreach (var kvp in overridesHash)
+            {
+                if (kvp.Key == Keys.COMMIT)
+                {
+                    commit = kvp.Value;
+                }
+                else
+                {
+                    var ov = ParseOverride(kvp.Key, kvp.Value);
+                    overrides.Add(ov);
+                }
+            }
+
+            if (commit == null)
+            {
+                if (overrides.Count > 0)
+                    throw new NFigMemoryStoreCorruptException($"Commit for app {appName} is missing.", GetKeys(appName).Overrides, Keys.COMMIT);
+
+                commit = INITIAL_COMMIT;
+            }
+
+            var overridesBySetting = new ListBySetting<OverrideValue<TTier, TDataCenter>>(overrides);
+            return new OverridesSnapshot<TTier, TDataCenter>(appName, commit, overridesBySetting);
+        }
 
         Keys GetKeys(string appName)
         {
