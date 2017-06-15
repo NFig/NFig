@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
 using NFig.Converters;
-using NFig.Encryption;
 using NFig.Metadata;
 
 namespace NFig
@@ -67,7 +66,7 @@ namespace NFig
             {
                 var rootDefaults = _appInfo.RootDefaults;
                 if (rootDefaults == null)
-                    throw new NFigException("Could not find defaults for root application. It may not be in use.");
+                    throw new NFigException("Could not find defaults for root application.");
 
                 return rootDefaults;
             }

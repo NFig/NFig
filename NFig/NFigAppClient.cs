@@ -17,8 +17,6 @@ namespace NFig
         where TTier : struct
         where TDataCenter : struct
     {
-        bool _isRootRegistered = false;
-
         readonly List<UpdateDelegate> _rootUpdateCallbacks = new List<UpdateDelegate>();
         readonly List<SubAppsUpdateDelegate> _subAppUpdateCallbacks = new List<SubAppsUpdateDelegate>();
 
@@ -77,7 +75,7 @@ namespace NFig
         /// <summary>
         /// Initializes the app client.
         /// </summary>
-        internal NFigAppClient(NFigStore<TTier, TDataCenter> store, AppInternalInfo<TTier, TDataCenter> appInfo)
+        NFigAppClient(NFigStore<TTier, TDataCenter> store, AppInternalInfo<TTier, TDataCenter> appInfo)
         {
             Store = store;
             AppName = appInfo.AppName;
@@ -86,6 +84,34 @@ namespace NFig
 
             _appInfo = appInfo;
             _factory = new SettingsFactory<TSettings, TTier, TDataCenter>(appInfo, Tier, DataCenter);
+        }
+
+        internal static NFigAppClient<TSettings, TTier, TDataCenter> Create(NFigStore<TTier, TDataCenter> store, AppInternalInfo<TTier, TDataCenter> appInfo)
+        {
+            var appName = appInfo.AppName;
+            store.RefreshSnapshotInternal(appName, true);
+
+            var client = new NFigAppClient<TSettings, TTier, TDataCenter>(store, appInfo);
+
+            store.SaveMetadataInternal(appName, appInfo.GeneratedSettingsMetadata);
+            store.SaveDefaultsInternal(appName, client._factory.RootDefaults);
+
+            return client;
+        }
+
+        internal static async Task<NFigAppClient<TSettings, TTier, TDataCenter>> CreateAsync(
+            NFigStore<TTier, TDataCenter> store,
+            AppInternalInfo<TTier, TDataCenter> appInfo)
+        {
+            var appName = appInfo.AppName;
+            await store.RefreshSnapshotAsyncInternal(appName, true);
+
+            var client = new NFigAppClient<TSettings, TTier, TDataCenter>(store, appInfo);
+
+            await store.SaveMetadataAsyncInternal(appName, appInfo.GeneratedSettingsMetadata);
+            await store.SaveDefaultsAsyncInternal(appName, client._factory.RootDefaults);
+
+            return client;
         }
 
         /// <summary>
@@ -97,9 +123,6 @@ namespace NFig
         /// </param>
         public TSettings GetSettings(int? subAppId = null)
         {
-            if (subAppId == null)
-                RegisterRootApp();
-
             List<InvalidOverrideValueException> invalidOverrides = null;
             _factory.TryGetSettings(subAppId, Snapshot, out var settings, ref invalidOverrides);
 
@@ -134,16 +157,34 @@ namespace NFig
         /// </summary>
         public void RegisterSubApps(params SubApp[] subApps)
         {
+            var defaults = RegisterSubAppsImpl(subApps);
+            Store.SaveDefaultsInternal(AppName, defaults);
+        }
+
+        /// <summary>
+        /// Registers multiple sub-apps at once. Each sub-app will be added to the store's metadata and included when the callback to
+        /// <see cref="SubscribeToSubApps"/> is called. If a sub-app with the same ID already exists, and the names DO NOT match, an exception is thrown.
+        /// Registering a sub-app multiple times with the same ID and name has no effect.
+        /// 
+        /// Sub-app names are not required to be unique, but it is best practice for every unique sub-app to have a unique name.
+        /// </summary>
+        public async Task RegisterSubAppsAsync(params SubApp[] subApps)
+        {
+            var defaults = RegisterSubAppsImpl(subApps);
+            await Store.SaveDefaultsAsyncInternal(AppName, defaults);
+        }
+
+        Defaults<TTier, TDataCenter>[] RegisterSubAppsImpl(SubApp[] subApps)
+        {
             var defaults = new Defaults<TTier, TDataCenter>[subApps.Length];
             for (var i = 0; i < subApps.Length; i++)
             {
                 // todo: we should probably make this parallel
                 ref var subApp = ref subApps[i];
-                var defaultsBySetting = _factory.RegisterSubApp(subApp.Id, subApp.Name);
-                defaults[i] = new Defaults<TTier, TDataCenter>(AppName, subApp.Id, subApp.Name, defaultsBySetting);
+                defaults[i] = _factory.RegisterSubApp(subApp.Id, subApp.Name);
             }
 
-            Store.SaveDefaultsInternal(AppName, defaults);
+            return defaults;
         }
 
         /// <summary>
@@ -163,8 +204,6 @@ namespace NFig
         {
             if (callback == null)
                 throw new ArgumentNullException(nameof(callback));
-
-            RegisterRootApp();
 
             List<InvalidOverrideValueException> invalidOverrides = null;
             _factory.TryGetSettings(null, Snapshot, out var settings, ref invalidOverrides);
@@ -256,16 +295,5 @@ namespace NFig
         /// doesn't match the setting's declared type, an exception is thrown.
         /// </summary>
         public TValue GetSettingValue<TValue>(TSettings settings, string settingName) => _factory.GetSettingValue<TValue>(settings, settingName);
-
-        void RegisterRootApp()
-        {
-            if (_isRootRegistered)
-                return;
-
-            _isRootRegistered = true;
-            var defaultsBySetting = _factory.RegisterRootApp();
-            var defaults = new Defaults<TTier, TDataCenter>(AppName, null, null, defaultsBySetting);
-            Store.SaveDefaultsInternal(AppName, defaults);
-        }
     }
 }

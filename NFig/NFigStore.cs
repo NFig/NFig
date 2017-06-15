@@ -154,7 +154,7 @@ namespace NFig
         protected void UpdateAppMetadataCache(
             [NotNull] string appName,
             [NotNull] BySetting<SettingMetadata> settingsMetadata,
-            [CanBeNull] Defaults<TTier, TDataCenter> rootDefaults,
+            [NotNull] Defaults<TTier, TDataCenter> rootDefaults,
             [NotNull] Dictionary<int, Defaults<TTier, TDataCenter>> subAppDefaults)
         {
             if (appName == null)
@@ -162,6 +162,9 @@ namespace NFig
 
             if (settingsMetadata == null)
                 throw new ArgumentNullException(nameof(settingsMetadata));
+
+            if (rootDefaults == null)
+                throw new ArgumentNullException(nameof(rootDefaults));
 
             if (subAppDefaults == null)
                 throw new ArgumentNullException(nameof(subAppDefaults));
@@ -271,15 +274,15 @@ namespace NFig
 
             if (client == null)
             {
-                RefreshSnapshotInternal(appName, true);
+                client = NFigAppClient<TSettings, TTier, TDataCenter>.Create(this, appInfo);
 
                 lock (appInfo)
                 {
-                    client = new NFigAppClient<TSettings, TTier, TDataCenter>(this, appInfo);
-                    appInfo.AppClient = client;
+                    if (appInfo.AppClient == null)
+                        appInfo.AppClient = client;
+                    else
+                        client = (NFigAppClient<TSettings, TTier, TDataCenter>)appInfo.AppClient;
                 }
-
-                SaveMetadata(appName, appInfo.GeneratedSettingsMetadata);
             }
 
             return client;
@@ -302,15 +305,15 @@ namespace NFig
 
             if (client == null)
             {
-                await RefreshSnapshotAsyncInternal(appName, true);
+                client = await NFigAppClient<TSettings, TTier, TDataCenter>.CreateAsync(this, appInfo);
 
                 lock (appInfo)
                 {
-                    client = new NFigAppClient<TSettings, TTier, TDataCenter>(this, appInfo);
-                    appInfo.AppClient = client;
+                    if (appInfo.AppClient == null)
+                        appInfo.AppClient = client;
+                    else
+                        client = (NFigAppClient<TSettings, TTier, TDataCenter>)appInfo.AppClient;
                 }
-
-                await SaveMetadataAsync(appName, appInfo.GeneratedSettingsMetadata);
             }
 
             return client;
@@ -323,7 +326,7 @@ namespace NFig
         public NFigAdminClient<TTier, TDataCenter> GetAdminClient(string appName)
         {
             var appInfo = SetupAppInfo(appName);
-            var client = (NFigAdminClient<TTier, TDataCenter>)appInfo.AdminClient;
+            var client = appInfo.AdminClient;
 
             if (client == null)
             {
@@ -347,7 +350,7 @@ namespace NFig
         public async Task<NFigAdminClient<TTier, TDataCenter>> GetAdminClientAsync(string appName)
         {
             var appInfo = SetupAppInfo(appName);
-            var client = (NFigAdminClient<TTier, TDataCenter>)appInfo.AdminClient;
+            var client = appInfo.AdminClient;
 
             if (client == null)
             {
@@ -537,8 +540,8 @@ namespace NFig
         /// </summary>
         protected abstract Task SaveMetadataAsync(string appName, BySetting<SettingMetadata> metadata);
 
-        internal void SetMetadataInternal(string appName, BySetting<SettingMetadata> metadata) => SaveMetadata(appName, metadata);
-        internal Task SetMetadataAsyncInternal(string appName, BySetting<SettingMetadata> metadata) => SaveMetadataAsync(appName, metadata);
+        internal void SaveMetadataInternal(string appName, BySetting<SettingMetadata> metadata) => SaveMetadata(appName, metadata);
+        internal Task SaveMetadataAsyncInternal(string appName, BySetting<SettingMetadata> metadata) => SaveMetadataAsync(appName, metadata);
 
         /// <summary>
         /// Sends default values to the backing store.
