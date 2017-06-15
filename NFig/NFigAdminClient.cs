@@ -63,7 +63,19 @@ namespace NFig
         /// <param name="subAppId">The ID of the sub-app, or null for the root app.</param>
         public Defaults<TTier, TDataCenter> GetDefaults(int? subAppId)
         {
-            throw new NotImplementedException();
+            if (subAppId == null)
+            {
+                var rootDefaults = _appInfo.RootDefaults;
+                if (rootDefaults == null)
+                    throw new NFigException("Could not find defaults for root application. It may not be in use.");
+
+                return rootDefaults;
+            }
+
+            if (_appInfo.SubAppDefaults.TryGetValue(subAppId.Value, out var subAppDefaults))
+                return subAppDefaults;
+
+            throw new NFigException($"Could not find defaults for sub-app {subAppId}. It may not be in use.");
         }
 
         /// <summary>
