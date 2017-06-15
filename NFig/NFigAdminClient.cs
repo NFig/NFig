@@ -205,20 +205,14 @@ namespace NFig
         /// <see cref="CanEncrypt"/> will be false, and this method will always throw an exception. Null values are not encrypted, and are simply returned as
         /// null.
         /// </summary>
-        public string Encrypt(string plainText)
-        {
-            throw new NotImplementedException();
-        }
+        public string Encrypt(string plainText) => _appInfo.Encrypt(plainText);
 
         /// <summary>
         /// Returns a plain-text (decrypted) version of <paramref name="encrypted"/>. If this admin client is not able to decrypt settings for the application, 
         /// then <see cref="CanDecrypt"/> will be false, and this method will always throw an exception. Null are considered to be unencrypted to begin with,
         /// and will result in a null return value.
         /// </summary>
-        public string Decrypt(string encrypted)
-        {
-            throw new NotImplementedException();
-        }
+        public string Decrypt(string encrypted) => _appInfo.Decrypt(encrypted);
 
         /// <summary>
         /// Restores all overrides to a previous state.
