@@ -102,7 +102,7 @@ namespace NFig.Metadata
             if (r.TokenType != JsonToken.EndObject)
                 throw new JsonSerializationException($"Expected '}}' but got token type {r.TokenType}");
 
-            r.Read(); // consume }
+            // leave the } unconsumed
 
             return new BySetting<T>(items);
         }
@@ -144,7 +144,7 @@ namespace NFig.Metadata
             if (r.TokenType != JsonToken.EndObject)
                 throw new JsonSerializationException($"Expected '}}' but got token type {r.TokenType}");
 
-            r.Read(); // consume }
+            // leave the } unconsumed
 
             return new ListBySetting<T>(items);
         }
