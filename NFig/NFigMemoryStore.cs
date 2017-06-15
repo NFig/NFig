@@ -74,7 +74,7 @@ namespace NFig
             var defaultsBySubApp = new Dictionary<int, Defaults<TTier, TDataCenter>>();
             foreach (var kvp in defaultsBySubAppHash)
             {
-                var defaults = JsonConvert.DeserializeObject<Defaults<TTier, TDataCenter>>(kvp.Value);
+                var defaults = NFigJson.Deserialize<Defaults<TTier, TDataCenter>>(kvp.Value);
 
                 if (defaults.AppName != appName)
                     throw new NFigMemoryStoreCorruptException("Defaults do not match the expected app name", keys.Defaults, kvp.Key);
