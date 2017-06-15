@@ -6,10 +6,13 @@ using NFig.Metadata;
 
 namespace NFig
 {
+    // This interface is just to give a type hint on the AppInternalInfo.AppClient property, rather than using object.
+    interface IAppClient { }
+
     /// <summary>
     /// Provides methods for consuming NFig settings within an application.
     /// </summary>
-    public class NFigAppClient<TSettings, TTier, TDataCenter>
+    public class NFigAppClient<TSettings, TTier, TDataCenter> : IAppClient
         where TSettings : class, INFigSettings<TTier, TDataCenter>, new()
         where TTier : struct
         where TDataCenter : struct

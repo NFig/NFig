@@ -15,8 +15,8 @@ namespace NFig
         internal Type SettingsType { get; set; }
         [CanBeNull]
         internal ISettingEncryptor Encryptor { get; set; } // todo: eventually make this private
-        internal object AppClient { get; set; }
-        internal object AdminClient { get; set; }
+        internal IAppClient AppClient { get; set; }
+        internal NFigAdminClient<TTier, TDataCenter> AdminClient { get; set; }
 
         // Generated internally by the SettingsFactory, not read from the store.
         [CanBeNull]
