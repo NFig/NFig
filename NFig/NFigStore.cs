@@ -278,6 +278,8 @@ namespace NFig
                     client = new NFigAppClient<TSettings, TTier, TDataCenter>(this, appInfo);
                     appInfo.AppClient = client;
                 }
+
+                SaveMetadata(appName, appInfo.GeneratedSettingsMetadata);
             }
 
             return client;
@@ -307,6 +309,8 @@ namespace NFig
                     client = new NFigAppClient<TSettings, TTier, TDataCenter>(this, appInfo);
                     appInfo.AppClient = client;
                 }
+
+                await SaveMetadataAsync(appName, appInfo.GeneratedSettingsMetadata);
             }
 
             return client;

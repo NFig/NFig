@@ -53,6 +53,7 @@ namespace NFig
             _tree = GetSettingsTree();
             _settingsByName = new BySetting<Setting>(_settings);
             _rootCache.Defaults = CollectDefaultsForSubApp(null, null);
+            appInfo.GeneratedSettingsMetadata = GetMetadataBySetting();
         }
 
         internal bool SettingExists(string settingName) => _settingsByName.ContainsKey(settingName);
@@ -279,6 +280,18 @@ namespace NFig
                 return _rootCache.Defaults;
 
             return new ListBySetting<DefaultValue<TTier, TDataCenter>>(allDefaults, _rootCache.Defaults);
+        }
+
+        BySetting<SettingMetadata> GetMetadataBySetting()
+        {
+            var settings = _settings;
+            var metas = new SettingMetadata[settings.Count];
+            for (var i = 0; i < metas.Length; i++)
+            {
+                metas[i] = settings[i].Metadata;
+            }
+
+            return new BySetting<SettingMetadata>(metas);
         }
 
         void AssertEncryptorIsNullOrValid()

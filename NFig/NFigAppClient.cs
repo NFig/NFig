@@ -94,7 +94,8 @@ namespace NFig
         /// </param>
         public TSettings GetSettings(int? subAppId = null)
         {
-            RegisterRootApp();
+            if (subAppId == null)
+                RegisterRootApp();
 
             List<InvalidOverrideValueException> invalidOverrides = null;
             _factory.TryGetSettings(subAppId, Snapshot, out var settings, ref invalidOverrides);

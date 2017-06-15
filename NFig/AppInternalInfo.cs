@@ -18,10 +18,14 @@ namespace NFig
         internal object AppClient { get; set; }
         internal object AdminClient { get; set; }
 
-        public AppMetadata AppMetadata { get; set; }
-        public Defaults<TTier, TDataCenter> RootDefaults { get; set; }
-        public Dictionary<int, Defaults<TTier, TDataCenter>> SubAppDefaults { get; set; }
-        public OverridesSnapshot<TTier, TDataCenter> Snapshot { get; set; }
+        // Generated internally by the SettingsFactory, not read from the store.
+        [CanBeNull]
+        internal BySetting<SettingMetadata> GeneratedSettingsMetadata { get; set; }
+
+        internal AppMetadata AppMetadata { get; set; }
+        internal Defaults<TTier, TDataCenter> RootDefaults { get; set; }
+        internal Dictionary<int, Defaults<TTier, TDataCenter>> SubAppDefaults { get; set; }
+        internal OverridesSnapshot<TTier, TDataCenter> Snapshot { get; set; }
 
         internal bool CanEncrypt => Encryptor != null;
         internal bool CanDecrypt => Encryptor?.CanDecrypt ?? false;
