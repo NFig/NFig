@@ -228,7 +228,26 @@ namespace NFig
 
         protected override void SaveDefaults(string appName, Defaults<TTier, TDataCenter>[] defaults)
         {
-            throw new NotImplementedException();
+            if (defaults.Length == 0)
+                return;
+
+            var hash = new Dictionary<string, string>();
+
+            foreach (var defs in defaults)
+            {
+                var hashKey = defs.SubAppId.HasValue ? defs.SubAppId.ToString() : Keys.ROOT;
+                var json = NFigJson.Serialize(defs);
+                hash.Add(hashKey, json);
+            }
+
+            var key = GetKeys(appName).Defaults;
+            using (MockRedis.Multi())
+            {
+                foreach (var kvp in hash)
+                {
+                    MockRedis.HashSet(key, kvp.Key, kvp.Value);
+                }
+            }
         }
 
         protected override Task SaveDefaultsAsync(string appName, Defaults<TTier, TDataCenter>[] defaults)
