@@ -265,5 +265,13 @@ namespace NFig
         {
             throw new NotImplementedException();
         }
+
+        /// <summary>
+        /// Returns true if the setting exists. Setting names are case-sensitive.
+        /// </summary>
+        public bool SettingExists(string settingName)
+        {
+            return _appInfo.AppMetadata.SettingsMetadata.ContainsKey(settingName);
+        }
     }
 }
