@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using JetBrains.Annotations;
+using NFig.Infrastructure;
 
 namespace NFig.Metadata
 {

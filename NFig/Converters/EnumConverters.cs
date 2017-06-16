@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
+using NFig.Infrastructure;
 
 namespace NFig.Converters
 {

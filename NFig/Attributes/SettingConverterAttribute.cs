@@ -2,6 +2,7 @@ using System;
 using System.Reflection;
 using JetBrains.Annotations;
 using NFig.Converters;
+using NFig.Infrastructure;
 
 namespace NFig
 {

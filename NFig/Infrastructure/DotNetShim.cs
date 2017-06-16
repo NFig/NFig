@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Reflection;
 
-namespace NFig
+namespace NFig.Infrastructure
 {
     static class DotNetShim
     {

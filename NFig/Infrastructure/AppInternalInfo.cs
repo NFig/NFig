@@ -5,7 +5,7 @@ using NFig.Converters;
 using NFig.Encryption;
 using NFig.Metadata;
 
-namespace NFig
+namespace NFig.Infrastructure
 {
     class AppInternalInfo<TTier, TDataCenter>
         where TTier : struct

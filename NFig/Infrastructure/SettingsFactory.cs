@@ -10,7 +10,7 @@ using NFig.Converters;
 using NFig.Encryption;
 using NFig.Metadata;
 
-namespace NFig
+namespace NFig.Infrastructure
 {
     class SettingsFactory<TSettings, TTier, TDataCenter>
         where TSettings : class, INFigSettings<TTier, TDataCenter>, new()

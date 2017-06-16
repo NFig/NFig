@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Threading;
 
-namespace NFig
+namespace NFig.Memory
 {
     static class MockRedis
     {

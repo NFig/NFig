@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace NFig
+namespace NFig.Infrastructure
 {
     static class Compare
     {

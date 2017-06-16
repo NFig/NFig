@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using NFig.Encryption;
+using NFig.Infrastructure;
 using NFig.Metadata;
 
 namespace NFig.Tests.Common

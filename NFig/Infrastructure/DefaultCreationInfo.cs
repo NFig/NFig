@@ -1,4 +1,4 @@
-﻿namespace NFig
+﻿namespace NFig.Infrastructure
 {
     /// <summary>
     /// This class is used by <see cref="DefaultValueBaseAttribute"/> to transmit default values to NFig.

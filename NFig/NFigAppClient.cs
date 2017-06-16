@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
+using NFig.Infrastructure;
 using NFig.Metadata;
 
 namespace NFig

@@ -4,6 +4,7 @@ using System.Reflection;
 using System.Reflection.Emit;
 using Newtonsoft.Json;
 using NFig;
+using NFig.Infrastructure;
 
 namespace NFig.Metadata
 {
@@ -204,7 +205,7 @@ namespace NFig.Metadata
                 ObjectType = objectType;
 
                 var tValue = objectType.GenericTypeArguments[0];
-                var module = DotNetShim.Module(GetType());
+                var module = GetType().Module();
 
                 Write = CreateWriteDelegate(mode, objectType, tValue, module);
                 Read = CreateReadDelegate(mode, tValue, module);
