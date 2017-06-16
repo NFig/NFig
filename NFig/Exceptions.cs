@@ -20,6 +20,16 @@ namespace NFig
     }
 
     /// <summary>
+    /// Thrown when a setting name is used that doesn't actually exist.
+    /// </summary>
+    public class SettingNotFoundException : NFigException
+    {
+        internal SettingNotFoundException(string settingName) : base($"No setting named \"{settingName}\" exists")
+        {
+        }
+    }
+
+    /// <summary>
     /// Used to indicate that a setting does not have a valid <see cref="ISettingConverter{TValue}"/>.
     /// </summary>
     public class InvalidSettingConverterException : NFigException
