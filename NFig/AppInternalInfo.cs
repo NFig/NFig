@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using JetBrains.Annotations;
+using NFig.Converters;
 using NFig.Encryption;
 using NFig.Metadata;
 
@@ -21,6 +22,8 @@ namespace NFig
         // Generated internally by the SettingsFactory, not read from the store.
         [CanBeNull]
         internal BySetting<SettingMetadata> GeneratedSettingsMetadata { get; set; }
+        [CanBeNull]
+        internal Dictionary<string, ISettingConverter> CustomConverters { get; set; }
 
         internal AppMetadata AppMetadata { get; set; }
         internal Defaults<TTier, TDataCenter> RootDefaults { get; set; }

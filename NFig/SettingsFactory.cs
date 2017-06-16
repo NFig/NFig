@@ -55,7 +55,7 @@ namespace NFig
             _tree = GetSettingsTree();
             _settingsByName = new BySetting<Setting>(_settings);
             _rootCache.Defaults = CollectDefaultsForSubApp(null, null);
-            appInfo.GeneratedSettingsMetadata = GetMetadataBySetting();
+            SetInternalInfo();
         }
 
         internal bool SettingExists(string settingName) => _settingsByName.ContainsKey(settingName);
@@ -285,16 +285,22 @@ namespace NFig
             }
         }
 
-        BySetting<SettingMetadata> GetMetadataBySetting()
+        void SetInternalInfo()
         {
             var settings = _settings;
             var metas = new SettingMetadata[settings.Count];
+            var customConverters = new Dictionary<string, ISettingConverter>();
             for (var i = 0; i < metas.Length; i++)
             {
-                metas[i] = settings[i].Metadata;
+                var s = settings[i];
+                metas[i] = s.Metadata;
+
+                if (!s.Metadata.IsDefaultConverter)
+                    customConverters[s.Name] = s.Converter;
             }
 
-            return new BySetting<SettingMetadata>(metas);
+            AppInfo.GeneratedSettingsMetadata = new BySetting<SettingMetadata>(metas);
+            AppInfo.CustomConverters = customConverters;
         }
 
         void AssertEncryptorIsNullOrValid()
@@ -712,7 +718,7 @@ namespace NFig
                     var getValue = converterType.GetMethod(nameof(ISettingConverter<bool>.GetValue)); // the <bool> here really doesn't matter - any type would work
 
                     var settingType = typeof(Setting<>).MakeGenericType(typeOfValue);
-                    var converterProp = settingType.GetProperty(nameof(Setting<bool>.Converter)); // the <bool> here really doesn't matter - any type would work
+                    var converterProp = settingType.GetProperty(nameof(Setting<bool>.TypedConverter)); // the <bool> here really doesn't matter - any type would work
 
                     var settingsField = _reflectionCache.SettingsField;
                     var getSettingItem = _reflectionCache.GetSettingItemMethod;
@@ -1047,6 +1053,8 @@ namespace NFig
             public int Index { get; set; } // the index into _settings where this Setting lives
             public int? RootDefaultCacheIndex { get; set; } // index into _valueCache where the root default is cached (if applicable)
 
+            public abstract ISettingConverter Converter { get; }
+
             protected Setting(
                 Type type,
                 PropertyInfo propertyInfo,
@@ -1083,7 +1091,9 @@ namespace NFig
             SettingGetterDelegate<TValue> _getter;
             SettingSetterDelegate<TValue> _setter;
 
-            public ISettingConverter<TValue> Converter { get; }
+            public ISettingConverter<TValue> TypedConverter { get; }
+
+            public override ISettingConverter Converter => TypedConverter;
 
             internal Setting(
                 PropertyInfo propertyInfo,
@@ -1095,7 +1105,7 @@ namespace NFig
                 bool allowInline)
                 : base(typeof(TValue), propertyInfo, metadata, group, rootAnyAnyDefault, defaultValueAttributes, allowInline)
             {
-                Converter = converter;
+                TypedConverter = converter;
             }
 
             public TValue GetValue(TSettings settings)
@@ -1118,7 +1128,7 @@ namespace NFig
                 try
                 {
                     var strValue = Metadata.IsEncrypted ? appInfo.Decrypt(over.Value) : over.Value;
-                    value = Converter.GetValue(strValue);
+                    value = TypedConverter.GetValue(strValue);
                 }
                 catch (Exception ex)
                 {
@@ -1142,7 +1152,7 @@ namespace NFig
 
             public override object GetValueFromString(string str)
             {
-                return Converter.GetValue(str);
+                return TypedConverter.GetValue(str);
             }
 
             public override bool TryGetValueFromString(string str, out object value)
@@ -1150,7 +1160,7 @@ namespace NFig
                 value = null;
                 try
                 {
-                    value = Converter.GetValue(str);
+                    value = TypedConverter.GetValue(str);
                 }
                 catch (Exception)
                 {
@@ -1165,7 +1175,7 @@ namespace NFig
                 str = null;
                 try
                 {
-                    str = Converter.GetString((TValue)value);
+                    str = TypedConverter.GetString((TValue)value);
                 }
                 catch (Exception)
                 {
@@ -1179,7 +1189,7 @@ namespace NFig
                 SettingsFactory<TSettings, TTier, TDataCenter> factory,
                 DefaultCreationInfo<TTier, TDataCenter> info)
             {
-                var strValue = factory.GetStringFromDefaultAndValidate(Name, info.Value, info.SubAppId, info.DataCenter, Converter, Metadata.IsEncrypted);
+                var strValue = factory.GetStringFromDefaultAndValidate(Name, info.Value, info.SubAppId, info.DataCenter, TypedConverter, Metadata.IsEncrypted);
                 return new DefaultValue<TTier, TDataCenter>(Name, strValue, info.SubAppId, info.Tier, info.DataCenter, info.AllowsOverrides);
             }
 
