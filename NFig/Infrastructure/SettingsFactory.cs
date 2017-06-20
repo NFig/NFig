@@ -480,10 +480,12 @@ namespace NFig.Infrastructure
             var changeRequiresRestart = pi.GetCustomAttribute<ChangeRequiresRestartAttribute>() != null;
             var allowInline = pi.GetCustomAttribute<DoNotInlineValuesAttribute>() == null;
 
-            var typeName = pi.PropertyType.FullName;
-            var isEnum = pi.PropertyType.IsEnum();
+            var type = typeof(TValue);
+            var typeName = type.FullName;
+            var isEnum = type.IsEnum();
+            var enumMeta = isEnum ? EnumMetadata.Create(type, Tier) : null;
             var converterTypeName = converter.GetType().FullName;
-            var meta = new SettingMetadata(name, description, typeName, isEncrypted, isEnum, converterTypeName, isDefaultConverter, changeRequiresRestart);
+            var meta = new SettingMetadata(name, description, typeName, isEncrypted, isEnum, enumMeta, converterTypeName, isDefaultConverter, changeRequiresRestart);
 
             // get the root default value
             var rootValue = isEncrypted ? default(TValue) : settingAttr.DefaultValue;

@@ -355,7 +355,8 @@ namespace NFig.Tests
                     Generate.Description(),
                     Generate.Word(),
                     Generate.Bool(),
-                    Generate.Bool(),
+                    false,
+                    null,
                     Generate.Word(),
                     Generate.Bool(),
                     Generate.Bool());

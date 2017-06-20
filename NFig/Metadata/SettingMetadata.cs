@@ -30,6 +30,10 @@ namespace NFig.Metadata
         /// </summary>
         public bool IsEnum { get; }
         /// <summary>
+        /// Information about the enum type, if <see cref="IsEnum"/> is true, otherwise null.
+        /// </summary>
+        public EnumMetadata EnumMetadata { get; }
+        /// <summary>
         /// The fully-qualified type name of the setting's converter. All built-in converters begin with "NFig.Converters."
         /// </summary>
         public string ConverterTypeName { get; }
@@ -50,6 +54,7 @@ namespace NFig.Metadata
             string typeName,
             bool isEncrypted,
             bool isEnum,
+            EnumMetadata enumMetadata,
             string converterTypeName,
             bool isDefaultConverter,
             bool changeRequiresRestart)
@@ -59,6 +64,7 @@ namespace NFig.Metadata
             TypeName = typeName;
             IsEncrypted = isEncrypted;
             IsEnum = isEnum;
+            EnumMetadata = enumMetadata;
             ConverterTypeName = converterTypeName;
             IsDefaultConverter = isDefaultConverter;
             ChangeRequiresRestart = changeRequiresRestart;
