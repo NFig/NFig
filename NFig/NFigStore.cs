@@ -606,13 +606,19 @@ namespace NFig
             if (dataCenterInt == null || ki >= key.Length || key[ki] != ',')
                 goto BAD_OVERRIDE;
 
+            // skip over ','
+            ki++;
+
             dataCenter = IntToDataCenter(dataCenterInt.Value);
 
             subAppId = ParseInt(key, ref ki);
             if (ki + 1 >= key.Length || key[ki] != ';')
                 goto BAD_OVERRIDE;
 
-            settingName = key.Substring(ki + 1);
+            // skip over ';'
+            ki++;
+
+            settingName = key.Substring(ki);
             if (settingName.Length == 0)
                 goto BAD_OVERRIDE;
 
@@ -650,8 +656,12 @@ namespace NFig
 
             var value = c - '0';
             index++;
-            while (index < s.Length && c >= '0' && c <= '9')
+            while (index < s.Length)
             {
+                c = s[index];
+                if (c < '0' || c > '9')
+                    break;
+
                 var digit = c - '0';
                 value = value * 10 + digit;
                 index++;
