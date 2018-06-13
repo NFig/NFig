@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -15,7 +15,7 @@ namespace NFig
         {
             var name = "NFigEnumConverters_" + Guid.NewGuid();
             var asmName = new AssemblyName(name);
-            var asmBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(asmName, AssemblyBuilderAccess.Run);
+            var asmBuilder = AssemblyBuilder.DefineDynamicAssembly(asmName, AssemblyBuilderAccess.Run);
             _moduleBuilder = asmBuilder.DefineDynamicModule("Main");
         }
 
