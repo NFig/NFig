@@ -25,7 +25,7 @@ namespace NFig
 
         private delegate Setting PropertyToSettingDelegate(PropertyInfo pi, PropertyAndParent parent, SettingAttribute sa, string prefix);
 
-        private readonly Dictionary<Type, object> _defaultConverters = new Dictionary<Type, object>
+        private readonly Dictionary<Type, ISettingConverter> _defaultConverters = new Dictionary<Type, ISettingConverter>
         {
             {typeof(bool), new BooleanSettingConverter()},
             {typeof(byte), new ByteSettingConverter()},
@@ -42,7 +42,7 @@ namespace NFig
             {typeof(decimal), new DecimalSettingConverter()},
         };
 
-        public SettingsFactory(Dictionary<Type, SettingConverterAttribute> additionalDefaultConverters = null)
+        public SettingsFactory(IEnumerable<ISettingConverter> additionalDefaultConverters = null)
         {
             TSettingsType = typeof(TSettings);
             TTierType = typeof(TTier);
@@ -53,9 +53,10 @@ namespace NFig
 
             if (additionalDefaultConverters != null)
             {
-                foreach (var kvp in additionalDefaultConverters)
+                foreach (var converter in additionalDefaultConverters)
                 {
-                    _defaultConverters[kvp.Key] = kvp.Value;
+                    var type = GetConverterType(converter);
+                    _defaultConverters[type] = converter;
                 }
             }
 
@@ -301,7 +302,7 @@ namespace NFig
 
             // see if there is a converter specified
             var converterAttribute = pi.GetCustomAttribute<SettingConverterAttribute>();
-            object convObj;
+            ISettingConverter convObj;
 
             if (converterAttribute != null)
             {
@@ -310,7 +311,7 @@ namespace NFig
                     throw new NFigException($"More than one SettingConverterAttribute was specified for \"{name}\"");
                 }
 
-                convObj = converterAttribute.Converter;
+                convObj = (ISettingConverter)converterAttribute.Converter;
             }
             else
             {
@@ -605,6 +606,19 @@ namespace NFig
         private static bool IsSettingsGroup(PropertyInfo pi)
         {
             return pi.PropertyType.IsClass && pi.GetCustomAttribute<SettingsGroupAttribute>() != null;
+        }
+
+        private static Type GetConverterType(ISettingConverter converter)
+        {
+            foreach (var iface in converter.GetType().GetInterfaces())
+            {
+                if (iface.GetGenericTypeDefinition() == typeof(ISettingConverter<>))
+                {
+                    return iface.GetGenericArguments()[0];
+                }
+            }
+
+            throw new NFigException("A default converter does not implement ISettingConverter<T>");
         }
 
 

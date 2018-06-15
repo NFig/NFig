@@ -7,7 +7,7 @@ namespace NFig
 {
     internal static class EnumConverters
     {
-        private static readonly Dictionary<Type, object> _converters = new Dictionary<Type, object>();
+        private static readonly Dictionary<Type, ISettingConverter> _converters = new Dictionary<Type, ISettingConverter>();
         private static readonly object _lock = new object();
         private static readonly ModuleBuilder _moduleBuilder;
 
@@ -19,10 +19,9 @@ namespace NFig
             _moduleBuilder = asmBuilder.DefineDynamicModule("Main");
         }
 
-        public static object GetConverterFor(Type enumType)
+        public static ISettingConverter GetConverterFor(Type enumType)
         {
-            object converter;
-            if (_converters.TryGetValue(enumType, out converter))
+            if (_converters.TryGetValue(enumType, out var converter))
                 return converter;
 
             lock (_lock)
@@ -36,7 +35,7 @@ namespace NFig
             }
         }
 
-        private static object CreateConverter(Type enumType)
+        private static ISettingConverter CreateConverter(Type enumType)
         {
             var ifaceType = typeof(ISettingConverter<>).MakeGenericType(enumType);
             var stringType = typeof(string);
@@ -69,7 +68,7 @@ namespace NFig
             il.Emit(OpCodes.Ret);
 
             var converterType = typeBuilder.CreateType();
-            return Activator.CreateInstance(converterType);
+            return (ISettingConverter)Activator.CreateInstance(converterType);
         }
     }
 }

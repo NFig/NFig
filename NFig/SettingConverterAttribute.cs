@@ -24,7 +24,11 @@ namespace NFig
         }
     }
 
-    public interface ISettingConverter<TValue>
+    public interface ISettingConverter
+    {
+    }
+
+    public interface ISettingConverter<TValue> : ISettingConverter
     {
         string GetString(TValue value);
         TValue GetValue(string s);
