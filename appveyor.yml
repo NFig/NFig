@@ -52,7 +52,7 @@ deploy:
     artifact: /^artifacts[\\/].*\.nupkg$/
     skip_symbols: false
     on:
-      branch: v2
+      branch: [master, v2]
 
   # NuGet.org
   - provider: NuGet
@@ -61,5 +61,6 @@ deploy:
     artifact: /^artifacts[\\/].*\.nupkg$/
     skip_symbols: false
     on:
+      branch: [master, v2]
       appveyor_repo_tag: true
 
