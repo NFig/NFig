@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -20,8 +21,7 @@ namespace NFig
         private readonly Type TTierType;
         private readonly Type TDataCenterType;
 
-        private readonly Dictionary<Type, PropertyToSettingDelegate> _propertyToSettingDelegatesCache;
-        private readonly object _delegatesCacheLock;
+        private readonly ConcurrentDictionary<Type, PropertyToSettingDelegate> _propertyToSettingDelegatesCache;
 
         private delegate Setting PropertyToSettingDelegate(PropertyInfo pi, PropertyAndParent parent, SettingAttribute sa, string prefix);
 
@@ -70,8 +70,7 @@ namespace NFig
                 }
             }
 
-            _propertyToSettingDelegatesCache = new Dictionary<Type, PropertyToSettingDelegate>();
-            _delegatesCacheLock = new object();
+            _propertyToSettingDelegatesCache = new ConcurrentDictionary<Type, PropertyToSettingDelegate>();
 
             _settings = BuildSettings(TSettingsType);
             _settingsByName = _settings.ToDictionary(s => s.Name);
@@ -79,7 +78,6 @@ namespace NFig
 
             // don't need this cache anymore
             _propertyToSettingDelegatesCache = null;
-            _delegatesCacheLock = null;
         }
 
         public TSettings GetAppSettings(TTier tier, TDataCenter dataCenter, IEnumerable<SettingValue<TTier, TDataCenter>> overrides = null)
@@ -278,21 +276,14 @@ namespace NFig
 
         private PropertyToSettingDelegate GetPropertyToSettingDelegate(Type type)
         {
-            PropertyToSettingDelegate del;
-            if (_propertyToSettingDelegatesCache.TryGetValue(type, out del))
-                return del;
-
-            lock (_delegatesCacheLock)
-            {
-                if (_propertyToSettingDelegatesCache.TryGetValue(type, out del))
-                    return del;
-
-                var methodInfo = GetType().GetMethod("PropertyToSetting", BindingFlags.NonPublic | BindingFlags.Instance).MakeGenericMethod(type);
-                del = (PropertyToSettingDelegate)Delegate.CreateDelegate(typeof(PropertyToSettingDelegate), this, methodInfo);
-                _propertyToSettingDelegatesCache[type] = del;
-
-                return del;
-            }
+            return _propertyToSettingDelegatesCache.GetOrAdd(
+                type,
+                key =>
+                {
+                    var methodInfo = GetType().GetMethod(nameof(PropertyToSetting), BindingFlags.NonPublic | BindingFlags.Instance).MakeGenericMethod(key);
+                    return (PropertyToSettingDelegate)Delegate.CreateDelegate(typeof(PropertyToSettingDelegate), this, methodInfo);
+                }
+            );
         }
 
         // ReSharper disable once UnusedMember.Local
